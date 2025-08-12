@@ -1,0 +1,22 @@
+{
+  "name": "metavault-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run test:all",
+    "test:all": "npm run test:create-vault && npm run test:read-vault",
+    "test:create-vault": "node test/create-vault.js",
+    "test:read-vault": "node test/read-vault.js",
+    "test:deposit-vault": "node test/deposit-vault.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "viem": "^2.33.1"
+  }
+}
