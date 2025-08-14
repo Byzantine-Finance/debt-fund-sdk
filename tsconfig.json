@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src"],
+  "include": ["src", "test", "example"],
   "exclude": ["node_modules", "dist"]
 }

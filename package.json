@@ -9,10 +9,13 @@
   "scripts": {
     "build": "tsc",
     "test": "npm run test:all",
-    "test:all": "npm run test:create-vault && npm run test:read-vault",
-    "test:create-vault": "node test/create-vault.js",
-    "test:read-vault": "node test/read-vault.js",
-    "test:deposit-vault": "node test/deposit-vault.js"
+    "test:all": "npm run build && npm run test:create-vault && npm run test:read-vault && npm run test:deposit-vault && npm run test:roles && npm run test:name-symbol && npm run test:adapters",
+    "test:create-vault": "node test/owners/create-vault.test.js",
+    "test:read-vault": "node test/read-vault.test.js",
+    "test:deposit-vault": "node test/deposit-vault.js",
+    "test:roles": "node test/owners/play-with-roles.test.js",
+    "test:name-symbol": "node test/owners/set-name-symbol.test.js",
+    "test:adapters": "node test/curators/set-adapters.test.js"
   },
   "dependencies": {
     "dotenv": "^17.2.1",

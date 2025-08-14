@@ -2,15 +2,14 @@
 
 import { ethers } from "ethers";
 import { ContractProvider } from "../utils";
-import { getNetworkConfig } from "../constants/networks";
 
 // Import specialized clients
-import { CreateClient } from "./curators";
-import { AdminClient } from "./byzantine";
-import { DepositClient, WithdrawClient } from "./depositors";
+import { OwnersClient } from "./owners";
+import { CuratorsClient } from "./curators";
 
 /**
- * Main SDK client for interacting with MetaVault ecosystem
+ * Main SDK client for interacting with Vault ecosystem
+ * Currently focused on Owner operations
  */
 export class ByzantineClient {
   private provider: ethers.Provider;
@@ -18,11 +17,8 @@ export class ByzantineClient {
   private contractProvider: ContractProvider;
 
   // Specialized clients
-  private createClient: CreateClient;
-  private adminClient?: AdminClient;
-  private depositClient?: DepositClient;
-  private withdrawClient?: WithdrawClient;
-
+  private ownersClient: OwnersClient;
+  private curatorsClient: CuratorsClient;
   /**
    * Initialize a new ByzantineClient
    * @param provider Ethereum provider
@@ -34,424 +30,522 @@ export class ByzantineClient {
     this.contractProvider = new ContractProvider(provider, signer);
 
     // Initialize specialized clients
-    this.createClient = new CreateClient(provider, signer);
-  }
-
-  /**
-   * Get the factory address for the current chain
-   * @returns The MetaVaultFactory address
-   */
-  private async getFactoryAddress(): Promise<string> {
-    const network = await this.provider.getNetwork();
-    const chainId = Number(network.chainId);
-
-    const networkConfig = getNetworkConfig(chainId as any);
-    if (!networkConfig || !networkConfig.byzantineFactoryAddress) {
-      throw new Error(`MetaVaultFactory not deployed on chain ${chainId}`);
-    }
-
-    return networkConfig.byzantineFactoryAddress;
-  }
-
-  /**
-   * Initialize admin client (lazy initialization)
-   */
-  private async initializeAdminClient(): Promise<void> {
-    if (!this.adminClient) {
-      this.adminClient = new AdminClient(this.provider, this.signer);
-    }
-  }
-
-  /**
-   * Initialize vault-specific clients
-   * @param vaultAddress Address of the MetaVault
-   */
-  public initializeVaultClients(vaultAddress: string): void {
-    this.depositClient = new DepositClient(
-      this.provider,
-      vaultAddress,
-      this.signer
-    );
-    this.withdrawClient = new WithdrawClient(
-      this.provider,
-      vaultAddress,
-      this.signer
-    );
+    this.ownersClient = new OwnersClient(provider, signer);
+    this.curatorsClient = new CuratorsClient(provider, signer);
   }
 
   //*******************************************
-  //* CREATE CLIENT - MetaVault Creation
+  //* OWNERS CLIENT - Vault Owner Operations
   //*******************************************
 
   /**
-   * Create a new MetaVault
-   * @param params Parameters for creating the MetaVault
+   * Create a new vault using the factory
+   * @param owner The address of the vault owner
+   * @param asset The address of the underlying asset
+   * @param salt Unique salt for deterministic vault address
    * @returns Transaction response
    */
-  async createMetaVault(params: {
-    asset: string;
-    vaultName: string;
-    vaultSymbol: string;
-    subVaults: Array<{ vault: string; percentage: bigint }>;
-    curatorFeePercentage: bigint;
-  }): Promise<ethers.TransactionResponse> {
-    return await this.createClient.createMetaVault(params);
-  }
-
-  //*******************************************
-  //* ADMIN CLIENT - Byzantine Administration
-  //*******************************************
-
-  /**
-   * Get the Byzantine fee settings from the factory
-   * @returns Byzantine fee recipient and percentage
-   */
-  async getByzantineFeeSettings(): Promise<{
-    recipient: string;
-    percentage: bigint;
-  }> {
-    await this.initializeAdminClient();
-    return await this.adminClient!.getByzantineFeeSettings();
-  }
-
-  /**
-   * Get the Byzantine fee percentage from the factory
-   * @returns Byzantine fee percentage
-   */
-  async getByzantineFeePercentage(): Promise<bigint> {
-    await this.initializeAdminClient();
-    return await this.adminClient!.getByzantineFeePercentage();
-  }
-
-  /**
-   * Get the Byzantine fee recipient from the factory
-   * @returns Byzantine fee recipient address
-   */
-  async getByzantineFeeRecipient(): Promise<string> {
-    await this.initializeAdminClient();
-    return await this.adminClient!.getByzantineFeeRecipient();
-  }
-
-  /**
-   * Set the Byzantine fee percentage (admin only)
-   * @param feePercentage The new fee percentage (in basis points)
-   * @returns Transaction response
-   */
-  async setByzantineFeePercentage(
-    feePercentage: bigint
+  async createVault(
+    owner: string,
+    asset: string,
+    salt: string
   ): Promise<ethers.TransactionResponse> {
-    await this.initializeAdminClient();
-    return await this.adminClient!.setByzantineFeePercentage(feePercentage);
+    return await this.ownersClient.createVault(owner, asset, salt);
   }
 
+  //*******************************************
+  //* General data retrieval
+  //*******************************************
+
+  async getAsset(vaultAddress: string): Promise<string> {
+    const contract = this.contractProvider.getVaultContract(vaultAddress);
+    return await contract.asset();
+  }
+
+  //*******************************************
+  //* OWNERS CLIENT - Vault Owner Operations
+  //*******************************************
+
   /**
-   * Set the Byzantine fee recipient (admin only)
-   * @param recipient The new fee recipient address
+   * Set a new owner for the vault
+   * @param vaultAddress The vault contract address
+   * @param newOwner The address of the new owner
    * @returns Transaction response
    */
-  async setByzantineFeeRecipient(
-    recipient: string
+  async setOwner(
+    vaultAddress: string,
+    newOwner: string
   ): Promise<ethers.TransactionResponse> {
-    await this.initializeAdminClient();
-    return await this.adminClient!.setByzantineFeeRecipient(recipient);
+    return await this.ownersClient.vault(vaultAddress).setOwner(newOwner);
   }
 
-  //*******************************************
-  //* DEPOSIT CLIENT - Vault Deposits
-  //*******************************************
-
   /**
-   * Deposit assets into the vault
-   * @param assets Amount of assets to deposit
-   * @param receiver Address to receive the shares
+   * Set a new curator for the vault
+   * @param vaultAddress The vault contract address
+   * @param newCurator The address of the new curator
    * @returns Transaction response
    */
-  async deposit(
-    assets: bigint,
-    receiver: string
+  async setCurator(
+    vaultAddress: string,
+    newCurator: string
   ): Promise<ethers.TransactionResponse> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.deposit(assets, receiver);
+    return await this.ownersClient.vault(vaultAddress).setCurator(newCurator);
   }
 
   /**
-   * Mint shares by depositing assets
-   * @param shares Amount of shares to mint
-   * @param receiver Address to receive the shares
+   * Add an account as a sentinel
+   * @param vaultAddress The vault contract address
+   * @param account The account address to add as sentinel
+   * @param isSentinel Whether the account is a sentinel
    * @returns Transaction response
    */
-  async mint(
-    shares: bigint,
-    receiver: string
+  async setIsSentinel(
+    vaultAddress: string,
+    account: string,
+    isSentinel: boolean
   ): Promise<ethers.TransactionResponse> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.mint(shares, receiver);
+    return await this.ownersClient
+      .vault(vaultAddress)
+      .setIsSentinel(account, isSentinel);
   }
 
+  // ========================================
+  // ROLE INFORMATION (READ FUNCTIONS)
+  // ========================================
+
   /**
-   * Preview how many shares will be received for depositing assets
-   * @param assets Amount of assets to deposit
-   * @returns Number of shares that will be received
+   * Get the current owner of the vault
+   * @param vaultAddress The vault contract address
+   * @returns The owner address
    */
-  async previewDeposit(assets: bigint): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.previewDeposit(assets);
+  async getOwner(vaultAddress: string): Promise<string> {
+    return await this.ownersClient.vault(vaultAddress).getOwner();
   }
 
   /**
-   * Preview how many assets are needed to mint shares
-   * @param shares Amount of shares to mint
-   * @returns Amount of assets needed
+   * Get the current curator of the vault
+   * @param vaultAddress The vault contract address
+   * @returns The curator address
    */
-  async previewMint(shares: bigint): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.previewMint(shares);
+  async getCurator(vaultAddress: string): Promise<string> {
+    return await this.ownersClient.vault(vaultAddress).getCurator();
   }
 
   /**
-   * Get the maximum amount of assets that can be deposited
-   * @param receiver Address of the receiver
-   * @returns Maximum depositable assets
+   * Check if an account is a sentinel
+   * @param vaultAddress The vault contract address
+   * @param account The account address to check
+   * @returns True if the account is a sentinel
    */
-  async maxDeposit(receiver: string): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.maxDeposit(receiver);
+  async isSentinel(vaultAddress: string, account: string): Promise<boolean> {
+    return await this.ownersClient.vault(vaultAddress).isSentinel(account);
   }
 
-  /**
-   * Get the maximum amount of shares that can be minted
-   * @param receiver Address of the receiver
-   * @returns Maximum mintable shares
-   */
-  async maxMint(receiver: string): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.maxMint(receiver);
-  }
+  // ========================================
+  // VAULT METADATA MANAGEMENT
+  // ========================================
 
   /**
-   * Get the underlying asset address of the vault
-   * @returns Asset address
-   */
-  async asset(): Promise<string> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.asset();
-  }
-
-  /**
-   * Get the total assets managed by the vault
-   * @returns Total assets
-   */
-  async totalAssets(): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.totalAssets();
-  }
-
-  /**
-   * Get the total supply of shares
-   * @returns Total supply
-   */
-  async totalSupply(): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.totalSupply();
-  }
-
-  //*******************************************
-  //* WITHDRAW CLIENT - Vault Withdrawals
-  //*******************************************
-
-  /**
-   * Withdraw assets from the vault
-   * @param assets Amount of assets to withdraw
-   * @param receiver Address to receive the assets
-   * @param owner Address of the shares owner
+   * Set a new name for the vault
+   * @param vaultAddress The vault contract address
+   * @param newName The new name for the vault
    * @returns Transaction response
    */
-  async withdraw(
-    assets: bigint,
-    receiver: string,
-    owner: string
+  async setVaultName(
+    vaultAddress: string,
+    newName: string
   ): Promise<ethers.TransactionResponse> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.withdraw(assets, receiver, owner);
+    return await this.ownersClient.vault(vaultAddress).setName(newName);
   }
 
   /**
-   * Redeem shares for assets
-   * @param shares Amount of shares to redeem
-   * @param receiver Address to receive the assets
-   * @param owner Address of the shares owner
+   * Set a new symbol for the vault
+   * @param vaultAddress The vault contract address
+   * @param newSymbol The new symbol for the vault
    * @returns Transaction response
    */
-  async redeem(
-    shares: bigint,
-    receiver: string,
-    owner: string
+  async setVaultSymbol(
+    vaultAddress: string,
+    newSymbol: string
   ): Promise<ethers.TransactionResponse> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.redeem(shares, receiver, owner);
+    return await this.ownersClient.vault(vaultAddress).setSymbol(newSymbol);
   }
 
   /**
-   * Preview how many shares are needed to withdraw a specific amount of assets
-   * @param assets Amount of assets to withdraw
-   * @returns Number of shares needed
+   * Set both name and symbol for the vault in a single transaction using multicall
+   * @param vaultAddress The vault contract address
+   * @param newName The new name for the vault
+   * @param newSymbol The new symbol for the vault
+   * @returns Transaction response
    */
-  async previewWithdraw(assets: bigint): Promise<bigint> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.previewWithdraw(assets);
+  async setVaultNameAndSymbol(
+    vaultAddress: string,
+    newName: string,
+    newSymbol: string
+  ): Promise<ethers.TransactionResponse> {
+    return await this.ownersClient
+      .vault(vaultAddress)
+      .setNameAndSymbol(newName, newSymbol);
   }
 
-  /**
-   * Preview how many assets will be received for redeeming shares
-   * @param shares Amount of shares to redeem
-   * @returns Amount of assets that will be received
-   */
-  async previewRedeem(shares: bigint): Promise<bigint> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.previewRedeem(shares);
+  async getVaultName(vaultAddress: string): Promise<string> {
+    return await this.ownersClient.vault(vaultAddress).getName();
   }
 
-  /**
-   * Get the maximum amount of assets that can be withdrawn by an owner
-   * @param owner Address of the owner
-   * @returns Maximum withdrawable assets
-   */
-  async maxWithdraw(owner: string): Promise<bigint> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.maxWithdraw(owner);
-  }
-
-  /**
-   * Get the maximum amount of shares that can be redeemed by an owner
-   * @param owner Address of the owner
-   * @returns Maximum redeemable shares
-   */
-  async maxRedeem(owner: string): Promise<bigint> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.maxRedeem(owner);
-  }
-
-  /**
-   * Get the balance of shares for an owner
-   * @param owner Address of the owner
-   * @returns Share balance
-   */
-  async balanceOf(owner: string): Promise<bigint> {
-    if (!this.withdrawClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.withdrawClient.balanceOf(owner);
+  async getVaultSymbol(vaultAddress: string): Promise<string> {
+    return await this.ownersClient.vault(vaultAddress).getSymbol();
   }
 
   //*******************************************
-  //* UTILITY FUNCTIONS - General Helpers
+  //* UTILITY METHODS - General Helpers
   //*******************************************
 
   /**
-   * Convert shares to assets
-   * @param shares Amount of shares
-   * @returns Equivalent amount of assets
+   * Get the current network configuration
+   * @returns Network configuration
    */
-  async convertToAssets(shares: bigint): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
+  async getNetworkConfig() {
+    return this.ownersClient.getNetworkConfig();
+  }
+
+  /**
+   * Get the current chain ID
+   * @returns Chain ID
+   */
+  async getChainId() {
+    return this.ownersClient.getChainId();
+  }
+
+  /**
+   * Get the Vault contract instance
+   * @param vaultAddress Address of the Vault
+   * @returns Vault contract instance
+   */
+  getVaultContract(vaultAddress: string): ethers.Contract {
+    return this.contractProvider.getVaultContract(vaultAddress);
+  }
+
+  /**
+   * Get the VaultFactory contract instance
+   * @returns VaultFactory contract instance
+   */
+  async getVaultFactoryContract(): Promise<ethers.Contract> {
+    return this.contractProvider.getVaultFactoryContract();
+  }
+
+  //*******************************************
+  //* CURATORS CLIENT - Vault Curator Operations
+  //*******************************************
+
+  async submitIsAdapter(
+    vaultAddress: string,
+    adapter: string,
+    isAdapter: boolean
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitIsAdapter(adapter, isAdapter);
+  }
+
+  async setIsAdapterAfterTimelock(
+    vaultAddress: string,
+    adapter: string,
+    isAdapter: boolean
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setIsAdapterAfterTimelock(adapter, isAdapter);
+  }
+
+  async instantSetIsAdapter(
+    vaultAddress: string,
+    adapter: string,
+    isAdapter: boolean
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetIsAdapter(adapter, isAdapter);
+  }
+
+  async getIsAdapter(vaultAddress: string, adapter: string) {
+    return await this.curatorsClient.vault(vaultAddress).getIsAdapter(adapter);
+  }
+
+  async getNumberOfAdapters(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getNumberOfAdapters();
+  }
+
+  // ========================================
+  // TIMELOCK MANAGEMENT
+  // ========================================
+
+  async getTimelock(vaultAddress: string, functionName: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getTimelock(functionName as any);
+  }
+
+  async getExecutableAt(vaultAddress: string, data: string) {
+    return await this.curatorsClient.vault(vaultAddress).getExecutableAt(data);
+  }
+
+  getTimelockFunctionSelector(functionName: string) {
+    return this.curatorsClient.getTimelockFunctionSelector(functionName as any);
+  }
+
+  async increaseTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .increaseTimelock(functionName as any, newDuration);
+  }
+
+  async submitDecreaseTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitDecreaseTimelock(functionName as any, newDuration);
+  }
+
+  async setDecreaseTimelockAfterTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setDecreaseTimelockAfterTimelock(functionName as any, newDuration);
+  }
+
+  async instantDecreaseTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantDecreaseTimelock(functionName as any, newDuration);
+  }
+
+  async submit(vaultAddress: string, data: string) {
+    return await this.curatorsClient.vault(vaultAddress).submit(data);
+  }
+
+  async revoke(vaultAddress: string, functionName: string, params: any[]) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .revoke(functionName as any, params);
+  }
+
+  async abdicateSubmit(vaultAddress: string, functionName: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .abdicateSubmit(functionName as any);
+  }
+
+  // ========================================
+  // FEES MANAGEMENT
+  // ========================================
+
+  // Performance Fee
+  async submitPerformanceFee(vaultAddress: string, performanceFee: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitPerformanceFee(performanceFee);
+  }
+
+  async setPerformanceFeeAfterTimelock(
+    vaultAddress: string,
+    performanceFee: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setPerformanceFeeAfterTimelock(performanceFee);
+  }
+
+  async instantSetPerformanceFee(vaultAddress: string, performanceFee: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetPerformanceFee(performanceFee);
+  }
+
+  async getPerformanceFee(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getPerformanceFee();
+  }
+
+  // Management Fee
+  async submitManagementFee(vaultAddress: string, managementFee: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitManagementFee(managementFee);
+  }
+
+  async setManagementFeeAfterTimelock(
+    vaultAddress: string,
+    managementFee: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setManagementFeeAfterTimelock(managementFee);
+  }
+
+  async instantSetManagementFee(vaultAddress: string, managementFee: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetManagementFee(managementFee);
+  }
+
+  async getManagementFee(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getManagementFee();
+  }
+
+  // Performance Fee Recipient
+  async submitPerformanceFeeRecipient(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitPerformanceFeeRecipient(newFeeRecipient);
+  }
+
+  async setPerformanceFeeRecipientAfterTimelock(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setPerformanceFeeRecipientAfterTimelock(newFeeRecipient);
+  }
+
+  async instantSetPerformanceFeeRecipient(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetPerformanceFeeRecipient(newFeeRecipient);
+  }
+
+  async getPerformanceFeeRecipient(vaultAddress: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getPerformanceFeeRecipient();
+  }
+
+  // Management Fee Recipient
+  async submitManagementFeeRecipient(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitManagementFeeRecipient(newFeeRecipient);
+  }
+
+  async setManagementFeeRecipientAfterTimelock(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setManagementFeeRecipientAfterTimelock(newFeeRecipient);
+  }
+
+  async instantSetManagementFeeRecipient(
+    vaultAddress: string,
+    newFeeRecipient: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetManagementFeeRecipient(newFeeRecipient);
+  }
+
+  async getManagementFeeRecipient(vaultAddress: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getManagementFeeRecipient();
+  }
+
+  // Force Deallocate Penalty
+  async submitForceDeallocatePenalty(
+    vaultAddress: string,
+    adapter: string,
+    newForceDeallocatePenalty: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitForceDeallocatePenalty(adapter, newForceDeallocatePenalty);
+  }
+
+  async setForceDeallocatePenaltyAfterTimelock(
+    vaultAddress: string,
+    adapter: string,
+    newForceDeallocatePenalty: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setForceDeallocatePenaltyAfterTimelock(
+        adapter,
+        newForceDeallocatePenalty
       );
-    }
-    return await this.depositClient.convertToAssets(shares);
+  }
+
+  async instantSetForceDeallocatePenalty(
+    vaultAddress: string,
+    adapter: string,
+    newForceDeallocatePenalty: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetForceDeallocatePenalty(adapter, newForceDeallocatePenalty);
+  }
+
+  async getForceDeallocatePenalty(vaultAddress: string, adapter: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getForceDeallocatePenalty(adapter);
+  }
+
+  // ========================================
+  // UTILITY METHODS
+  // ========================================
+
+  /**
+   * Use a different signer for transactions
+   * @param signer The new signer to use
+   */
+  useSigner(signer: ethers.Signer) {
+    this.signer = signer;
+    this.contractProvider = new ContractProvider(this.provider, signer);
+    this.ownersClient = new OwnersClient(this.provider, signer);
+    this.curatorsClient = new CuratorsClient(this.provider, signer);
   }
 
   /**
-   * Convert assets to shares
-   * @param assets Amount of assets
-   * @returns Equivalent amount of shares
+   * Get access to the contract provider for advanced operations
    */
-  async convertToShares(assets: bigint): Promise<bigint> {
-    if (!this.depositClient) {
-      throw new Error(
-        "Vault clients not initialized. Call initializeVaultClients() first."
-      );
-    }
-    return await this.depositClient.convertToShares(assets);
+  getContractProvider() {
+    return this.contractProvider;
   }
 
   /**
-   * Get the MetaVault contract instance
-   * @param vaultAddress Address of the MetaVault
-   * @returns MetaVault contract instance
+   * Get access to the curators client for advanced operations
    */
-  getMetaVaultContract(vaultAddress: string): ethers.Contract {
-    return this.contractProvider.getMetaVaultContract(vaultAddress);
+  get curators() {
+    return this.curatorsClient;
   }
 
   /**
-   * Get the MetaVaultFactory contract instance
-   * @returns MetaVaultFactory contract instance
+   * Get access to the owners client for advanced operations
    */
-  async getMetaVaultFactoryContract(): Promise<ethers.Contract> {
-    const factoryAddress = await this.getFactoryAddress();
-    return this.contractProvider.getMetaVaultFactoryContract(factoryAddress);
+  get owners() {
+    return this.ownersClient;
   }
 }

@@ -6,6 +6,8 @@
  */
 
 const { ethers } = require("ethers");
+const { ByzantineClient, getNetworkConfig } = require("../dist");
+require("dotenv").config();
 
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
@@ -150,6 +152,31 @@ async function getWalletBalances(provider, address, networkConfig) {
       balances.wstETH = { balance: 0n, formatted: "0", symbol: "wstETH" };
     }
 
+    // Only try to get USDC balance if the address exists in network config
+    if (networkConfig.USDCaddress) {
+      try {
+        const usdcContract = new ethers.Contract(
+          networkConfig.USDCaddress,
+          ERC20_ABI,
+          provider
+        );
+        const usdcBalance = await usdcContract.balanceOf(address);
+        const usdcDecimals = await usdcContract.decimals();
+        const usdcSymbol = await usdcContract.symbol();
+
+        balances.USDC = {
+          balance: usdcBalance,
+          formatted: ethers.formatUnits(usdcBalance, usdcDecimals),
+          symbol: usdcSymbol,
+        };
+      } catch (error) {
+        console.warn(`⚠️ Error getting USDC balance: ${error.message}`);
+        balances.USDC = { balance: 0n, formatted: "0", symbol: "USDC" };
+      }
+    } else {
+      balances.USDC = { balance: 0n, formatted: "0", symbol: "USDC" };
+    }
+
     return balances;
   } catch (error) {
     console.warn(`⚠️ Error getting wallet balances: ${error.message}`);
@@ -157,9 +184,138 @@ async function getWalletBalances(provider, address, networkConfig) {
       ETH: { balance: 0n, formatted: "0" },
       stETH: { balance: 0n, formatted: "0", symbol: "stETH" },
       wstETH: { balance: 0n, formatted: "0", symbol: "wstETH" },
+      USDC: { balance: 0n, formatted: "0", symbol: "USDC" },
     };
   }
 }
+
+const setUpTest = async () => {
+  const { RPC_URL, MNEMONIC, PRIVATE_KEY, DEFAULT_CHAIN_ID } = process.env;
+  const chainId = DEFAULT_CHAIN_ID ? parseInt(DEFAULT_CHAIN_ID) : 11155111; // Default to Sepolia
+
+  let skipNetworkTests = false;
+  if (!RPC_URL) {
+    console.warn(
+      "⚠️ Warning: RPC_URL not set in .env file. Network tests will be skipped."
+    );
+    skipNetworkTests = true;
+  }
+
+  if (!MNEMONIC && !PRIVATE_KEY) {
+    console.warn(
+      "⚠️ Warning: Neither MNEMONIC nor PRIVATE_KEY set in .env file. Using dummy wallet."
+    );
+  }
+
+  if (skipNetworkTests) {
+    console.log(
+      "⚠️ Network tests skipped. Please provide RPC_URL to run tests."
+    );
+    return;
+  }
+
+  // Initialize provider and wallet using utils
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const wallet =
+    MNEMONIC || PRIVATE_KEY
+      ? createWallet(provider, 0)
+      : ethers.Wallet.createRandom().connect(provider);
+
+  const userAddress = await wallet.getAddress();
+
+  // Initialize the ByzantineClient
+  const client = new ByzantineClient(
+    /** @type {any} */ (provider),
+    /** @type {any} */ (wallet)
+  );
+  if (!client) {
+    throw new Error("Client initialization failed");
+  }
+
+  // Get network configuration
+  const networkConfig = getNetworkConfig(/** @type {any} */ (chainId));
+
+  logTitle("Global Information");
+  logResult("Client initialization", true, "Success");
+  logResult("Network", true, `${networkConfig.name} (Chain ID: ${chainId})`);
+  logResult("Factory", true, networkConfig.byzantineFactoryAddress);
+
+  // =============================================
+  // User Wallet Information
+  // =============================================
+  logTitle("User Wallet Information");
+  // Display user address first
+  logResult("User Address", true, userAddress);
+
+  try {
+    // Get wallet balances using utils function
+    const balances = await getWalletBalances(
+      provider,
+      userAddress,
+      networkConfig
+    );
+    logResult("ETH balance", true, `${balances.ETH.formatted} ETH`);
+
+    if (balances.USDC) {
+      logResult(
+        "USDC balance",
+        true,
+        `${balances.USDC.formatted} ${balances.USDC.symbol}`
+      );
+    }
+
+    if (balances.stETH) {
+      logResult(
+        "stETH balance",
+        true,
+        `${balances.stETH.formatted} ${balances.stETH.symbol}`
+      );
+    }
+
+    if (balances.wstETH) {
+      logResult(
+        "wstETH balance",
+        true,
+        `${balances.wstETH.formatted} ${balances.wstETH.symbol}`
+      );
+    }
+  } catch (error) {
+    logResult(
+      "Wallet balances",
+      false,
+      `Error getting balances: ${error.message}`
+    );
+  } finally {
+    return { provider, client, networkConfig, userAddress };
+  }
+};
+
+const vaultUserInformation = async (client, vaultAddress, userAddress) => {
+  logTitle("Vault Ownership Information");
+  try {
+    // Get vault owner
+    const owner = await client.getOwner(vaultAddress);
+    logResult("Vault Owner", true, owner);
+
+    // Get vault curator
+    const curator = await client.getCurator(vaultAddress);
+    logResult("Vault Curator", true, curator);
+
+    // Check if current user is the owner
+    const isUserOwner = owner.toLowerCase() === userAddress.toLowerCase();
+    logResult("User is Owner", true, isUserOwner ? "Yes" : "No");
+
+    // Check if current user is the curator
+    const isUserCurator = curator.toLowerCase() === userAddress.toLowerCase();
+    logResult("User is Curator", true, isUserCurator ? "Yes" : "No");
+
+    // Check if current user is a sentinel
+    const isUserSentinel = await client.isSentinel(vaultAddress, userAddress);
+    logResult("User is Sentinel", true, isUserSentinel ? "Yes" : "No");
+  } catch (error) {
+    logResult("Ownership info", false, `Error: ${error.message}`);
+  }
+};
 
 // Export utilities
 module.exports = {
@@ -169,4 +325,6 @@ module.exports = {
   assertThrows,
   getWalletBalances,
   createWallet,
+  setUpTest,
+  vaultUserInformation,
 };

@@ -1,5 +1,5 @@
 /**
- * Network configurations for Byzantine Deposit contract
+ * Network configurations for Byzantine Factory SDK
  */
 
 import { NetworkConfig, ChainsOptions } from "../types";
@@ -15,7 +15,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
   // Base mainnet
   8453: {
     name: "Base Mainnet",
-    byzantineFactoryAddress: "0xAb80CD2CEB6614BBaf1720A9eC546F1BC1f16ecA",
+    byzantineFactoryAddress: "0x9615550EA8Fa52bdAC83de3FC9A280dBa3D981eE",
     scanLink: "https://basescan.org",
     USDCaddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
   },
@@ -38,18 +38,23 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
 /**
  * Gets network configuration for the specified chain ID
  * @param chainId - The chain ID to get configuration for
- * @returns Network configuration or undefined if not supported
+ * @returns Network configuration
+ * @throws Error if chain ID is not supported
  */
 export function getNetworkConfig(chainId: ChainsOptions): NetworkConfig {
-  return NETWORKS[chainId];
+  const config = NETWORKS[chainId];
+  if (!config) {
+    throw new Error(`Unsupported chain ID: ${chainId}`);
+  }
+  return config;
 }
 
 /**
  * Gets supported chain IDs
  * @returns Array of supported chain IDs
  */
-export function getSupportedChainIds(): number[] {
-  return Object.keys(NETWORKS).map((id) => parseInt(id));
+export function getSupportedChainIds(): ChainsOptions[] {
+  return Object.keys(NETWORKS).map((id) => parseInt(id)) as ChainsOptions[];
 }
 
 /**
@@ -57,6 +62,50 @@ export function getSupportedChainIds(): number[] {
  * @param chainId The chain ID to check
  * @returns True if the chain ID is supported, false otherwise
  */
-export function isChainSupported(chainId: ChainsOptions): boolean {
-  return !!NETWORKS[chainId];
+export function isChainSupported(chainId: number): chainId is ChainsOptions {
+  return chainId in NETWORKS;
+}
+
+/**
+ * Convert chain ID to hex format
+ * @param chainId The chain ID to convert
+ * @returns Hex formatted chain ID
+ */
+export function toHexChainId(chainId: ChainsOptions): string {
+  return `0x${chainId.toString(16)}`;
+}
+
+/**
+ * Get the explorer URL for a chain
+ * @param chainId The chain ID
+ * @returns Explorer base URL
+ */
+export function getExplorerUrl(chainId: ChainsOptions): string {
+  return getNetworkConfig(chainId).scanLink;
+}
+
+/**
+ * Get the explorer URL for an address
+ * @param chainId The chain ID
+ * @param address The address
+ * @returns Full explorer URL for the address
+ */
+export function getExplorerAddressUrl(
+  chainId: ChainsOptions,
+  address: string
+): string {
+  return `${getExplorerUrl(chainId)}/address/${address}`;
+}
+
+/**
+ * Get the explorer URL for a transaction
+ * @param chainId The chain ID
+ * @param tx The transaction hash
+ * @returns Full explorer URL for the transaction
+ */
+export function getExplorerTransactionUrl(
+  chainId: ChainsOptions,
+  tx: string
+): string {
+  return `${getExplorerUrl(chainId)}/tx/${tx}`;
 }

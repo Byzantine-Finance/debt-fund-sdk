@@ -1,8 +1,17 @@
 // @ts-check
 
 /**
- * Export all staking related clients
+ * Export all curator related clients and functions
  */
 
 // Export specialized clients
-export { CreateClient } from "./CreateClient";
+export { CuratorsClient } from "./CuratorsClient";
+
+// Export function modules
+export * as AdaptersFunctions from "./Adapters";
+export * as TimelockFunctions from "./Timelock";
+// export * as CapFunctions from "./Cap";
+// export * as FeesFunctions from "./Fees";
+
+// Export types
+export type { TimelockFunction } from "./Timelock";

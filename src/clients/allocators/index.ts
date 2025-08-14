@@ -5,5 +5,4 @@
 //  */
 
 // // Export specialized clients
-// export { DepositClient } from "./DepositClient";
-// export { WithdrawClient } from "./WithdrawClient";
+// export { AllocatorsClient } from "./AllocatorsClient";

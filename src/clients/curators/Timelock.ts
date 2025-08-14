@@ -1,0 +1,259 @@
+import { ethers } from "ethers";
+import { executeContractMethod, callContractMethod } from "../../utils";
+
+/**
+ * Supported timelock functions with their hardcoded selectors
+ */
+export type TimelockFunction =
+  | "abdicateSubmit" // 0x4520a18c
+  //
+  | "setIsAdapter" // 0xb332ebf2
+  //
+  | "decreaseTimelock" // 0x5c1a1a4f
+  //
+  | "increaseAbsoluteCap" // 0xf6f98fd5
+  | "increaseRelativeCap" // 0x2438525b
+  //
+  | "setIsAllocator" // 0xb192a84a
+  //
+  | "setSharesGate" // 0x8d3b31d3
+  | "setReceiveAssetsGate" // 0x04dbf0ce
+  | "setSendAssetsGate" // 0x871c979c
+  //
+  | "setPerformanceFee" // 0x70897b23
+  | "setPerformanceFeeRecipient" // 0x6a5f1aa2
+  | "setManagementFee" // 0xfe56e232
+  | "setManagementFeeRecipient" // 0x9faae464
+  //
+  | "setMaxRate" // 0xaa4abe7f
+  //
+  | "setForceDeallocatePenalty"; // 0x3e9d2ac7
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+/**
+ * Get the function selector for a timelock function
+ * @param functionName The timelock function name
+ * @returns The function selector (bytes4)
+ */
+export function getTimelockFunctionSelector(
+  functionName: TimelockFunction
+): string {
+  switch (functionName) {
+    case "abdicateSubmit":
+      return "0x4520a18c";
+    case "setIsAdapter":
+      return "0xb332ebf2";
+    case "decreaseTimelock":
+      return "0x5c1a1a4f";
+    case "increaseAbsoluteCap":
+      return "0xf6f98fd5";
+    case "increaseRelativeCap":
+      return "0x2438525b";
+    case "setIsAllocator":
+      return "0xb192a84a";
+    case "setSharesGate":
+      return "0x8d3b31d3";
+    case "setReceiveAssetsGate":
+      return "0x04dbf0ce";
+    case "setSendAssetsGate":
+      return "0x871c979c";
+    case "setPerformanceFee":
+      return "0x70897b23";
+    case "setPerformanceFeeRecipient":
+      return "0x6a5f1aa2";
+    case "setManagementFee":
+      return "0xfe56e232";
+    case "setManagementFeeRecipient":
+      return "0x9faae464";
+    case "setMaxRate":
+      return "0xaa4abe7f";
+    case "setForceDeallocatePenalty":
+      return "0x3e9d2ac7";
+    default:
+      throw new Error(`Unknown function name: ${functionName}`);
+  }
+}
+
+// function increaseTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
+
+// function submitDecreaseTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
+// function setDecreaseTimelockAfterTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
+// function instantDecreaseTimelock(vaultContract: ethers.Contract, functionName: TimelockFunction, newDuration: uint256) // qui va faire submitDecreaseTimelock et setDecreaseTimelockAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
+
+// function getTimelock(vaultContract: ethers.Contract, functionName: TimelockFunction)
+
+/**
+ * Get the current timelock duration for a function
+ * @param vaultContract The vault contract instance
+ * @param functionName The function name
+ * @returns The timelock duration in seconds
+ */
+export async function getTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction
+): Promise<bigint> {
+  const selector = getTimelockFunctionSelector(functionName);
+  return await callContractMethod(vaultContract, "timelock", selector);
+}
+
+/**
+ * Get the executable timestamp for specific calldata
+ * @param vaultContract The vault contract instance
+ * @param data The calldata
+ * @returns The timestamp when the data can be executed
+ */
+export async function getExecutableAt(
+  vaultContract: ethers.Contract,
+  data: string
+): Promise<bigint> {
+  return await callContractMethod(vaultContract, "executableAt", data);
+}
+
+// ========================================
+// TIMELOCK MANAGEMENT FUNCTIONS
+// ========================================
+
+/**
+ * Increase the timelock duration for a function (immediate effect)
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function increaseTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  return await executeContractMethod(
+    vaultContract,
+    "increaseTimelock",
+    selector,
+    newDuration
+  );
+}
+
+/**
+ * Submit a request to decrease timelock duration (requires timelock)
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function submitDecreaseTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  const calldata = vaultContract.interface.encodeFunctionData(
+    "decreaseTimelock",
+    [selector, newDuration]
+  );
+  return await executeContractMethod(vaultContract, "submit", [calldata]);
+}
+
+/**
+ * Execute timelock decrease after timelock period expires
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function setDecreaseTimelockAfterTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  return await executeContractMethod(vaultContract, "decreaseTimelock", [
+    selector,
+    newDuration,
+  ]);
+}
+
+/**
+ * Instantly decrease timelock if current timelock is 0 (multicall submit + execute)
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function instantDecreaseTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  const timelock = await getTimelock(vaultContract, functionName);
+  if (timelock !== 0n) {
+    throw new Error(
+      `Cannot instantly decrease timelock. Current timelock is ${timelock} seconds, must be 0.`
+    );
+  }
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    selector,
+    newDuration,
+  ]);
+  const calldataDecrease = vaultContract.interface.encodeFunctionData(
+    "decreaseTimelock",
+    [selector, newDuration]
+  );
+  return await executeContractMethod(vaultContract, "multicall", [
+    calldataSubmit,
+    calldataDecrease,
+  ]);
+}
+
+// ========================================
+// GENERAL TIMELOCK FUNCTIONS
+// ========================================
+
+/**
+ * Submit any function call for timelock
+ * @param vaultContract The vault contract instance
+ * @param data The encoded function call data
+ * @returns Transaction response
+ */
+export async function submit(vaultContract: ethers.Contract, data: string) {
+  return await executeContractMethod(vaultContract, "submit", [data]);
+}
+
+/**
+ * Revoke a pending timelock submission
+ * @param vaultContract The vault contract instance
+ * @param functionName The function name
+ * @param params The parameters for the function
+ * @returns Transaction response
+ */
+export async function revoke(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  params: any[]
+) {
+  const calldata = vaultContract.interface.encodeFunctionData(
+    functionName,
+    params
+  );
+  return await executeContractMethod(vaultContract, "revoke", [calldata]);
+}
+
+/**
+ * Abdicate submit privileges for a specific function
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to abdicate submit for
+ * @returns Transaction response
+ */
+export async function abdicateSubmit(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  return await executeContractMethod(vaultContract, "abdicateSubmit", [
+    selector,
+  ]);
+}

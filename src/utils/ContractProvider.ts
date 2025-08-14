@@ -1,12 +1,16 @@
 import { ethers } from "ethers";
-import { MetaVaultFactoryAbi, MetaVaultAbi } from "../constants";
+import { VAULT_FACTORY_ABI, VAULT_ABI } from "../constants";
+import { getNetworkConfig } from "../constants/networks";
+import { ChainsOptions } from "../types";
 
 /**
- * Simple Contract Provider for MetaVault and MetaVaultFactory contracts
+ * Smart Contract Provider for Vault and VaultFactory contracts
+ * Automatically detects the chain ID from the provider
  */
 export class ContractProvider {
   private provider: ethers.Provider;
   private signer?: ethers.Signer;
+  private chainIdCache?: ChainsOptions;
 
   /**
    * Creates a new ContractProvider instance
@@ -19,28 +23,76 @@ export class ContractProvider {
   }
 
   /**
-   * Get the MetaVault contract instance
-   * @param vaultAddress The address of the MetaVault
-   * @returns The MetaVault contract instance
+   * Get the chain ID from the provider (cached)
+   * @returns The chain ID
    */
-  public getMetaVaultContract(vaultAddress: string): ethers.Contract {
+  private async getChainId(): Promise<ChainsOptions> {
+    if (this.chainIdCache) {
+      return this.chainIdCache;
+    }
+
+    const network = await this.provider.getNetwork();
+    const chainId = Number(network.chainId) as ChainsOptions;
+
+    // Validate that the chain is supported
+    const config = getNetworkConfig(chainId);
+    if (!config) {
+      throw new Error(`Unsupported chain ID: ${chainId}`);
+    }
+
+    this.chainIdCache = chainId;
+    return chainId;
+  }
+
+  /**
+   * Get the factory address for the current network
+   * @returns Factory address
+   */
+  private async getFactoryAddress(): Promise<string> {
+    const chainId = await this.getChainId();
+    return getNetworkConfig(chainId).byzantineFactoryAddress;
+  }
+
+  /**
+   * Get the Vault contract instance
+   * @param vaultAddress The address of the Vault
+   * @returns The Vault contract instance
+   */
+  public getVaultContract(vaultAddress: string): ethers.Contract {
     return new ethers.Contract(
       vaultAddress,
-      MetaVaultAbi,
+      VAULT_ABI,
       this.signer || this.provider
     );
   }
 
   /**
-   * Get the MetaVaultFactory contract instance
-   * @param factoryAddress The address of the MetaVaultFactory
-   * @returns The MetaVaultFactory contract instance
+   * Get the VaultFactory contract instance for the current network
+   * @returns The VaultFactory contract instance
    */
-  public getMetaVaultFactoryContract(factoryAddress: string): ethers.Contract {
+  public async getVaultFactoryContract(): Promise<ethers.Contract> {
+    const factoryAddress = await this.getFactoryAddress();
     return new ethers.Contract(
       factoryAddress,
-      MetaVaultFactoryAbi,
+      VAULT_FACTORY_ABI,
       this.signer || this.provider
     );
+  }
+
+  /**
+   * Get the current chain ID
+   * @returns The chain ID
+   */
+  public async getCurrentChainId(): Promise<ChainsOptions> {
+    return this.getChainId();
+  }
+
+  /**
+   * Get the network configuration for the current chain
+   * @returns Network configuration
+   */
+  public async getNetworkConfig() {
+    const chainId = await this.getChainId();
+    return getNetworkConfig(chainId);
   }
 }

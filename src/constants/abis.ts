@@ -1,3 +1,2 @@
-// Re-export the default export from MetaVaultFactory.json as MetaVaultFactoryAbi
-export { default as MetaVaultFactoryAbi } from "./MetaVaultFactory.json";
-export { default as MetaVaultAbi } from "./MetaVault.json";
+export { default as VAULT_FACTORY_ABI } from "./VaultFactory.json";
+export { default as VAULT_ABI } from "./Vault.json";
