@@ -48,7 +48,7 @@ interface SetupVaultConfig {
   management_fee?: bigint; // 100% = 1e18, max 5%/year -> 0.05e18/31_536_000 = 1.3698630136986301e15
   performance_fee_recipient?: string;
   management_fee_recipient?: string;
-  max_rate?: bigint;
+  max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
 
   underlying_vaults?: {
     address: string;
@@ -56,21 +56,32 @@ interface SetupVaultConfig {
     needs_adapter: boolean; // If true, we will create the adapter and use it, if no, it means the address is already the vault
     relative_cap?: number;
     absolute_cap?: number;
+    deallocate_penalty?: bigint; // 100% = 1e18, max 2% -> 0.02e18
   }[];
 
   // Timelock configuration: a mapping from each TimelockFunction to a number (duration in seconds)
   timelock?: Partial<Record<TimelockFunction, number>>;
 }
 
+//*******************************************************************
+//*  This is what you need to change to create a vault              *
+//*  Have a look to the interface above to see what you can change  *
+//*  And the code below will adapt based on your configuration      *
+//*******************************************************************
+
+const SETUP_VAULT_CONFIG_MINIMAL_CONFIG: SetupVaultConfig = {
+  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on base
+};
+
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   name: "Byzantine Vault",
   symbol: "BYZ",
-  max_rate: parseEther("10000"),
-  performance_fee: parseEther("0.5"),
-  management_fee: parseEther("0.05") / 31536000n,
+  performance_fee: parseEther("0.5"), // 50%
+  management_fee: parseEther("0.05") / 31536000n, // 5% / year
   performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
+  max_rate: parseEther("0.5") / 31536000n, // 50% / year
 };
 
 async function main() {
@@ -223,9 +234,13 @@ async function main() {
       );
       await wait1s();
     }
-    // if (SETUP_VAULT_CONFIG.max_rate) {
-    //   await client.submitMaxRate(VAULT_ADDRESS, SETUP_VAULT_CONFIG.max_rate);
-    // }
+    if (SETUP_VAULT_CONFIG.max_rate) {
+      await client.instantSetMaxRate(
+        VAULT_ADDRESS,
+        SETUP_VAULT_CONFIG.max_rate
+      );
+      await wait1s();
+    }
 
     console.log("🔍 Adding underlying vault");
     if (NEEDS_TO_ADD_UNDERLYING_VAULT) {

@@ -6,6 +6,7 @@ import * as AdaptersFunctions from "./Adapters";
 // import * as CapFunctions from "./Cap";
 import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
+import * as MaxRateFunctions from "./MaxRate";
 
 /**
  * Main client for vault curators operations
@@ -326,6 +327,28 @@ export class VaultCurator {
     return FeesFunctions.getForceDeallocatePenalty(this.vaultContract, adapter);
   }
 
+  // ========================================
+  // MAX RATE MANAGEMENT
+  // ========================================
+
+  async submitMaxRate(newMaxRate: bigint) {
+    return MaxRateFunctions.submitMaxRate(this.vaultContract, newMaxRate);
+  }
+
+  async setMaxRateAfterTimelock(newMaxRate: bigint) {
+    return MaxRateFunctions.setMaxRateAfterTimelock(
+      this.vaultContract,
+      newMaxRate
+    );
+  }
+
+  async instantSetMaxRate(newMaxRate: bigint) {
+    return MaxRateFunctions.instantSetMaxRate(this.vaultContract, newMaxRate);
+  }
+
+  async getMaxRate() {
+    return MaxRateFunctions.getMaxRate(this.vaultContract);
+  }
   // ========================================
   // UTILITY METHODS
   // ========================================

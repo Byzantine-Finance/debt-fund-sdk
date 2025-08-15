@@ -137,41 +137,6 @@ async function instantSetFeeRecipientFunction(
   ]);
 }
 
-/**
- * Helper for instant force deallocate penalty function
- */
-async function instantSetForceDeallocatePenaltyFunction(
-  vaultContract: ethers.Contract,
-  adapter: string,
-  penalty: bigint
-): Promise<ethers.TransactionResponse> {
-  // Check if timelock is 0
-  const timelock = await getTimelock(
-    vaultContract,
-    "setForceDeallocatePenalty"
-  );
-
-  if (timelock !== 0n) {
-    throw new Error(
-      `Cannot instant set: timelock for setForceDeallocatePenalty is not 0 (current: ${timelock})`
-    );
-  }
-
-  // Use multicall to submit and execute in one transaction
-  const calldataSet = vaultContract.interface.encodeFunctionData(
-    "setForceDeallocatePenalty",
-    [adapter, penalty]
-  );
-  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
-    calldataSet,
-  ]);
-
-  return executeContractMethod(vaultContract, "multicall", [
-    calldataSubmit,
-    calldataSet,
-  ]);
-}
-
 // ========================================
 // PERFORMANCE FEE
 // ========================================
@@ -336,11 +301,31 @@ export async function instantSetForceDeallocatePenalty(
   adapter: string,
   newForceDeallocatePenalty: bigint
 ): Promise<ethers.TransactionResponse> {
-  return instantSetForceDeallocatePenaltyFunction(
+  // Check if timelock is 0
+  const timelock = await getTimelock(
     vaultContract,
-    adapter,
-    newForceDeallocatePenalty
+    "setForceDeallocatePenalty"
   );
+
+  if (timelock !== 0n) {
+    throw new Error(
+      `Cannot instant set: timelock for setForceDeallocatePenalty is not 0 (current: ${timelock})`
+    );
+  }
+
+  // Use multicall to submit and execute in one transaction
+  const calldataSet = vaultContract.interface.encodeFunctionData(
+    "setForceDeallocatePenalty",
+    [adapter, newForceDeallocatePenalty]
+  );
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    calldataSet,
+  ]);
+
+  return executeContractMethod(vaultContract, "multicall", [
+    calldataSubmit,
+    calldataSet,
+  ]);
 }
 
 // ========================================

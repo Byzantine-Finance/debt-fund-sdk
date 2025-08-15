@@ -514,6 +514,29 @@ export class ByzantineClient {
   }
 
   // ========================================
+  // MAX RATE MANAGEMENT
+  // ========================================
+
+  // Max Rate
+  async submitMaxRate(vaultAddress: string, newMaxRate: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitMaxRate(newMaxRate);
+  }
+
+  async setMaxRateAfterTimelock(vaultAddress: string, newMaxRate: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setMaxRateAfterTimelock(newMaxRate);
+  }
+
+  async instantSetMaxRate(vaultAddress: string, newMaxRate: bigint) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetMaxRate(newMaxRate);
+  }
+
+  // ========================================
   // UTILITY METHODS
   // ========================================
 
