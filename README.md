@@ -4,14 +4,15 @@ A TypeScript/JavaScript SDK for interacting with the Debt Fund ecosystem of Byza
 
 ## About Debt Fund
 
-Debt Fund is a decentralized protocol that allows users to create and manage vaults with comprehensive role-based access control. The protocol enables:
+Debt Fund is a decentralized protocol that allows users to create and manage vaults with comprehensive role-based access control and sophisticated parameter management. The protocol enables:
 
-- **Vault Creation**: Deploy new vaults with configurable parameters
-- **Owner Operations**: Complete vault ownership management (roles, names, symbols)
-- **Curator Management**: Advanced vault administration capabilities
-- **Role Management**: Sophisticated access control with owners, curators, and sentinels
+- **Vault Creation**: Deploy new vaults with deterministic addresses and configurable parameters
+- **Owner Operations**: Complete vault ownership management (roles, metadata, access control)
+- **Curator Management**: Advanced vault administration with fee management, adapter configuration, and timelock controls
+- **Timelock System**: Secure parameter changes with customizable delays for critical operations
+- **Role Management**: Sophisticated access control with owners, curators, sentinels, and allocators
 
-This SDK provides a simple and efficient interface for developers to integrate with Debt Fund on:
+This SDK provides a comprehensive interface for developers to integrate with Debt Fund on:
 
 - **Base Mainnet (Chain ID: 8453)**
 - _Additional networks coming soon_
@@ -97,7 +98,7 @@ main();
 
 ## Quick Start - Vault Management
 
-Here's how to manage an existing vault using our optimized API:
+Here's how to manage an existing vault:
 
 ```js
 import { ByzantineClient } from "debt-fund-sdk";
@@ -113,41 +114,51 @@ async function vaultManagement() {
   const vaultAddress = "0x..."; // Your vault address
 
   try {
-    // OPTION 1: Traditional API (with vault address parameter)
-    console.log("=== Traditional API ===");
+    // Owner Operations
+    console.log("=== Owner Operations ===");
 
     // Set vault name and symbol
-    await client.setName(vaultAddress, "My Awesome Vault");
-    await client.setSymbol(vaultAddress, "MAV");
+    await client.setVaultName(vaultAddress, "My Awesome Vault");
+    await client.setVaultSymbol(vaultAddress, "MAV");
+
+    // Or set both in a single transaction (gas efficient!)
+    await client.setVaultNameAndSymbol(vaultAddress, "My Vault", "MVT");
 
     // Manage roles
     const curatorAddress = "0x...";
     await client.setCurator(vaultAddress, curatorAddress);
+    await client.setIsSentinel(vaultAddress, "0x...", true);
 
     // Check roles
     const owner = await client.getOwner(vaultAddress);
     const curator = await client.getCurator(vaultAddress);
+    const isSentinel = await client.isSentinel(vaultAddress, "0x...");
     console.log("Owner:", owner);
     console.log("Curator:", curator);
+    console.log("Is Sentinel:", isSentinel);
 
-    // OPTION 2: New VaultOwner API (recommended - no repeated vault address!)
-    console.log("=== New VaultOwner API ===");
+    // Curator Operations
+    console.log("=== Curator Operations ===");
 
-    // Get a VaultOwner instance for convenient operations
-    const vault = client.vault(vaultAddress);
+    // Fee management
+    await client.instantSetPerformanceFee(
+      vaultAddress,
+      ethers.parseEther("0.1")
+    ); // 10%
+    await client.instantSetManagementFee(
+      vaultAddress,
+      ethers.parseEther("0.02") / 31536000n
+    ); // 2% per year
+    await client.instantSetPerformanceFeeRecipient(vaultAddress, "0x...");
 
-    // Much cleaner - no need to pass vault address every time!
-    await vault.setName("My Even Better Vault");
-    await vault.setSymbol("MEBV");
-    await vault.setCurator(curatorAddress);
+    // Adapter management
+    await client.instantSetIsAdapter(vaultAddress, "0x...", true);
 
-    // Set both name and symbol in a single transaction (gas efficient!)
-    await vault.setNameAndSymbol("Final Vault Name", "FVN");
-
-    // Role management without repetitive parameters
-    await vault.setSentinel("0x...");
-    const isOwner = await vault.getOwner();
-    const isCurator = await vault.getCurator();
+    // Get fee information
+    const performanceFee = await client.getPerformanceFee(vaultAddress);
+    const managementFee = await client.getManagementFee(vaultAddress);
+    console.log("Performance Fee:", performanceFee);
+    console.log("Management Fee:", managementFee);
 
     console.log("Operations completed successfully!");
   } catch (error) {
@@ -167,99 +178,190 @@ await client.createVault(owner, asset, salt);
 // Get network information
 await client.getNetworkConfig();
 await client.getChainId();
-await client.getFactoryContract();
+await client.getVaultFactoryContract();
 ```
 
 ### Owner Operations
 
 ```js
-// Traditional API (requires vault address each time)
+// Role management
 await client.setOwner(vaultAddress, newOwner);
 await client.setCurator(vaultAddress, newCurator);
-await client.setSentinel(vaultAddress, account);
-await client.removeSentinel(vaultAddress, account);
-await client.setName(vaultAddress, newName);
-await client.setSymbol(vaultAddress, newSymbol);
-await client.setNameAndSymbol(vaultAddress, newName, newSymbol);
+await client.setIsSentinel(vaultAddress, account, true); // true = add, false = remove
+
+// Vault metadata
+await client.setVaultName(vaultAddress, newName);
+await client.setVaultSymbol(vaultAddress, newSymbol);
+await client.setVaultNameAndSymbol(vaultAddress, newName, newSymbol); // Gas-efficient multicall
 
 // Read operations
 await client.getOwner(vaultAddress);
 await client.getCurator(vaultAddress);
 await client.isSentinel(vaultAddress, account);
+await client.getVaultName(vaultAddress);
+await client.getVaultSymbol(vaultAddress);
+await client.getAsset(vaultAddress);
 ```
 
-### VaultOwner API (Recommended)
+### Curator Operations
 
 ```js
-// Get a VaultOwner instance (creates contract once, reuses efficiently)
-const vault = client.vault(vaultAddress);
+// Adapter management
+await client.submitIsAdapter(vaultAddress, adapter, true);
+await client.setIsAdapterAfterTimelock(vaultAddress, adapter, true);
+await client.instantSetIsAdapter(vaultAddress, adapter, true); // Gas-efficient with multicall when 0 timelock
+await client.getIsAdapter(vaultAddress, adapter);
 
-// Role management (no vault address needed!)
-await vault.setOwner(newOwner);
-await vault.setCurator(newCurator);
-await vault.setSentinel(account);
-await vault.removeSentinel(account);
+// Fee management
+await client.submitPerformanceFee(vaultAddress, fee);
+await client.setPerformanceFeeAfterTimelock(vaultAddress, fee);
+await client.instantSetPerformanceFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
+await client.getPerformanceFee(vaultAddress);
 
-// Name and symbol management
-await vault.setName(newName);
-await vault.setSymbol(newSymbol);
-await vault.setNameAndSymbol(newName, newSymbol); // Gas-efficient multicall
+await client.submitManagementFee(vaultAddress, fee);
+await client.setManagementFeeAfterTimelock(vaultAddress, fee);
+await client.instantSetManagementFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
+await client.getManagementFee(vaultAddress);
 
-// Read operations
-await vault.getOwner();
-await vault.getCurator();
-await vault.isSentinel(account);
+// Fee recipients
+await client.submitPerformanceFeeRecipient(vaultAddress, recipient);
+await client.setPerformanceFeeRecipientAfterTimelock(vaultAddress, recipient);
+await client.instantSetPerformanceFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
+await client.getPerformanceFeeRecipient(vaultAddress);
 
-// Utility methods
-vault.getAddress(); // Get vault address
-vault.getContract(); // Get ethers contract instance
+await client.submitManagementFeeRecipient(vaultAddress, recipient);
+await client.setManagementFeeRecipientAfterTimelock(vaultAddress, recipient);
+await client.instantSetManagementFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
+await client.getManagementFeeRecipient(vaultAddress);
+
+// Force deallocate penalty
+await client.submitForceDeallocatePenalty(vaultAddress, adapter, penalty);
+await client.setForceDeallocatePenaltyAfterTimelock(
+  vaultAddress,
+  adapter,
+  penalty
+);
+await client.instantSetForceDeallocatePenalty(vaultAddress, adapter, penalty); // Gas-efficient with multicall when 0 timelock
+await client.getForceDeallocatePenalty(vaultAddress, adapter);
+
+// Max rate management
+await client.submitMaxRate(vaultAddress, maxRate);
+await client.setMaxRateAfterTimelock(vaultAddress, maxRate);
+await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with multicall when 0 timelock
 ```
 
-### Advanced Usage - Direct Function Access
+### Timelock Management
 
 ```js
-// Import specific functions for advanced usage
-import { setOwner, getOwner } from "debt-fund-sdk/clients/owners/ManageRole";
-import { setName } from "debt-fund-sdk/clients/owners/NameAndSymbol";
+// Timelock operations
+await client.getTimelock(vaultAddress, functionName);
+await client.getExecutableAt(vaultAddress, data);
+await client.increaseTimelock(vaultAddress, functionName, newDuration);
+await client.submitDecreaseTimelock(vaultAddress, functionName, newDuration);
+await client.setDecreaseTimelockAfterTimelock(
+  vaultAddress,
+  functionName,
+  newDuration
+);
+await client.instantDecreaseTimelock(vaultAddress, functionName, newDuration); // Gas-efficient with multicall when 0 timelock
 
-// Get contract once, reuse for multiple operations
+// Submit and revoke operations
+await client.submit(vaultAddress, data);
+await client.revoke(vaultAddress, functionName, params);
+await client.abdicateSubmit(vaultAddress, functionName);
+
+// Utility
+client.getTimelockFunctionSelector(functionName);
+```
+
+### Advanced Usage - Direct Contract Access
+
+```js
+// Get contract instances for advanced operations
 const vaultContract = client.getVaultContract(vaultAddress);
+const factoryContract = await client.getVaultFactoryContract();
 
-// Use functions directly with contract
-await setOwner(vaultContract, newOwner);
-await setName(vaultContract, newName);
-const owner = await getOwner(vaultContract);
+// Access specialized clients
+const curatorsClient = client.curators;
+const ownersClient = client.owners;
+
+// Use different signer
+client.useSigner(newSigner);
+
+// Get contract provider
+const contractProvider = client.getContractProvider();
 ```
 
 ## Key Features
 
-### 🚀 Optimized Performance
+### 🚀 Comprehensive Vault Management
 
-- **Efficient Contract Management**: Contract instances created once and reused
-- **Gas-Efficient Operations**: Multicall support for batch operations
-- **Reduced Redundancy**: No more repetitive `contractProvider.getVaultContract()` calls
+- **Vault Creation**: Deploy new vaults with deterministic addresses
+- **Owner Operations**: Complete vault ownership and metadata control
+- **Curator Management**: Advanced fee management and adapter configuration
+- **Timelock System**: Secure parameter changes with customizable delays
 
-### 🎯 Multiple API Styles
+### ⚡ Optimized Performance
 
-- **Traditional API**: Backward compatible, requires vault address parameter
-- **VaultOwner API**: Modern, clean interface for single-vault operations
-- **Direct Functions**: Advanced usage with direct function imports
+- **Gas-Efficient Operations**: Multicall wrappers for instant operations when timelock = 0
+- **Contract Instance Caching**: Contract instances created once and reused
+- **Reduced Redundancy**: No repetitive contract provider calls
+- **Batch Operations**: Support for multiple operations in single transaction
+
+### 🎯 Three-Tier Timelock Operation System
+
+Most sensitive vault operations require a timelock mechanism for security. To make this easy to use, we provide three wrapper functions for each timelocked operation:
+
+#### 1. `submit<FunctionName>()`
+
+Submits a parameter change proposal that must wait for the timelock delay before execution.
+
+```js
+await client.submitPerformanceFee(vaultAddress, newFee);
+// Must wait for timelock delay before execution
+```
+
+#### 2. `set<FunctionName>AfterTimelock()`
+
+Executes a previously submitted change after the timelock delay has passed.
+
+```js
+await client.setPerformanceFeeAfterTimelock(vaultAddress, newFee);
+// Executes the change that was submitted earlier
+```
+
+#### 3. `instant<FunctionName>()`
+
+**Gas-efficient instant execution** - Only available when timelock is set to 0. Uses multicall wrapper for optimized gas usage.
+
+```js
+await client.instantSetPerformanceFee(vaultAddress, newFee);
+// Immediate execution (only if timelock = 0) with gas optimization
+```
+
+**Usage Pattern:**
+
+- **Standard workflow**: Use `submit*()` then `set*AfterTimelock()` after delay
+- **Zero timelock**: Use `instant*()` for immediate, gas-efficient execution
+- **Emergency**: Timelock can be set to 0 for instant operations when needed
 
 ### 🔒 Comprehensive Role Management
 
-- **Owner Operations**: Complete vault ownership control
-- **Curator Management**: Sophisticated vault administration
+- **Owner Operations**: Complete vault ownership control and metadata management
+- **Curator Management**: Fee configuration, adapter management, and advanced parameters
 - **Sentinel System**: Flexible access control for multiple accounts
+- **Allocator System**: Control over vault allocation strategies
 
 ### ⚡ Developer Experience
 
 - **TypeScript Support**: Full type safety and intellisense
 - **Flexible Authentication**: Support for mnemonic or private key
 - **Error Handling**: Comprehensive error handling and reporting
+- **Direct Contract Access**: Advanced usage with direct contract instances
 
-## Testing
+## Examples and Testing
 
-The SDK includes comprehensive tests:
+The SDK includes comprehensive examples and tests:
 
 ```bash
 # Install dependencies
@@ -268,12 +370,31 @@ npm install
 # Build the SDK
 npm run build
 
+# Run the complete vault creation example
+node example/create-vault.ts
+
 # Run specific tests
 node test/create-vault.test.js
 node test/read-vault.test.js
 node test/play-with-roles.test.js
 node test/set-name-symbol.test.js
+node test/curators/fees.test.js
+node test/curators/timelock.test.js
 ```
+
+### Complete Vault Setup Example
+
+The `example/create-vault.ts` file demonstrates a complete vault setup including:
+
+- Vault creation with deterministic address
+- Setting vault name and symbol
+- Configuring performance and management fees
+- Setting fee recipients
+- Managing roles (owner, curator, sentinel)
+- Configuring underlying vault adapters
+- Setting up timelock parameters
+
+This example shows the full lifecycle of vault creation and configuration.
 
 ## Supported Networks
 

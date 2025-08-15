@@ -60,6 +60,7 @@ interface SetupVaultConfig {
   }[];
 
   // Timelock configuration: a mapping from each TimelockFunction to a number (duration in seconds)
+  // Will be set at the end of the script so we can do the other actions before
   timelock?: Partial<Record<TimelockFunction, number>>;
 }
 
@@ -69,10 +70,12 @@ interface SetupVaultConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
+// Example of minimal configuration
 const SETUP_VAULT_CONFIG_MINIMAL_CONFIG: SetupVaultConfig = {
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on base
 };
 
+// Current configuration we use
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   name: "Byzantine Vault",
