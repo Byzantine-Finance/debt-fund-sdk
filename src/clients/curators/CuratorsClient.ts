@@ -7,6 +7,7 @@ import * as AdaptersFunctions from "./Adapters";
 import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
+import * as ManageRoleFunctions from "./ManageRole";
 
 /**
  * Main client for vault curators operations
@@ -349,6 +350,23 @@ export class VaultCurator {
   async getMaxRate() {
     return MaxRateFunctions.getMaxRate(this.vaultContract);
   }
+
+  // ========================================
+  // Manage role
+  // ========================================
+
+  async setIsAllocator(allocator: string, isAllocator: boolean) {
+    return ManageRoleFunctions.setIsAllocator(
+      this.vaultContract,
+      allocator,
+      isAllocator
+    );
+  }
+
+  async getIsAllocator(allocator: string) {
+    return ManageRoleFunctions.getIsAllocator(this.vaultContract, allocator);
+  }
+
   // ========================================
   // UTILITY METHODS
   // ========================================

@@ -1,37 +1,12 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
-import { ethers, parseEther, randomBytes } from "ethers";
-import * as dotenv from "dotenv";
+import { ethers, parseEther, parseUnits, randomBytes } from "ethers";
 import { TimelockFunction } from "../dist/clients/curators";
-const {
-  setUpTest,
-  logTitle,
-  logResult,
-  assert,
-  assertThrows,
-  createWallet,
-  getWalletBalances,
-} = require("../test/utils");
-dotenv.config();
-
-const timelocks = [
-  "abdicateSubmit",
-  "setIsAdapter",
-  "decreaseTimelock",
-  "increaseAbsoluteCap",
-  "increaseRelativeCap",
-  "setIsAllocator",
-  "setSharesGate",
-  "setReceiveAssetsGate",
-  "setSendAssetsGate",
-  "setPerformanceFee",
-  "setPerformanceFeeRecipient",
-  "setManagementFee",
-  "setManagementFeeRecipient",
-  "setMaxRate",
-  "setForceDeallocatePenalty",
-];
-
-const wait1s = () => new Promise((resolve) => setTimeout(resolve, 1000));
+import {
+  finalReading,
+  RPC_URL,
+  MNEMONIC,
+  waitHalfSecond,
+} from "./utils-example";
 
 interface SetupVaultConfig {
   owner?: string; // If not provided, we will use the user address
@@ -51,11 +26,11 @@ interface SetupVaultConfig {
   max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
 
   underlying_vaults?: {
-    address: string;
+    address: string; // Address of the underlying vault, or the adapter if needs_adapter is false
     type: "Morpho" | "Aave" | "Euler" | "Compound"; // Because we need to select the right adapter
     needs_adapter: boolean; // If true, we will create the adapter and use it, if no, it means the address is already the vault
-    relative_cap?: number;
-    absolute_cap?: number;
+    relative_cap?: bigint; // 100% = 1e18, max 100% -> 1e18
+    absolute_cap?: bigint;
     deallocate_penalty?: bigint; // 100% = 1e18, max 2% -> 0.02e18
   }[];
 
@@ -70,12 +45,6 @@ interface SetupVaultConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-// Example of minimal configuration
-const SETUP_VAULT_CONFIG_MINIMAL_CONFIG: SetupVaultConfig = {
-  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on base
-};
-
-// Current configuration we use
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   name: "Byzantine Vault",
@@ -85,6 +54,32 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   max_rate: parseEther("0.5") / 31536000n, // 50% / year
+  underlying_vaults: [
+    {
+      address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
+      type: "Morpho",
+      needs_adapter: true,
+      relative_cap: parseUnits("0.5", 18), // 50%
+      absolute_cap: parseUnits("800", 6), // 800 USDC
+      deallocate_penalty: parseEther("0.02"),
+    },
+    {
+      address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
+      type: "Morpho",
+      needs_adapter: true,
+      relative_cap: parseUnits("0.3", 18), // 30%
+      absolute_cap: parseUnits("300", 6), // 300 USDC
+      deallocate_penalty: parseEther("0.02"),
+    },
+    {
+      address: "0xC768c589647798a6EE01A91FdE98EF2ed046DBD6", // AAVE stata vault
+      type: "Aave",
+      needs_adapter: true,
+      relative_cap: parseUnits("0.2", 18), // 20%
+      absolute_cap: parseUnits("200", 6), // 200 USDC
+      deallocate_penalty: parseEther("0.015"),
+    },
+  ],
 };
 
 async function main() {
@@ -95,10 +90,8 @@ async function main() {
     // Setup the test
     // ****************
 
-    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-    const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC || "").connect(
-      provider
-    );
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
     const client = new ByzantineClient(provider, wallet);
 
     const userAddress = await wallet.getAddress();
@@ -160,7 +153,7 @@ async function main() {
       SETUP_VAULT_CONFIG.asset,
       SETUP_VAULT_CONFIG.salt || ethers.hexlify(randomBytes(32))
     );
-    await wait1s();
+    await waitHalfSecond();
     console.log("Vault creation transaction sent", txCreateVault.hash);
     const receiptCreateVault = await txCreateVault.wait();
     const VAULT_ADDRESS = receiptCreateVault?.logs[0]?.address;
@@ -177,7 +170,7 @@ async function main() {
         "You are not the owner, we will set the owner to the intended owner, but put back the intended owner at the end"
       );
       await client.setOwner(VAULT_ADDRESS, INTENDED_OWNER);
-      await wait1s();
+      await waitHalfSecond();
     }
 
     // ****************
@@ -195,17 +188,17 @@ async function main() {
     } else if (SETUP_VAULT_CONFIG.symbol) {
       await client.setVaultSymbol(VAULT_ADDRESS, SETUP_VAULT_CONFIG.symbol);
     }
-    await wait1s();
+    await waitHalfSecond();
 
     // ****************
     // Handle the fees
     // ****************
 
-    if (!YOUR_ARE_CURATOR) {
-      console.log("Setting back the curator to the user");
+    if (NEEDS_TEMPORARY_CURATOR_ROLE) {
+      console.log("Setting temporary curator to the user");
       await client.setCurator(VAULT_ADDRESS, userAddress);
     }
-    await wait1s();
+    await waitHalfSecond();
 
     console.log("💰 Setting fees");
 
@@ -214,72 +207,108 @@ async function main() {
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.performance_fee_recipient
       );
-      await wait1s();
+      await waitHalfSecond();
     }
     if (SETUP_VAULT_CONFIG.management_fee_recipient) {
       await client.instantSetManagementFeeRecipient(
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.management_fee_recipient
       );
-      await wait1s();
+      await waitHalfSecond();
     }
     if (SETUP_VAULT_CONFIG.performance_fee) {
       await client.instantSetPerformanceFee(
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.performance_fee
       );
-      await wait1s();
+      await waitHalfSecond();
     }
     if (SETUP_VAULT_CONFIG.management_fee) {
       await client.instantSetManagementFee(
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.management_fee
       );
-      await wait1s();
+      await waitHalfSecond();
     }
     if (SETUP_VAULT_CONFIG.max_rate) {
       await client.instantSetMaxRate(
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.max_rate
       );
-      await wait1s();
+      await waitHalfSecond();
     }
 
     console.log("🔍 Adding underlying vault");
     if (NEEDS_TO_ADD_UNDERLYING_VAULT) {
       console.log("Adding underlying vault");
       //   await client.addUnderlyingVault(VAULT_ADDRESS, SETUP_VAULT_CONFIG.underlying_vault);
-
+      const mappingAdapters = new Map<string, string>(); // Will store the address of the adapter for each underlying vault, and if it is already an adapter, it will store the address of the adapter
+      const mappingCaps = new Map<
+        string,
+        { relative_cap: bigint; absolute_cap: bigint }
+      >(); // Will store the relative and absolute caps for each underlying vault
       // ****************
       // Add the underlying vault
       // ****************
+      if (SETUP_VAULT_CONFIG.underlying_vaults) {
+        // TODO: first loop when we create the adapters if needed
+        for (const underlying of SETUP_VAULT_CONFIG.underlying_vaults || []) {
+          if (underlying.needs_adapter) {
+            // const adapterAddress = await client.createAdapter(
+            //   VAULT_ADDRESS,
+            //   underlying.address
+            // );
+            // if (adapterAddress) {
+            //   mappingAdapters.set(underlying.address, adapterAddress);
+            // } else {
+            //   mappingAdapters.set(underlying.address, underlying.address);
+            // }
+          }
+        }
 
-      // ****************
-      // Add the caps
-      // ****************
+        // TODO: then add the adapters of the underlying vaults in the vault
+
+        // ****************
+        // Add the caps
+        // ****************
+        // Then, if we have caps, we add them
+        if (NEEDS_TO_CAP_UNDERLYING_VAULT) {
+          for (const underlying of SETUP_VAULT_CONFIG.underlying_vaults || []) {
+            // if (underlying.relative_cap) {
+            //   await client.setRelativeCap(VAULT_ADDRESS, underlying.address, underlying.relative_cap);
+            // }
+            // if (underlying.absolute_cap) {
+            //   await client.setAbsoluteCap(VAULT_ADDRESS, underlying.address, underlying.absolute_cap);
+            // }
+          }
+        }
+      }
 
       // ****************
       // Go back to the original situation
       // ****************
-
-      if (!YOUR_ARE_ALLOCATOR) {
+      if (NEEDS_TEMPORARY_ALLOCATOR_ROLE) {
         console.log("Setting back the allocator to the user");
-        //   await client.setIsAllocator(VAULT_ADDRESS, false);
+        await client.setIsAllocator(VAULT_ADDRESS, userAddress, false);
       }
       if (!YOUR_ARE_SENTINEL) {
         console.log("Setting back the sentinel to the user");
         await client.setIsSentinel(VAULT_ADDRESS, userAddress, false);
+        await waitHalfSecond();
       }
     }
 
     if (NEEDS_TEMPORARY_CURATOR_ROLE) {
-      console.log("Setting back the curator to the user");
+      console.log("Setting back the curator to the intended curator");
+      console.log("Current curator:", await client.getCurator(VAULT_ADDRESS));
       await client.setCurator(
         VAULT_ADDRESS,
-        "0x0000000000000000000000000000000000000000"
+        SETUP_VAULT_CONFIG.curator ||
+          "0x0000000000000000000000000000000000000000"
       );
+      await waitHalfSecond();
     }
-    await wait1s();
+    await waitHalfSecond();
 
     if (NEEDS_TEMPORARY_OWNER_ROLE) {
       console.log("Setting back the owner to the user");
@@ -292,63 +321,7 @@ async function main() {
     // ****************
     // Final step: retrieve and display all vault information
     // ****************
-    console.log("");
-    console.log("*********************************************************");
-    console.log("*                                                       *");
-    console.log("* Reading the vault                                     *");
-    const asset = await client.getAsset(VAULT_ADDRESS);
-    const name = await client.getVaultName(VAULT_ADDRESS);
-    const symbol = await client.getVaultSymbol(VAULT_ADDRESS);
-
-    const owner = await client.getOwner(VAULT_ADDRESS);
-    const curator = await client.getCurator(VAULT_ADDRESS);
-    const isSentinel = await client.isSentinel(VAULT_ADDRESS, userAddress);
-    // const isAllocator = await client.getIsAdapter(VAULT_ADDRESS, "Morpho");
-
-    const performanceFee = await client.getPerformanceFee(VAULT_ADDRESS);
-    const managementFee = await client.getManagementFee(VAULT_ADDRESS);
-    const performanceFeeRecipient = await client.getPerformanceFeeRecipient(
-      VAULT_ADDRESS
-    );
-    const managementFeeRecipient = await client.getManagementFeeRecipient(
-      VAULT_ADDRESS
-    );
-    // const maxRate = await client.getMaxRate(VAULT_ADDRESS);
-
-    // const allTimelocks = await Promise.all(
-    //   timelocks.map(async (timelock) => {
-    //     return {
-    //       name: timelock,
-    //       timelock: await client.getTimelock(VAULT_ADDRESS, timelock),
-    //     };
-    //   })
-    // );
-
-    console.log("* Asset:", asset);
-    console.log("* Name:", name);
-    console.log("* Symbol:", symbol);
-    console.log("* Owner:", owner);
-    console.log("* Curator:", curator);
-    console.log("* Is Sentinel:", isSentinel);
-    // console.log("* Is Adapter:", isAdapter);
-    console.log(
-      "* Performance Fee:",
-      (Number(performanceFee) / 1e18) * 100,
-      "%"
-    );
-    console.log(
-      "* Management Fee:",
-      Math.round((Number(managementFee) / 1e18) * 31536000 * 1e5) / 1e5,
-      "%/year"
-    );
-    console.log("* Performance Fee Recipient:", performanceFeeRecipient);
-    console.log("* Management Fee Recipient:", managementFeeRecipient);
-    // console.log("* Max Rate:", maxRate);
-    // allTimelocks.forEach((timelock) => {
-    //   console.log(`* Timelock of ${timelock.name}:`, timelock.timelock);
-    // });
-    console.log("*                                                       *");
-    console.log("*********************************************************");
+    await finalReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
     console.error("Error creating vault:", error);
   }

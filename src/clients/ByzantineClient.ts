@@ -109,6 +109,16 @@ export class ByzantineClient {
       .setIsSentinel(account, isSentinel);
   }
 
+  async setIsAllocator(
+    vaultAddress: string,
+    account: string,
+    isAllocator: boolean
+  ): Promise<ethers.TransactionResponse> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setIsAllocator(account, isAllocator);
+  }
+
   // ========================================
   // ROLE INFORMATION (READ FUNCTIONS)
   // ========================================
@@ -139,6 +149,12 @@ export class ByzantineClient {
    */
   async isSentinel(vaultAddress: string, account: string): Promise<boolean> {
     return await this.ownersClient.vault(vaultAddress).isSentinel(account);
+  }
+
+  async isAllocator(vaultAddress: string, account: string): Promise<boolean> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getIsAllocator(account);
   }
 
   // ========================================
@@ -534,6 +550,10 @@ export class ByzantineClient {
     return await this.curatorsClient
       .vault(vaultAddress)
       .instantSetMaxRate(newMaxRate);
+  }
+
+  async getMaxRate(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getMaxRate();
   }
 
   // ========================================

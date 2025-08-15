@@ -1,0 +1,98 @@
+import { ByzantineClient } from "../src/clients/ByzantineClient";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+export const RPC_URL = process.env.RPC_URL || "";
+export const MNEMONIC = process.env.MNEMONIC || "";
+
+export const timelocks = [
+  "abdicateSubmit",
+  "setIsAdapter",
+  "decreaseTimelock",
+  "increaseAbsoluteCap",
+  "increaseRelativeCap",
+  "setIsAllocator",
+  "setSharesGate",
+  "setReceiveAssetsGate",
+  "setSendAssetsGate",
+  "setPerformanceFee",
+  "setPerformanceFeeRecipient",
+  "setManagementFee",
+  "setManagementFeeRecipient",
+  "setMaxRate",
+  "setForceDeallocatePenalty",
+];
+
+export const waitHalfSecond = () =>
+  new Promise((resolve) => setTimeout(resolve, 500));
+
+export async function finalReading(
+  client: ByzantineClient,
+  vaultAddress: string,
+  userAddress: string
+) {
+  console.log("\n*********************************************************");
+  console.log("*                                                       *");
+  console.log(`*   Vault: ${vaultAddress}   *`);
+  console.log("*                                                       *");
+  console.log("*********************************************************");
+  console.log("*                                                       *");
+  const asset = await client.getAsset(vaultAddress);
+  const name = await client.getVaultName(vaultAddress);
+  const symbol = await client.getVaultSymbol(vaultAddress);
+
+  const owner = await client.getOwner(vaultAddress);
+  const curator = await client.getCurator(vaultAddress);
+  const isSentinel = await client.isSentinel(vaultAddress, userAddress);
+  const isAllocator = "N/A"; // await client.getIsAdapter(vaultAddress, "Morpho");
+
+  const performanceFee = await client.getPerformanceFee(vaultAddress);
+  const managementFee = await client.getManagementFee(vaultAddress);
+  const performanceFeeRecipient = await client.getPerformanceFeeRecipient(
+    vaultAddress
+  );
+  const managementFeeRecipient = await client.getManagementFeeRecipient(
+    vaultAddress
+  );
+  const maxRate = await client.getMaxRate(vaultAddress);
+
+  const allTimelocks = await Promise.all(
+    timelocks.map(async (timelock) => {
+      return {
+        name: timelock,
+        timelock: await client.getTimelock(vaultAddress, timelock),
+      };
+    })
+  );
+
+  console.log("* Asset:", asset);
+  console.log("* Name:", name);
+  console.log("* Symbol:", symbol);
+  console.log("*");
+  console.log("* Your address:", userAddress, "✅");
+  console.log("* Owner:", owner, owner === userAddress ? "✅" : "❌");
+  console.log("* Curator:", curator, curator === userAddress ? "✅" : "❌");
+  console.log("* Is Sentinel:", isSentinel, isSentinel ? "✅" : "❌");
+  console.log("* Is allocator:", isAllocator, isAllocator ? "✅" : "❌");
+  console.log("*");
+  console.log("* Performance Fee:", (Number(performanceFee) / 1e18) * 100, "%");
+  console.log(
+    "* Management Fee:",
+    Math.round((Number(managementFee) / 1e18) * 31536000 * 1e5) / 1e5,
+    "%/year"
+  );
+  console.log("* Performance Fee Recipient:", performanceFeeRecipient);
+  console.log("* Management Fee Recipient:", managementFeeRecipient);
+  console.log(
+    "* Max Rate:",
+    ((Number(maxRate) / 1e18) * 31536000 * 1e5) / 1e5,
+    "%/year"
+  );
+  console.log("*");
+  allTimelocks.forEach((timelock) => {
+    console.log(`* Timelock of ${timelock.name}:`, timelock.timelock);
+  });
+  console.log("*                                                       *");
+  console.log("*********************************************************");
+}

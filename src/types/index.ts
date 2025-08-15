@@ -12,6 +12,10 @@ export interface NetworkConfig {
   byzantineFactoryAddress: string;
   scanLink: string;
   USDCaddress: string;
+  adapters: {
+    morphoVaultV1: string;
+    morphoMarketV1: string;
+  };
 }
 
 /**
