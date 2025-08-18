@@ -1,5 +1,5 @@
 /**
- * Restake SDK - Main export file
+ * Byzantine SDK - Main export file
  */
 
 // Export main clients

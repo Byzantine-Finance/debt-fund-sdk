@@ -1,11 +1,40 @@
 {
-  "name": "metavault-sdk",
+  "name": "@byzantine/metavault-sdk",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
+  "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
+  "license": "MIT",
+  "author": "Byzantine Finance",
   "type": "commonjs",
   "main": "index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "byzantine",
+    "vault",
+    "vaults",
+    "sdk",
+    "debt",
+    "debt-funds",
+    "funds",
+    "lending",
+    "sdk",
+    "blockchain",
+    "ethereum",
+    "base"
+  ],
+  "homepage": "https://byzantine.fi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byzantine-finance/debt-funds-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/byzantine-finance/debt-funds-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "test": "npm run test:all",
