@@ -8,6 +8,7 @@ import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
+import * as CreateAdaptersFunctions from "./MorphoAdapters";
 
 /**
  * Main client for vault curators operations
@@ -109,8 +110,8 @@ export class VaultCurator {
     return AdaptersFunctions.getIsAdapter(this.vaultContract, adapter);
   }
 
-  async getNumberOfAdapters() {
-    return AdaptersFunctions.getNumberOfAdapters(this.vaultContract);
+  async getAdaptersLength() {
+    return AdaptersFunctions.getAdaptersLength(this.vaultContract);
   }
 
   // ========================================
@@ -355,8 +356,24 @@ export class VaultCurator {
   // Manage role
   // ========================================
 
-  async setIsAllocator(allocator: string, isAllocator: boolean) {
-    return ManageRoleFunctions.setIsAllocator(
+  async submitIsAllocator(allocator: string, isAllocator: boolean) {
+    return ManageRoleFunctions.submitIsAllocator(
+      this.vaultContract,
+      allocator,
+      isAllocator
+    );
+  }
+
+  async setIsAllocatorAfterTimelock(allocator: string, isAllocator: boolean) {
+    return ManageRoleFunctions.setIsAllocatorAfterTimelock(
+      this.vaultContract,
+      allocator,
+      isAllocator
+    );
+  }
+
+  async instantSetIsAllocator(allocator: string, isAllocator: boolean) {
+    return ManageRoleFunctions.instantSetIsAllocator(
       this.vaultContract,
       allocator,
       isAllocator
@@ -365,6 +382,38 @@ export class VaultCurator {
 
   async getIsAllocator(allocator: string) {
     return ManageRoleFunctions.getIsAllocator(this.vaultContract, allocator);
+  }
+
+  // ========================================
+  // CREATE ADAPTERS
+  // ========================================
+
+  async deployMorphoVaultV1Adapter(
+    underlyingVault: string
+  ): Promise<CreateAdaptersFunctions.DeployAdapterResult> {
+    return CreateAdaptersFunctions.deployMorphoVaultV1Adapter(
+      this.contractProvider,
+      this.vaultAddress,
+      underlyingVault
+    );
+  }
+
+  async isMorphoVaultV1Adapter(account: string) {
+    return CreateAdaptersFunctions.isMorphoVaultV1Adapter(
+      this.contractProvider,
+      account
+    );
+  }
+
+  async findMorphoVaultV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ) {
+    return CreateAdaptersFunctions.findMorphoVaultV1Adapter(
+      this.contractProvider,
+      vaultAddress,
+      underlyingVault
+    );
   }
 
   // ========================================

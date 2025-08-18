@@ -8,7 +8,7 @@ import { executeContractMethod, callContractMethod } from "../../utils";
 // function instantSetIsAdapter(vaultContract: ethers.Contract, adapter: string, isAdapter: boolean) // qui va faire submitIsAdapter et setIsAdapterAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
 
 // function getIsAdapter(vaultContract: ethers.Contract, adapter: string) // return isAdapter
-// function getNumberOfAdapters(vaultContract: ethers.Contract)
+// function getAdaptersLength(vaultContract: ethers.Contract)
 
 export async function submitIsAdapter(
   vaultContract: ethers.Contract,
@@ -58,6 +58,6 @@ export async function getIsAdapter(
   return await callContractMethod(vaultContract, "isAdapter", [adapter]);
 }
 
-export async function getNumberOfAdapters(vaultContract: ethers.Contract) {
+export async function getAdaptersLength(vaultContract: ethers.Contract) {
   return await callContractMethod(vaultContract, "adaptersLength", []);
 }

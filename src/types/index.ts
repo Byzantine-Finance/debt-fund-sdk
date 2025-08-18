@@ -13,8 +13,9 @@ export interface NetworkConfig {
   scanLink: string;
   USDCaddress: string;
   adapters: {
-    morphoVaultV1: string;
-    morphoMarketV1: string;
+    morphoVaultV1AdapterFactory: string;
+    morphoMarketV1AdapterFactory: string;
+    aaveStataVaultAdapterFactory: string;
   };
 }
 

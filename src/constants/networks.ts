@@ -19,8 +19,11 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://basescan.org",
     USDCaddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
     adapters: {
-      morphoVaultV1: "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
-      morphoMarketV1: "0xf21189365131551Ba4c3613252B1bcCdA60BD1e6",
+      morphoVaultV1AdapterFactory: "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
+      aaveStataVaultAdapterFactory:
+        "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
+      morphoMarketV1AdapterFactory:
+        "0xf21189365131551Ba4c3613252B1bcCdA60BD1e6",
     },
   },
   // Holesky Testnet
@@ -37,8 +40,11 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://sepolia.etherscan.io",
     USDCaddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     adapters: {
-      morphoVaultV1: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
-      morphoMarketV1: "0xE5B709A14859EdF820347D78E587b1634B0ec771",
+      morphoVaultV1AdapterFactory: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
+      aaveStataVaultAdapterFactory:
+        "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
+      morphoMarketV1AdapterFactory:
+        "0xE5B709A14859EdF820347D78E587b1634B0ec771",
     },
   },
 };

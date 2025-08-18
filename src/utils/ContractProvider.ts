@@ -1,5 +1,9 @@
 import { ethers } from "ethers";
-import { VAULT_FACTORY_ABI, VAULT_ABI } from "../constants";
+import {
+  MorphoV1AdapterFactoryABI,
+  VAULT_FACTORY_ABI,
+  VAULT_ABI,
+} from "../constants";
 import { getNetworkConfig } from "../constants/networks";
 import { ChainsOptions } from "../types";
 
@@ -54,6 +58,16 @@ export class ContractProvider {
   }
 
   /**
+   * Get the adapter factory address for the current network
+   * @returns Adapter factory address
+   */
+
+  private async getMorphoVaultV1AdapterFactoryAddress(): Promise<string> {
+    const chainId = await this.getChainId();
+    return getNetworkConfig(chainId).adapters.morphoVaultV1AdapterFactory;
+  }
+
+  /**
    * Get the Vault contract instance
    * @param vaultAddress The address of the Vault
    * @returns The Vault contract instance
@@ -75,6 +89,16 @@ export class ContractProvider {
     return new ethers.Contract(
       factoryAddress,
       VAULT_FACTORY_ABI,
+      this.signer || this.provider
+    );
+  }
+
+  public async getMorphoVaultV1AdapterFactoryContract(): Promise<ethers.Contract> {
+    const adapterFactoryAddress =
+      await this.getMorphoVaultV1AdapterFactoryAddress();
+    return new ethers.Contract(
+      adapterFactoryAddress,
+      MorphoV1AdapterFactoryABI,
       this.signer || this.provider
     );
   }

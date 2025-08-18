@@ -40,7 +40,7 @@ async function main() {
 
     await finalReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
-    console.error("Error creating vault:", error);
+    console.error("Error creating vault simple:", error);
   }
 }
 

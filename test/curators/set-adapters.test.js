@@ -45,7 +45,7 @@ const TEST_CONFIG = {
 async function checkAdapterStatus(client, vaultAddress, adapterAddress) {
   try {
     const isAdapter = await client.getIsAdapter(vaultAddress, adapterAddress);
-    const numberOfAdapters = await client.getNumberOfAdapters(vaultAddress);
+    const numberOfAdapters = await client.getAdaptersLength(vaultAddress);
     const timelock = await client.getTimelock(vaultAddress, "setIsAdapter");
     return { isAdapter, numberOfAdapters, timelock };
   } catch (error) {

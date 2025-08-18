@@ -58,13 +58,13 @@ async function main() {
     const newOwner = OWNER_SETTINGS_CONFIG.new_owner;
 
     if (newName && newSymbol) {
-      await client.setVaultNameAndSymbol(VAULT_ADDRESS, newName, newSymbol);
+      await client.setSharesNameAndSymbol(VAULT_ADDRESS, newName, newSymbol);
       console.log(`Name ${newName} and symbol ${newSymbol} set`);
     } else if (newName) {
-      await client.setVaultName(VAULT_ADDRESS, newName);
+      await client.setSharesName(VAULT_ADDRESS, newName);
       console.log(`Name ${newName} set`);
     } else if (newSymbol) {
-      await client.setVaultSymbol(VAULT_ADDRESS, newSymbol);
+      await client.setSharesSymbol(VAULT_ADDRESS, newSymbol);
       console.log(`Symbol ${newSymbol} set`);
     }
     await waitHalfSecond();
@@ -93,7 +93,7 @@ async function main() {
 
     await finalReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
-    console.error("Error creating vault:", error);
+    console.error("Error setting owner settings of a vault:", error);
   }
 }
 

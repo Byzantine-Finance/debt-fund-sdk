@@ -69,7 +69,7 @@ async function setVaultNameAndSymbolOptimal(
       console.log(`📝 Name: "${currentName}" → "${newName}"`);
       console.log(`🏷️ Symbol: "${currentSymbol}" → "${newSymbol}"`);
 
-      const tx = await client.setVaultNameAndSymbol(
+      const tx = await client.setSharesNameAndSymbol(
         vaultAddress,
         newName,
         newSymbol
@@ -99,7 +99,7 @@ async function setVaultNameAndSymbolOptimal(
           `📝 Updating vault name from "${currentName}" to "${newName}"...`
         );
 
-        const tx = await client.setVaultName(vaultAddress, newName);
+        const tx = await client.setSharesName(vaultAddress, newName);
         logResult("Name update transaction sent", true, tx.hash);
 
         // Wait for transaction confirmation
@@ -136,7 +136,7 @@ async function setVaultNameAndSymbolOptimal(
           `🏷️ Updating vault symbol from "${currentSymbol}" to "${newSymbol}"...`
         );
 
-        const tx = await client.setVaultSymbol(vaultAddress, newSymbol);
+        const tx = await client.setSharesSymbol(vaultAddress, newSymbol);
         logResult("Symbol update transaction sent", true, tx.hash);
 
         // Wait for transaction confirmation

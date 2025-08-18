@@ -44,20 +44,21 @@ export async function setNameAndSymbol(
   newSymbol: string
 ): Promise<ethers.TransactionResponse> {
   // Encode the setName call
-  const setNameData = vaultContract.interface.encodeFunctionData("setName", [
-    newName,
-  ]);
+  const calldataSetName = vaultContract.interface.encodeFunctionData(
+    "setName",
+    [newName]
+  );
 
   // Encode the setSymbol call
-  const setSymbolData = vaultContract.interface.encodeFunctionData(
+  const calldataSetSymbol = vaultContract.interface.encodeFunctionData(
     "setSymbol",
     [newSymbol]
   );
 
   // Execute multicall with both operations
   return await executeContractMethod(vaultContract, "multicall", [
-    setNameData,
-    setSymbolData,
+    calldataSetName,
+    calldataSetSymbol,
   ]);
 }
 

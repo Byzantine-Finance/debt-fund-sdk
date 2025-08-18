@@ -26,9 +26,8 @@ interface SetupVaultConfig {
   max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
 
   underlying_vaults?: {
-    address: string; // Address of the underlying vault, or the adapter if needs_adapter is false
-    type: "Morpho" | "Aave" | "Euler" | "Compound"; // Because we need to select the right adapter
-    needs_adapter: boolean; // If true, we will create the adapter and use it, if no, it means the address is already the vault
+    address: string; // Address of the underlying vault or market
+    type: "MorphoVaultV1" | "MorphoMarketV1" | "Aave" | "Euler" | "Compound"; // Because we need to select the right adapter
     relative_cap?: bigint; // 100% = 1e18, max 100% -> 1e18
     absolute_cap?: bigint;
     deallocate_penalty?: bigint; // 100% = 1e18, max 2% -> 0.02e18
@@ -54,19 +53,18 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   max_rate: parseEther("0.5") / 31536000n, // 50% / year
+  curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   underlying_vaults: [
     {
       address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
-      type: "Morpho",
-      needs_adapter: true,
+      type: "MorphoVaultV1",
       relative_cap: parseUnits("0.5", 18), // 50%
       absolute_cap: parseUnits("800", 6), // 800 USDC
       deallocate_penalty: parseEther("0.02"),
     },
     {
       address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
-      type: "Morpho",
-      needs_adapter: true,
+      type: "MorphoVaultV1",
       relative_cap: parseUnits("0.3", 18), // 30%
       absolute_cap: parseUnits("300", 6), // 300 USDC
       deallocate_penalty: parseEther("0.02"),
@@ -74,7 +72,6 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
     {
       address: "0xC768c589647798a6EE01A91FdE98EF2ed046DBD6", // AAVE stata vault
       type: "Aave",
-      needs_adapter: true,
       relative_cap: parseUnits("0.2", 18), // 20%
       absolute_cap: parseUnits("200", 6), // 200 USDC
       deallocate_penalty: parseEther("0.015"),
@@ -178,15 +175,15 @@ async function main() {
     // ****************
     console.log("🔤 Setting name and symbol");
     if (SETUP_VAULT_CONFIG.name && SETUP_VAULT_CONFIG.symbol) {
-      await client.setVaultNameAndSymbol(
+      await client.setSharesNameAndSymbol(
         VAULT_ADDRESS,
         SETUP_VAULT_CONFIG.name,
         SETUP_VAULT_CONFIG.symbol
       );
     } else if (SETUP_VAULT_CONFIG.name) {
-      await client.setVaultName(VAULT_ADDRESS, SETUP_VAULT_CONFIG.name);
+      await client.setSharesName(VAULT_ADDRESS, SETUP_VAULT_CONFIG.name);
     } else if (SETUP_VAULT_CONFIG.symbol) {
-      await client.setVaultSymbol(VAULT_ADDRESS, SETUP_VAULT_CONFIG.symbol);
+      await client.setSharesSymbol(VAULT_ADDRESS, SETUP_VAULT_CONFIG.symbol);
     }
     await waitHalfSecond();
 
@@ -194,7 +191,7 @@ async function main() {
     // Handle the fees
     // ****************
 
-    if (NEEDS_TEMPORARY_CURATOR_ROLE) {
+    if (NEEDS_TEMPORARY_CURATOR_ROLE || YOUR_ARE_CURATOR) {
       console.log("Setting temporary curator to the user");
       await client.setCurator(VAULT_ADDRESS, userAddress);
     }
@@ -253,17 +250,15 @@ async function main() {
       if (SETUP_VAULT_CONFIG.underlying_vaults) {
         // TODO: first loop when we create the adapters if needed
         for (const underlying of SETUP_VAULT_CONFIG.underlying_vaults || []) {
-          if (underlying.needs_adapter) {
-            // const adapterAddress = await client.createAdapter(
-            //   VAULT_ADDRESS,
-            //   underlying.address
-            // );
-            // if (adapterAddress) {
-            //   mappingAdapters.set(underlying.address, adapterAddress);
-            // } else {
-            //   mappingAdapters.set(underlying.address, underlying.address);
-            // }
-          }
+          // const adapterAddress = await client.createAdapter(
+          //   VAULT_ADDRESS,
+          //   underlying.address
+          // );
+          // if (adapterAddress) {
+          //   mappingAdapters.set(underlying.address, adapterAddress);
+          // } else {
+          //   mappingAdapters.set(underlying.address, underlying.address);
+          // }
         }
 
         // TODO: then add the adapters of the underlying vaults in the vault
@@ -289,7 +284,8 @@ async function main() {
       // ****************
       if (NEEDS_TEMPORARY_ALLOCATOR_ROLE) {
         console.log("Setting back the allocator to the user");
-        await client.setIsAllocator(VAULT_ADDRESS, userAddress, false);
+        await client.instantSetIsAllocator(VAULT_ADDRESS, userAddress, false);
+        await waitHalfSecond();
       }
       if (!YOUR_ARE_SENTINEL) {
         console.log("Setting back the sentinel to the user");

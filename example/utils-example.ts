@@ -1,12 +1,13 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import * as dotenv from "dotenv";
+import { TimelockFunction } from "../src/clients/curators";
 
 dotenv.config();
 
 export const RPC_URL = process.env.RPC_URL || "";
 export const MNEMONIC = process.env.MNEMONIC || "";
 
-export const timelocks = [
+export const timelocks: TimelockFunction[] = [
   "abdicateSubmit",
   "setIsAdapter",
   "decreaseTimelock",
@@ -45,7 +46,7 @@ export async function finalReading(
   const owner = await client.getOwner(vaultAddress);
   const curator = await client.getCurator(vaultAddress);
   const isSentinel = await client.isSentinel(vaultAddress, userAddress);
-  const isAllocator = "N/A"; // await client.getIsAdapter(vaultAddress, "Morpho");
+  const isAllocator = await client.getIsAllocator(vaultAddress, userAddress);
 
   const performanceFee = await client.getPerformanceFee(vaultAddress);
   const managementFee = await client.getManagementFee(vaultAddress);
@@ -56,6 +57,8 @@ export async function finalReading(
     vaultAddress
   );
   const maxRate = await client.getMaxRate(vaultAddress);
+
+  const adaptersLength = await client.getAdaptersLength(vaultAddress);
 
   const allTimelocks = await Promise.all(
     timelocks.map(async (timelock) => {
@@ -89,6 +92,8 @@ export async function finalReading(
     ((Number(maxRate) / 1e18) * 31536000 * 1e5) / 1e5,
     "%/year"
   );
+  console.log("*");
+  console.log("* Adapters length:", adaptersLength);
   console.log("*");
   allTimelocks.forEach((timelock) => {
     console.log(`* Timelock of ${timelock.name}:`, timelock.timelock);

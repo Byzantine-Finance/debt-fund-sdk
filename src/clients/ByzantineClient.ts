@@ -5,7 +5,7 @@ import { ContractProvider } from "../utils";
 
 // Import specialized clients
 import { OwnersClient } from "./owners";
-import { CuratorsClient } from "./curators";
+import { CuratorsClient, TimelockFunction } from "./curators";
 
 /**
  * Main SDK client for interacting with Vault ecosystem
@@ -109,14 +109,74 @@ export class ByzantineClient {
       .setIsSentinel(account, isSentinel);
   }
 
-  async setIsAllocator(
+  /**
+   * Submit a new allocator for the vault
+   * This function is used to submit a new allocator for the vault
+   * Then the curator will have to call the setIsAllocatorAfterTimelock function to set the allocator
+   * @param vaultAddress The vault contract address
+   * @param account The account address to add as allocator
+   * @param isAllocator Whether the account is a allocator
+   * @returns Transaction response
+   */
+  async submitIsAllocator(
     vaultAddress: string,
     account: string,
     isAllocator: boolean
   ): Promise<ethers.TransactionResponse> {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .setIsAllocator(account, isAllocator);
+      .submitIsAllocator(account, isAllocator);
+  }
+
+  /**
+   * Set a new allocator for the vault after timelock
+   * This function is used to set a new allocator for the vault after the timelock has passed
+   * @param vaultAddress The vault contract address
+   * @param account The account address to add as allocator
+   * @param isAllocator Whether the account is a allocator
+   * @returns Transaction response
+   */
+  async setIsAllocatorAfterTimelock(
+    vaultAddress: string,
+    account: string,
+    isAllocator: boolean
+  ): Promise<ethers.TransactionResponse> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setIsAllocatorAfterTimelock(account, isAllocator);
+  }
+
+  /**
+   * Instant set a new allocator for the vault
+   * This function is used to set a new allocator for the vault without timelock
+   * @param vaultContract The vault contract instance
+   * @param newAllocator The address of the new allocator
+   * @param isAllocator Whether the account is a allocator
+   * @returns Transaction response
+   */
+  async instantSetIsAllocator(
+    vaultAddress: string,
+    account: string,
+    isAllocator: boolean
+  ): Promise<ethers.TransactionResponse> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetIsAllocator(account, isAllocator);
+  }
+
+  /**
+   * Get if an account is a allocator of the vault
+   * @param vaultAddress The vault contract address
+   * @param account The account address to check
+   * @returns True if the account is a allocator
+   */
+  async getIsAllocator(
+    vaultAddress: string,
+    account: string
+  ): Promise<boolean> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getIsAllocator(account);
   }
 
   // ========================================
@@ -167,7 +227,7 @@ export class ByzantineClient {
    * @param newName The new name for the vault
    * @returns Transaction response
    */
-  async setVaultName(
+  async setSharesName(
     vaultAddress: string,
     newName: string
   ): Promise<ethers.TransactionResponse> {
@@ -180,7 +240,7 @@ export class ByzantineClient {
    * @param newSymbol The new symbol for the vault
    * @returns Transaction response
    */
-  async setVaultSymbol(
+  async setSharesSymbol(
     vaultAddress: string,
     newSymbol: string
   ): Promise<ethers.TransactionResponse> {
@@ -194,7 +254,7 @@ export class ByzantineClient {
    * @param newSymbol The new symbol for the vault
    * @returns Transaction response
    */
-  async setVaultNameAndSymbol(
+  async setSharesNameAndSymbol(
     vaultAddress: string,
     newName: string,
     newSymbol: string
@@ -287,18 +347,18 @@ export class ByzantineClient {
     return await this.curatorsClient.vault(vaultAddress).getIsAdapter(adapter);
   }
 
-  async getNumberOfAdapters(vaultAddress: string) {
-    return await this.curatorsClient.vault(vaultAddress).getNumberOfAdapters();
+  async getAdaptersLength(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getAdaptersLength();
   }
 
   // ========================================
   // TIMELOCK MANAGEMENT
   // ========================================
 
-  async getTimelock(vaultAddress: string, functionName: string) {
+  async getTimelock(vaultAddress: string, functionName: TimelockFunction) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .getTimelock(functionName as any);
+      .getTimelock(functionName);
   }
 
   async getExecutableAt(vaultAddress: string, data: string) {
@@ -554,6 +614,34 @@ export class ByzantineClient {
 
   async getMaxRate(vaultAddress: string) {
     return await this.curatorsClient.vault(vaultAddress).getMaxRate();
+  }
+
+  // ========================================
+  // CREATE  ADAPTERS
+  // ========================================
+
+  async deployMorphoVaultV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ): Promise<import("./curators/MorphoAdapters").DeployAdapterResult> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .deployMorphoVaultV1Adapter(underlyingVault);
+  }
+
+  async isMorphoVaultV1Adapter(vaultAddress: string, account: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .isMorphoVaultV1Adapter(account);
+  }
+
+  async findMorphoVaultV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .findMorphoVaultV1Adapter(vaultAddress, underlyingVault);
   }
 
   // ========================================

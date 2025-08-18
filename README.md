@@ -117,12 +117,12 @@ async function vaultManagement() {
     // Owner Operations
     console.log("=== Owner Operations ===");
 
-    // Set vault name and symbol
-    await client.setVaultName(vaultAddress, "My Awesome Vault");
-    await client.setVaultSymbol(vaultAddress, "MAV");
+    // Set vault shares name and symbol
+    await client.setSharesName(vaultAddress, "My Awesome Vault");
+    await client.setSharesSymbol(vaultAddress, "MAV");
 
     // Or set both in a single transaction (gas efficient!)
-    await client.setVaultNameAndSymbol(vaultAddress, "My Vault", "MVT");
+    await client.setSharesNameAndSymbol(vaultAddress, "My Vault", "MVT");
 
     // Manage roles
     const curatorAddress = "0x...";
@@ -190,9 +190,9 @@ await client.setCurator(vaultAddress, newCurator);
 await client.setIsSentinel(vaultAddress, account, true); // true = add, false = remove
 
 // Vault metadata
-await client.setVaultName(vaultAddress, newName);
-await client.setVaultSymbol(vaultAddress, newSymbol);
-await client.setVaultNameAndSymbol(vaultAddress, newName, newSymbol); // Gas-efficient multicall
+await client.setSharesName(vaultAddress, newName);
+await client.setSharesSymbol(vaultAddress, newSymbol);
+await client.setSharesNameAndSymbol(vaultAddress, newName, newSymbol); // Gas-efficient multicall
 
 // Read operations
 await client.getOwner(vaultAddress);

@@ -145,7 +145,7 @@ export async function executeContractMethod(
  * Call a contract method (read-only) with error handling
  * @param contract The contract instance
  * @param method The method name to call
- * @param args The method arguments
+ * @param args The method arguments (can be spread arguments or a single array)
  * @returns The result of the contract call
  */
 export async function callContractMethod(
@@ -154,6 +154,12 @@ export async function callContractMethod(
   ...args: any[]
 ): Promise<any> {
   try {
+    // If the first argument is an array and it's the only argument, spread it
+    // This allows both callContractMethod(contract, "method", arg1, arg2)
+    // and callContractMethod(contract, "method", [arg1, arg2]) to work
+    if (args.length === 1 && Array.isArray(args[0])) {
+      return await contract[method](...args[0]);
+    }
     return await contract[method](...args);
   } catch (error) {
     throw formatContractError(method, error);

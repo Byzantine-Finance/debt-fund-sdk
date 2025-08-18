@@ -100,7 +100,7 @@ async function instantSetFeeFunction(
     calldataSet,
   ]);
 
-  return executeContractMethod(vaultContract, "multicall", [
+  return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataSet,
   ]);
@@ -131,7 +131,7 @@ async function instantSetFeeRecipientFunction(
     calldataSet,
   ]);
 
-  return executeContractMethod(vaultContract, "multicall", [
+  return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataSet,
   ]);
@@ -322,7 +322,7 @@ export async function instantSetForceDeallocatePenalty(
     calldataSet,
   ]);
 
-  return executeContractMethod(vaultContract, "multicall", [
+  return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataSet,
   ]);
