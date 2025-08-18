@@ -6,6 +6,10 @@ import {
 } from "../../utils/contractErrorHandler";
 import { ContractProvider } from "../../utils";
 
+// ========================================
+// Factory Functions
+// ========================================
+
 export interface DeployAdapterResult
   extends ethers.ContractTransactionResponse {
   adapterAddress: string;
@@ -70,4 +74,24 @@ export async function findMorphoVaultV1Adapter(
     "morphoVaultV1Adapter",
     [vaultAddress, underlyingVault]
   );
+}
+
+// ========================================
+// Adapters
+// ========================================
+
+/**
+ * Get the ids of the markets of a Morpho Vault V1 Adapter
+ * @param contractProvider The contract provider
+ * @param adapterAddress The address of the Morpho Vault V1 Adapter
+ * @returns The ids of the markets
+ */
+export async function getIds(
+  contractProvider: ContractProvider,
+  adapterAddress: string
+): Promise<string> {
+  const contract = await contractProvider.getMorphoVaultV1AdapterContract(
+    adapterAddress
+  );
+  return await callContractMethod(contract, "ids", []);
 }

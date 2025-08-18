@@ -51,6 +51,8 @@ export async function instantSetIsAdapter(
   ]);
 }
 
+// Getters
+
 export async function getIsAdapter(
   vaultContract: ethers.Contract,
   adapter: string
@@ -60,4 +62,11 @@ export async function getIsAdapter(
 
 export async function getAdaptersLength(vaultContract: ethers.Contract) {
   return await callContractMethod(vaultContract, "adaptersLength", []);
+}
+
+export async function getAdapterByIndex(
+  vaultContract: ethers.Contract,
+  index: number
+) {
+  return await callContractMethod(vaultContract, "adapters", [index]);
 }

@@ -351,6 +351,12 @@ export class ByzantineClient {
     return await this.curatorsClient.vault(vaultAddress).getAdaptersLength();
   }
 
+  async getAdapterByIndex(vaultAddress: string, index: number) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .getAdapterByIndex(index);
+  }
+
   // ========================================
   // TIMELOCK MANAGEMENT
   // ========================================
@@ -617,13 +623,110 @@ export class ByzantineClient {
   }
 
   // ========================================
-  // CREATE  ADAPTERS
+  // CAP MANAGEMENT
+  // ========================================
+
+  // Increase Absolute Cap
+  async submitIncreaseAbsoluteCap(
+    vaultAddress: string,
+    idData: string,
+    newAbsoluteCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitIncreaseAbsoluteCap(idData, newAbsoluteCap);
+  }
+
+  async setIncreaseAbsoluteCapAfterTimelock(
+    vaultAddress: string,
+    idData: string,
+    newAbsoluteCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setIncreaseAbsoluteCapAfterTimelock(idData, newAbsoluteCap);
+  }
+
+  async instantIncreaseAbsoluteCap(
+    vaultAddress: string,
+    idData: string,
+    newAbsoluteCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantIncreaseAbsoluteCap(idData, newAbsoluteCap);
+  }
+
+  // Increase Relative Cap
+  async submitIncreaseRelativeCap(
+    vaultAddress: string,
+    idData: string,
+    newRelativeCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitIncreaseRelativeCap(idData, newRelativeCap);
+  }
+
+  async setIncreaseRelativeCapAfterTimelock(
+    vaultAddress: string,
+    idData: string,
+    newRelativeCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setIncreaseRelativeCapAfterTimelock(idData, newRelativeCap);
+  }
+
+  async instantIncreaseRelativeCap(
+    vaultAddress: string,
+    idData: string,
+    newRelativeCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantIncreaseRelativeCap(idData, newRelativeCap);
+  }
+
+  // Decrease Absolute Cap
+  async decreaseAbsoluteCap(
+    vaultAddress: string,
+    idData: string,
+    newAbsoluteCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .decreaseAbsoluteCap(idData, newAbsoluteCap);
+  }
+
+  // Decrease Relative Cap
+  async decreaseRelativeCap(
+    vaultAddress: string,
+    idData: string,
+    newRelativeCap: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .decreaseRelativeCap(idData, newRelativeCap);
+  }
+
+  // Read Cap Functions
+  async getAbsoluteCap(vaultAddress: string, id: number) {
+    return await this.curatorsClient.vault(vaultAddress).getAbsoluteCap(id);
+  }
+
+  async getRelativeCap(vaultAddress: string, id: number) {
+    return await this.curatorsClient.vault(vaultAddress).getRelativeCap(id);
+  }
+
+  // ========================================
+  // VAULT V1 ADAPTERS
   // ========================================
 
   async deployMorphoVaultV1Adapter(
     vaultAddress: string,
     underlyingVault: string
-  ): Promise<import("./curators/MorphoAdapters").DeployAdapterResult> {
+  ): Promise<import("./curators/MorphoVaultV1Adapters").DeployAdapterResult> {
     return await this.curatorsClient
       .vault(vaultAddress)
       .deployMorphoVaultV1Adapter(underlyingVault);
@@ -642,6 +745,55 @@ export class ByzantineClient {
     return await this.curatorsClient
       .vault(vaultAddress)
       .findMorphoVaultV1Adapter(vaultAddress, underlyingVault);
+  }
+
+  async getIdsVaultV1(adapterAddress: string) {
+    return await this.curatorsClient
+      .vault(adapterAddress)
+      .getIdsVaultV1(adapterAddress);
+  }
+
+  // ========================================
+  // MARKET V1 ADAPTERS
+  // ========================================
+
+  async deployMorphoMarketV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ): Promise<import("./curators/MorphoMarketV1Adapters").DeployAdapterResult> {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .deployMorphoMarketV1Adapter(underlyingVault);
+  }
+
+  async isMorphoMarketV1Adapter(vaultAddress: string, account: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .isMorphoMarketV1Adapter(account);
+  }
+
+  async findMorphoMarketV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .findMorphoMarketV1Adapter(vaultAddress, underlyingVault);
+  }
+
+  async getIdsMarketV1(
+    adapterAddress: string,
+    marketParams: {
+      loanToken: string;
+      collateralToken: string;
+      oracle: string;
+      irm: string;
+      lltv: string;
+    }
+  ) {
+    return await this.curatorsClient
+      .vault(adapterAddress)
+      .getIdsMarketV1(adapterAddress, marketParams);
   }
 
   // ========================================

@@ -151,7 +151,11 @@ async function main() {
       const mappingAdapters = new Map<string, string>(); // Will store the address of the adapter for each underlying vault
       const mappingCaps = new Map<
         string,
-        { relative_cap?: bigint; absolute_cap?: bigint }
+        {
+          relative_cap?: bigint;
+          absolute_cap?: bigint;
+          deallocate_penalty?: bigint;
+        }
       >(); // Will store the relative and absolute caps for each underlying vault
 
       // First round: create adapters if needed and build mapping
@@ -198,6 +202,7 @@ async function main() {
           mappingCaps.set(underlying.address, {
             relative_cap: underlying.relative_cap,
             absolute_cap: underlying.absolute_cap,
+            deallocate_penalty: underlying.deallocate_penalty,
           });
         }
 
@@ -238,7 +243,12 @@ async function main() {
               console.log(
                 `Setting relative cap ${caps.relative_cap} for ${adapterAddress}`
               );
-              // TODO: Uncomment when method is available
+              await client.instantIncreaseRelativeCap(
+                VAULT_ADDRESS,
+                adapterAddress,
+                caps.relative_cap
+              );
+              await waitHalfSecond();
               // await client.setRelativeCap(VAULT_ADDRESS, adapterAddress, caps.relative_cap);
             }
             if (caps.absolute_cap) {
@@ -247,6 +257,23 @@ async function main() {
               );
               // TODO: Uncomment when method is available
               // await client.setAbsoluteCap(VAULT_ADDRESS, adapterAddress, caps.absolute_cap);
+              await client.instantIncreaseAbsoluteCap(
+                VAULT_ADDRESS,
+                adapterAddress,
+                caps.absolute_cap
+              );
+              await waitHalfSecond();
+            }
+            if (caps.deallocate_penalty) {
+              console.log(
+                `Setting deallocate penalty ${caps.deallocate_penalty} for ${adapterAddress}`
+              );
+              await client.instantSetForceDeallocatePenalty(
+                VAULT_ADDRESS,
+                adapterAddress,
+                caps.deallocate_penalty
+              );
+              await waitHalfSecond();
             }
             await waitHalfSecond();
           } catch (error) {

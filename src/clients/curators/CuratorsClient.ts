@@ -3,12 +3,13 @@ import { ContractProvider } from "../../utils";
 
 // Import all the specialized functions
 import * as AdaptersFunctions from "./Adapters";
-// import * as CapFunctions from "./Cap";
+import * as CapFunctions from "./Cap";
 import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
-import * as CreateAdaptersFunctions from "./MorphoAdapters";
+import * as CreateAdaptersFunctions from "./MorphoVaultV1Adapters";
+import * as MorphoMarketV1AdaptersFunctions from "./MorphoMarketV1Adapters";
 
 /**
  * Main client for vault curators operations
@@ -112,6 +113,10 @@ export class VaultCurator {
 
   async getAdaptersLength() {
     return AdaptersFunctions.getAdaptersLength(this.vaultContract);
+  }
+
+  async getAdapterByIndex(index: number) {
+    return AdaptersFunctions.getAdapterByIndex(this.vaultContract, index);
   }
 
   // ========================================
@@ -330,6 +335,93 @@ export class VaultCurator {
   }
 
   // ========================================
+  // CAP MANAGEMENT
+  // ========================================
+
+  // Increase Absolute Cap
+  async submitIncreaseAbsoluteCap(idData: string, newAbsoluteCap: bigint) {
+    return CapFunctions.submitIncreaseAbsoluteCap(
+      this.vaultContract,
+      idData,
+      newAbsoluteCap
+    );
+  }
+
+  async setIncreaseAbsoluteCapAfterTimelock(
+    idData: string,
+    newAbsoluteCap: bigint
+  ) {
+    return CapFunctions.setIncreaseAbsoluteCapAfterTimelock(
+      this.vaultContract,
+      idData,
+      newAbsoluteCap
+    );
+  }
+
+  async instantIncreaseAbsoluteCap(idData: string, newAbsoluteCap: bigint) {
+    return CapFunctions.instantIncreaseAbsoluteCap(
+      this.vaultContract,
+      idData,
+      newAbsoluteCap
+    );
+  }
+
+  // Increase Relative Cap
+  async submitIncreaseRelativeCap(idData: string, newRelativeCap: bigint) {
+    return CapFunctions.submitIncreaseRelativeCap(
+      this.vaultContract,
+      idData,
+      newRelativeCap
+    );
+  }
+
+  async setIncreaseRelativeCapAfterTimelock(
+    idData: string,
+    newRelativeCap: bigint
+  ) {
+    return CapFunctions.setIncreaseRelativeCapAfterTimelock(
+      this.vaultContract,
+      idData,
+      newRelativeCap
+    );
+  }
+
+  async instantIncreaseRelativeCap(idData: string, newRelativeCap: bigint) {
+    return CapFunctions.instantIncreaseRelativeCap(
+      this.vaultContract,
+      idData,
+      newRelativeCap
+    );
+  }
+
+  // Decrease Absolute Cap
+  async decreaseAbsoluteCap(idData: string, newAbsoluteCap: bigint) {
+    return CapFunctions.decreaseAbsoluteCap(
+      this.vaultContract,
+      idData,
+      newAbsoluteCap
+    );
+  }
+
+  // Decrease Relative Cap
+  async decreaseRelativeCap(idData: string, newRelativeCap: bigint) {
+    return CapFunctions.decreaseRelativeCap(
+      this.vaultContract,
+      idData,
+      newRelativeCap
+    );
+  }
+
+  // Read Cap Functions
+  async getAbsoluteCap(id: number) {
+    return CapFunctions.getAbsoluteCap(this.vaultContract, id);
+  }
+
+  async getRelativeCap(id: number) {
+    return CapFunctions.getRelativeCap(this.vaultContract, id);
+  }
+
+  // ========================================
   // MAX RATE MANAGEMENT
   // ========================================
 
@@ -385,7 +477,7 @@ export class VaultCurator {
   }
 
   // ========================================
-  // CREATE ADAPTERS
+  // VAULT V1 ADAPTERS
   // ========================================
 
   async deployMorphoVaultV1Adapter(
@@ -416,6 +508,63 @@ export class VaultCurator {
     );
   }
 
+  async getIdsVaultV1(adapterAddress: string) {
+    return CreateAdaptersFunctions.getIds(
+      this.contractProvider,
+      adapterAddress
+    );
+  }
+
+  // ========================================
+  // MARKET V1 ADAPTERS
+  // ========================================
+
+  async deployMorphoMarketV1Adapter(
+    underlyingVault: string
+  ): Promise<CreateAdaptersFunctions.DeployAdapterResult> {
+    return MorphoMarketV1AdaptersFunctions.deployMorphoMarketV1Adapter(
+      this.contractProvider,
+      this.vaultAddress,
+      underlyingVault
+    );
+  }
+
+  async isMorphoMarketV1Adapter(account: string) {
+    return MorphoMarketV1AdaptersFunctions.isMorphoMarketV1Adapter(
+      this.contractProvider,
+      account
+    );
+  }
+
+  async findMorphoMarketV1Adapter(
+    vaultAddress: string,
+    underlyingVault: string
+  ) {
+    return MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
+      this.contractProvider,
+      vaultAddress,
+      underlyingVault
+    );
+  }
+
+  async getIdsMarketV1(
+    adapterAddress: string,
+    marketParams: {
+      loanToken: string;
+      collateralToken: string;
+      oracle: string;
+      irm: string;
+      lltv: string;
+    }
+  ) {
+    return MorphoMarketV1AdaptersFunctions.getIds(
+      this.contractProvider,
+      adapterAddress,
+      marketParams
+    );
+  }
+
+  // ========================================
   // ========================================
   // UTILITY METHODS
   // ========================================
