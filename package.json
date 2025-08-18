@@ -1,5 +1,5 @@
 {
-  "name": "@byzantine/metavault-sdk",
+  "name": "@byzantine/debt-fund-sdk",
   "version": "1.0.0",
   "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
   "license": "MIT",
