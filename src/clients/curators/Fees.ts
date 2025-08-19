@@ -1,29 +1,3 @@
-// function submitPerformanceFee(underlyingVault: string, performanceFee: bigint)
-// function setPerformanceFeeAfterTimelock(underlyingVault: string, performanceFee: bigint)
-// function instantSetPerformanceFee(underlyingVault: string, performanceFee: bigint) // qui va faire submitPerformanceFee et setPerformanceFeeAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function submitManagementFee(underlyingVault: string, managementFee: bigint)
-// function setManagementFeeAfterTimelock(underlyingVault: string, managementFee: bigint)
-// function instantSetManagementFee(underlyingVault: string, managementFee: bigint) // qui va faire submitManagementFee et setManagementFeeAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function submitPerformanceFeeRecipient(underlyingVault: string, newFeeRecipient: string)
-// function setPerformanceFeeRecipientAfterTimelock(underlyingVault: string, newFeeRecipient: string)
-// function instantSetPerformanceFeeRecipient(underlyingVault: string, newFeeRecipient: string) // qui va faire submitPerformanceFeeRecipient et setPerformanceFeeRecipientAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function submitManagementFeeRecipient(underlyingVault: string, newFeeRecipient: string)
-// function setManagementFeeRecipientAfterTimelock(underlyingVault: string, newFeeRecipient: string)
-// function instantSetManagementFeeRecipient(underlyingVault: string, newFeeRecipient: string) // qui va faire submitManagementFeeRecipient et setManagementFeeRecipientAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function submitForceDeallocatePenalty(underlyingVault: string, adapter: string, newForceDeallocatePenalty: bigint)
-// function setForceDeallocatePenaltyAfterTimelock(underlyingVault: string, adapter: string, newForceDeallocatePenalty: bigint)
-// function instantSetForceDeallocatePenalty(underlyingVault: string, adapter: string, newForceDeallocatePenalty: bigint) // qui va faire submitForceDeallocatePenalty et setForceDeallocatePenaltyAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function getPerformanceFee(underlyingVault: string) // return performanceFee
-// function getPerformanceFeeRecipient(underlyingVault: string) // return performanceFeeRecipient
-// function getManagementFee(underlyingVault: string) // return managementFee
-// function getManagementFeeRecipient(underlyingVault: string) // return managementFeeRecipient
-// function getForceDeallocatePenalty(underlyingVault: string) // return forceDeallocatePenalty
-
 import { ethers } from "ethers";
 import { executeContractMethod, callContractMethod } from "../../utils";
 import { getTimelock } from "./Timelock";
@@ -41,9 +15,10 @@ async function submitFeeFunction(
   functionName: string,
   value: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "submit", [
-    vaultContract.interface.encodeFunctionData(functionName, [value]),
+  const calldata = vaultContract.interface.encodeFunctionData(functionName, [
+    value,
   ]);
+  return executeContractMethod(vaultContract, "submit", calldata);
 }
 
 /**
@@ -54,9 +29,10 @@ async function submitFeeRecipientFunction(
   functionName: string,
   receiver: string
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "submit", [
-    vaultContract.interface.encodeFunctionData(functionName, [receiver]),
+  const calldata = vaultContract.interface.encodeFunctionData(functionName, [
+    receiver,
   ]);
+  return executeContractMethod(vaultContract, "submit", calldata);
 }
 
 /**
@@ -152,9 +128,11 @@ export async function setPerformanceFeeAfterTimelock(
   vaultContract: ethers.Contract,
   performanceFee: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "setPerformanceFee", [
-    performanceFee,
-  ]);
+  return executeContractMethod(
+    vaultContract,
+    "setPerformanceFee",
+    performanceFee
+  );
 }
 
 export async function instantSetPerformanceFee(
@@ -183,9 +161,11 @@ export async function setManagementFeeAfterTimelock(
   vaultContract: ethers.Contract,
   managementFee: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "setManagementFee", [
-    managementFee,
-  ]);
+  return executeContractMethod(
+    vaultContract,
+    "setManagementFee",
+    managementFee
+  );
 }
 
 export async function instantSetManagementFee(
@@ -218,9 +198,11 @@ export async function setPerformanceFeeRecipientAfterTimelock(
   vaultContract: ethers.Contract,
   newFeeRecipient: string
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "setPerformanceFeeRecipient", [
-    newFeeRecipient,
-  ]);
+  return executeContractMethod(
+    vaultContract,
+    "setPerformanceFeeRecipient",
+    newFeeRecipient
+  );
 }
 
 export async function instantSetPerformanceFeeRecipient(
@@ -253,9 +235,11 @@ export async function setManagementFeeRecipientAfterTimelock(
   vaultContract: ethers.Contract,
   newFeeRecipient: string
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "setManagementFeeRecipient", [
-    newFeeRecipient,
-  ]);
+  return executeContractMethod(
+    vaultContract,
+    "setManagementFeeRecipient",
+    newFeeRecipient
+  );
 }
 
 export async function instantSetManagementFeeRecipient(
@@ -290,10 +274,12 @@ export async function setForceDeallocatePenaltyAfterTimelock(
   adapter: string,
   newForceDeallocatePenalty: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "setForceDeallocatePenalty", [
+  return executeContractMethod(
+    vaultContract,
+    "setForceDeallocatePenalty",
     adapter,
-    newForceDeallocatePenalty,
-  ]);
+    newForceDeallocatePenalty
+  );
 }
 
 export async function instantSetForceDeallocatePenalty(

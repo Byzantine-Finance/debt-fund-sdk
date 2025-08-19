@@ -24,14 +24,13 @@ export async function deployMorphoVaultV1Adapter(
     await contractProvider.getMorphoVaultV1AdapterFactoryContract();
 
   try {
-    console.log("Deploying Morpho Vault V1 Adapter");
     // First simulate the call to get the adapter address that will be created
     const adapterAddress =
       await adapterFactoryContract.createMorphoVaultV1Adapter.staticCall(
         vaultAddress,
         morphoVaultV1
       );
-    console.log("Adapter address", adapterAddress);
+
     // Then execute the actual transaction
     const tx = await executeContractMethod(
       adapterFactoryContract,

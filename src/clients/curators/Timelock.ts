@@ -77,14 +77,6 @@ export function getTimelockFunctionSelector(
   }
 }
 
-// function increaseTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
-
-// function submitDecreaseTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
-// function setDecreaseTimelockAfterTimelock(vaultContract: ethers.Contract,functionName: TimelockFunction, newDuration: uint256)
-// function instantDecreaseTimelock(vaultContract: ethers.Contract, functionName: TimelockFunction, newDuration: uint256) // qui va faire submitDecreaseTimelock et setDecreaseTimelockAfterTimelock dans un multicall, mais uniquement si le timelock est à 0, tu vas check avant
-
-// function getTimelock(vaultContract: ethers.Contract, functionName: TimelockFunction)
-
 /**
  * Get the current timelock duration for a function
  * @param vaultContract The vault contract instance
@@ -154,7 +146,7 @@ export async function submitDecreaseTimelock(
     "decreaseTimelock",
     [selector, newDuration]
   );
-  return await executeContractMethod(vaultContract, "submit", [calldata]);
+  return await executeContractMethod(vaultContract, "submit", calldata);
 }
 
 /**
@@ -170,10 +162,12 @@ export async function setDecreaseTimelockAfterTimelock(
   newDuration: bigint
 ) {
   const selector = getTimelockFunctionSelector(functionName);
-  return await executeContractMethod(vaultContract, "decreaseTimelock", [
+  return await executeContractMethod(
+    vaultContract,
+    "decreaseTimelock",
     selector,
-    newDuration,
-  ]);
+    newDuration
+  );
 }
 
 /**
@@ -220,7 +214,7 @@ export async function instantDecreaseTimelock(
  * @returns Transaction response
  */
 export async function submit(vaultContract: ethers.Contract, data: string) {
-  return await executeContractMethod(vaultContract, "submit", [data]);
+  return await executeContractMethod(vaultContract, "submit", data);
 }
 
 /**
@@ -239,7 +233,7 @@ export async function revoke(
     functionName,
     params
   );
-  return await executeContractMethod(vaultContract, "revoke", [calldata]);
+  return await executeContractMethod(vaultContract, "revoke", calldata);
 }
 
 /**
@@ -253,7 +247,5 @@ export async function abdicateSubmit(
   functionName: TimelockFunction
 ) {
   const selector = getTimelockFunctionSelector(functionName);
-  return await executeContractMethod(vaultContract, "abdicateSubmit", [
-    selector,
-  ]);
+  return await executeContractMethod(vaultContract, "abdicateSubmit", selector);
 }

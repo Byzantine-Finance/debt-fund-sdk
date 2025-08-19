@@ -6,6 +6,7 @@ import {
   RPC_URL,
   MNEMONIC,
 } from "./utils-example";
+import { getIdData } from "../src/clients/curators/Cap";
 
 // This is what you need to set in order to set cap for an adapter
 const VAULT_ADDRESS = "0x9F940434cABB9d8c1b9C9a4A042a846c093A85e7";
@@ -23,23 +24,15 @@ async function main() {
     const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
     const client = new ByzantineClient(provider, wallet);
 
-    const userAddress = await wallet.getAddress();
+    const idData = getIdData("this", [CAPS_CONFIG.id]);
+    console.log("ID Data:", idData);
 
-    const abiCoder = new AbiCoder();
-
-    const data = abiCoder.encode(
-      ["string", "address"],
-      ["this", "0x355ff614e20F74f0FecC0EB630d22a6FDBaF2e70"]
-    );
-
-    const adapterId = keccak256(data);
-
+    const adapterId = keccak256(idData);
     console.log("Adapter ID:", adapterId);
-    console.log("Data:", data);
 
     const tx = await client.instantIncreaseRelativeCap(
       VAULT_ADDRESS,
-      data,
+      idData,
       CAPS_CONFIG.relativeCap
     );
     await tx.wait();

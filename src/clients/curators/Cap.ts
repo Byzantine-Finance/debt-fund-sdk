@@ -57,9 +57,11 @@ async function submitIncreaseCapFunction(
   idData: string,
   newCap: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "submit", [
-    vaultContract.interface.encodeFunctionData(functionName, [idData, newCap]),
+  const calldata = vaultContract.interface.encodeFunctionData(functionName, [
+    idData,
+    newCap,
   ]);
+  return executeContractMethod(vaultContract, "submit", calldata);
 }
 
 /**
@@ -121,10 +123,12 @@ export async function setIncreaseAbsoluteCapAfterTimelock(
   idData: string,
   newAbsoluteCap: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "increaseAbsoluteCap", [
+  return executeContractMethod(
+    vaultContract,
+    "increaseAbsoluteCap",
     idData,
-    newAbsoluteCap,
-  ]);
+    newAbsoluteCap
+  );
 }
 
 export async function instantIncreaseAbsoluteCap(
@@ -162,10 +166,12 @@ export async function setIncreaseRelativeCapAfterTimelock(
   idData: string,
   newRelativeCap: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "increaseRelativeCap", [
+  return executeContractMethod(
+    vaultContract,
+    "increaseRelativeCap",
     idData,
-    newRelativeCap,
-  ]);
+    newRelativeCap
+  );
 }
 
 export async function instantIncreaseRelativeCap(

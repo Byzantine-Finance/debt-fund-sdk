@@ -221,45 +221,89 @@ await client.getVaultSymbol(vaultAddress);
 await client.getAsset(vaultAddress);
 ```
 
-### Adapter Management
+### Curator Operations
+
+#### Fee Management
 
 ```js
-// Deploy Morpho Vault V1 adapter
-const adapterTx = await client.deployMorphoVaultV1Adapter(
+// Fee recipients (You need to set the address of the recipient before setting the fee)
+await client.submitPerformanceFeeRecipient(vaultAddress, recipient);
+await client.setPerformanceFeeRecipientAfterTimelock(vaultAddress, recipient);
+await client.instantSetPerformanceFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
+await client.getPerformanceFeeRecipient(vaultAddress);
+
+await client.submitManagementFeeRecipient(vaultAddress, recipient);
+await client.setManagementFeeRecipientAfterTimelock(vaultAddress, recipient);
+await client.instantSetManagementFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
+await client.getManagementFeeRecipient(vaultAddress);
+
+// Performance Fee
+await client.submitPerformanceFee(vaultAddress, fee);
+await client.setPerformanceFeeAfterTimelock(vaultAddress, fee);
+await client.instantSetPerformanceFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
+await client.getPerformanceFee(vaultAddress);
+
+// Management Fee
+await client.submitManagementFee(vaultAddress, fee);
+await client.setManagementFeeAfterTimelock(vaultAddress, fee);
+await client.instantSetManagementFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
+await client.getManagementFee(vaultAddress);
+
+// Force deallocate penalty
+await client.submitForceDeallocatePenalty(vaultAddress, adapter, penalty);
+await client.setForceDeallocatePenaltyAfterTimelock(
   vaultAddress,
-  morphoVaultAddress
+  adapter,
+  penalty
+);
+await client.instantSetForceDeallocatePenalty(vaultAddress, adapter, penalty); // Gas-efficient with multicall when 0 timelock
+await client.getForceDeallocatePenalty(vaultAddress, adapter);
+```
+
+#### Max Rate Management
+
+```js
+// Max rate
+await client.submitMaxRate(vaultAddress, maxRate);
+await client.setMaxRateAfterTimelock(vaultAddress, maxRate);
+await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with multicall when 0 timelock
+await client.getMaxRate(vaultAddress);
+```
+
+#### Allocator Management
+
+```js
+// Submit allocator for timelock
+await client.submitIsAllocator(vaultAddress, account, isAllocator);
+await client.setIsAllocatorAfterTimelock(vaultAddress, account, isAllocator);
+await client.instantSetIsAllocator(vaultAddress, account, isAllocator); // Gas-efficient when timelock = 0
+
+// Check allocator status
+await client.getIsAllocator(vaultAddress, account);
+await client.isAllocator(vaultAddress, account);
+```
+
+#### Adapter Management
+
+```js
+// Generic adapter deployment and management
+const adapterTx = await client.deployAdapter(
+  "morphoVaultV1", // or "morphoMarketV1"
+  vaultAddress,
+  underlyingAddress
 );
 const adapterAddress = adapterTx.adapterAddress;
 
-// Deploy Morpho Market V1 adapter
-const marketAdapterTx = await client.deployMorphoMarketV1Adapter(
+// Find existing adapters
+const existingAdapter = await client.findAdapter(
+  "morphoVaultV1", // or "morphoMarketV1"
   vaultAddress,
-  morphoMarketAddress
+  underlyingAddress
 );
 
-// Check if an address is a Morpho Vault V1 adapter
-const isVaultAdapter = await client.isMorphoVaultV1Adapter(
-  vaultAddress,
-  adapterAddress
-);
-
-// Find existing adapter for a Morpho vault
-const existingAdapter = await client.findMorphoVaultV1Adapter(
-  vaultAddress,
-  morphoVaultAddress
-);
-
-// Check if an address is a Morpho Market V1 adapter
-const isMarketAdapter = await client.isMorphoMarketV1Adapter(
-  vaultAddress,
-  adapterAddress
-);
-
-// Find existing adapter for a Morpho market
-const existingMarketAdapter = await client.findMorphoMarketV1Adapter(
-  vaultAddress,
-  morphoMarketAddress
-);
+// Check adapter types
+const isVaultAdapter = await client.isAdapter("morphoVaultV1", account);
+const isMarketAdapter = await client.isAdapter("morphoMarketV1", account);
 
 // Adapter configuration in vault
 await client.submitIsAdapter(vaultAddress, adapter, true);
@@ -271,45 +315,40 @@ await client.getIsAdapter(vaultAddress, adapter);
 await client.getAdaptersLength(vaultAddress);
 await client.getAdapterByIndex(vaultAddress, 0);
 
-// Fee management
-await client.submitPerformanceFee(vaultAddress, fee);
-await client.setPerformanceFeeAfterTimelock(vaultAddress, fee);
-await client.instantSetPerformanceFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
-await client.getPerformanceFee(vaultAddress);
-
-await client.submitManagementFee(vaultAddress, fee);
-await client.setManagementFeeAfterTimelock(vaultAddress, fee);
-await client.instantSetManagementFee(vaultAddress, fee); // Gas-efficient with multicall when 0 timelock
-await client.getManagementFee(vaultAddress);
-
-// Fee recipients
-await client.submitPerformanceFeeRecipient(vaultAddress, recipient);
-await client.setPerformanceFeeRecipientAfterTimelock(vaultAddress, recipient);
-await client.instantSetPerformanceFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
-await client.getPerformanceFeeRecipient(vaultAddress);
-
-await client.submitManagementFeeRecipient(vaultAddress, recipient);
-await client.setManagementFeeRecipientAfterTimelock(vaultAddress, recipient);
-await client.instantSetManagementFeeRecipient(vaultAddress, recipient); // Gas-efficient with multicall when 0 timelock
-await client.getManagementFeeRecipient(vaultAddress);
-
-// Force deallocate penalty
-await client.submitForceDeallocatePenalty(vaultAddress, adapter, penalty);
-await client.setForceDeallocatePenaltyAfterTimelock(
-  vaultAddress,
-  adapter,
-  penalty
-);
-await client.instantSetForceDeallocatePenalty(vaultAddress, adapter, penalty); // Gas-efficient with multicall when 0 timelock
-await client.getForceDeallocatePenalty(vaultAddress, adapter);
-
-// Max rate management
-await client.submitMaxRate(vaultAddress, maxRate);
-await client.setMaxRateAfterTimelock(vaultAddress, maxRate);
-await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with multicall when 0 timelock
+// Get adapter information
+await client.getIdsAdapterVaultV1(adapterAddress);
+await client.getIdsAdapterMarketV1(adapterAddress, marketParams);
+await client.getUnderlyingVaultFromAdapterV1(adapterAddress);
+await client.getUnderlyingMarketFromAdapterV1(adapterAddress);
 ```
 
-### Timelock Management
+#### Cap Management
+
+```js
+// Absolute Cap
+await client.submitIncreaseAbsoluteCap(vaultAddress, idData, newAbsoluteCap);
+await client.setIncreaseAbsoluteCapAfterTimelock(
+  vaultAddress,
+  idData,
+  newAbsoluteCap
+);
+await client.instantIncreaseAbsoluteCap(vaultAddress, idData, newAbsoluteCap); // Gas-efficient when timelock = 0
+await client.decreaseAbsoluteCap(vaultAddress, idData, newAbsoluteCap);
+await client.getAbsoluteCap(vaultAddress, id);
+
+// Relative Cap
+await client.submitIncreaseRelativeCap(vaultAddress, idData, newRelativeCap);
+await client.setIncreaseRelativeCapAfterTimelock(
+  vaultAddress,
+  idData,
+  newRelativeCap
+);
+await client.instantIncreaseRelativeCap(vaultAddress, idData, newRelativeCap); // Gas-efficient when timelock = 0
+await client.decreaseRelativeCap(vaultAddress, idData, newRelativeCap);
+await client.getRelativeCap(vaultAddress, id);
+```
+
+#### Timelock Management
 
 ```js
 // Timelock operations
@@ -331,24 +370,6 @@ await client.abdicateSubmit(vaultAddress, functionName);
 
 // Utility
 client.getTimelockFunctionSelector(functionName);
-```
-
-### Advanced Usage - Direct Contract Access
-
-```js
-// Get contract instances for advanced operations
-const vaultContract = client.getVaultContract(vaultAddress);
-const factoryContract = await client.getVaultFactoryContract();
-
-// Access specialized clients
-const curatorsClient = client.curators;
-const ownersClient = client.owners;
-
-// Use different signer
-client.useSigner(newSigner);
-
-// Get contract provider
-const contractProvider = client.getContractProvider();
 ```
 
 ## Complete Adapter Management Example

@@ -24,22 +24,20 @@ export async function deployMorphoMarketV1Adapter(
     await contractProvider.getMorphoMarketV1AdapterFactoryContract();
 
   try {
-    console.log("Deploying Morpho Market V1 Adapter");
     // First simulate the call to get the adapter address that will be created
     const adapterAddress =
       await adapterFactoryContract.createMorphoMarketV1Adapter.staticCall(
         vaultAddress,
         morphoMarketV1
       );
-    console.log("Adapter address", adapterAddress);
+
     // Then execute the actual transaction
     const tx = await executeContractMethod(
       adapterFactoryContract,
       "createMorphoMarketV1Adapter",
-      [vaultAddress, morphoMarketV1]
+      vaultAddress,
+      morphoMarketV1
     );
-
-    console.log("Transaction", tx);
 
     // Add the adapter address property to the transaction object
     (tx as DeployAdapterResult).adapterAddress = adapterAddress;

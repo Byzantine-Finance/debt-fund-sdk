@@ -13,14 +13,14 @@ export async function submitMaxRate(
   const calldata = vaultContract.interface.encodeFunctionData("setMaxRate", [
     newMaxRate,
   ]);
-  return executeContractMethod(vaultContract, "submit", [calldata]);
+  return executeContractMethod(vaultContract, "submit", calldata);
 }
 
 export async function setMaxRateAfterTimelock(
   vaultContract: ethers.Contract,
   newMaxRate: bigint
 ) {
-  return executeContractMethod(vaultContract, "setMaxRate", [newMaxRate]);
+  return executeContractMethod(vaultContract, "setMaxRate", newMaxRate);
 }
 
 export async function instantSetMaxRate(

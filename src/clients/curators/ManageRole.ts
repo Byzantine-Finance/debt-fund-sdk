@@ -23,7 +23,7 @@ export async function submitIsAllocator(
     "setIsAllocator",
     [newAllocator, isAllocator]
   );
-  return await executeContractMethod(vaultContract, "submit", [callData]);
+  return await executeContractMethod(vaultContract, "submit", callData);
 }
 
 /**
@@ -39,10 +39,12 @@ export async function setIsAllocatorAfterTimelock(
   newAllocator: string,
   isAllocator: boolean
 ): Promise<ethers.TransactionResponse> {
-  return await executeContractMethod(vaultContract, "setIsAllocator", [
+  return await executeContractMethod(
+    vaultContract,
+    "setIsAllocator",
     newAllocator,
-    isAllocator,
-  ]);
+    isAllocator
+  );
 }
 
 /**

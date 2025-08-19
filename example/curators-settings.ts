@@ -40,7 +40,7 @@ interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x09024fDE33F08FaB8A525b67F38b7b0356C851AE";
+const VAULT_ADDRESS = "0x2B68d57CC2d5b763609570047E2435B8ECD9ff32";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
   allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
@@ -157,17 +157,6 @@ async function main() {
         0
       ) > 0;
 
-    console.log("NEEDS_TO_CAP_BY_ID", NEEDS_TO_CAP_BY_ID);
-    console.log(
-      "CURATORS_SETTINGS_CONFIG.underlying_vaults.reduce",
-      CURATORS_SETTINGS_CONFIG.underlying_vaults?.reduce(
-        (acc, underlying) =>
-          acc +
-          (underlying.caps_per_id && underlying.caps_per_id.length > 0 ? 1 : 0),
-        0
-      )
-    );
-
     if (CURATORS_SETTINGS_CONFIG.underlying_vaults) {
       // Maps to store adapter addresses and deallocate penalties
       const mappingAdapters = new Map<string, string>(); // Will store the address of the adapter for each underlying vault
@@ -228,35 +217,35 @@ async function main() {
       }
 
       // Second round: add the adapters to the vault
-      console.log("Adding adapters to vault...");
+      console.log("  - Adding adapters to vault...");
       for (const [underlyingAddress, adapterAddress] of mappingAdapters) {
         try {
           console.log(
-            `  - Setting adapter ${adapterAddress} for underlying ${underlyingAddress}`
+            `    - Setting adapter ${adapterAddress} for underlying ${underlyingAddress}`
           );
           await client.instantSetIsAdapter(VAULT_ADDRESS, adapterAddress, true);
           await waitHalfSecond();
         } catch (error) {
           console.error(
-            `  - Error setting adapter for ${underlyingAddress}:`,
+            `    - Error setting adapter for ${underlyingAddress}:`,
             error
           );
         }
       }
 
       // Third round: set deallocate penalties for adapters
-      console.log("Setting deallocate penalties for adapters...");
+      console.log("  - Setting deallocate penalties for adapters...");
       for (const [underlyingAddress, penalty] of mappingDeallocatePenalties) {
         const adapterAddress = mappingAdapters.get(underlyingAddress);
         if (!adapterAddress) {
           console.warn(
-            `No adapter found for ${underlyingAddress}, skipping deallocate penalty`
+            `    - No adapter found for ${underlyingAddress}, skipping deallocate penalty`
           );
           continue;
         }
         try {
           console.log(
-            `  - Setting deallocate penalty ${penalty} for ${adapterAddress}`
+            `    - Setting deallocate penalty ${penalty} for ${adapterAddress}`
           );
           await client.instantSetForceDeallocatePenalty(
             VAULT_ADDRESS,
@@ -266,25 +255,25 @@ async function main() {
           await waitHalfSecond();
         } catch (error) {
           console.error(
-            `  - Error setting deallocate penalty for ${adapterAddress}:`,
+            `    - Error setting deallocate penalty for ${adapterAddress}:`,
             error
           );
         }
       }
 
-      console.log("Adapter mapping completed:");
+      console.log("  - Adapter mapping completed:");
       console.log(
-        "Underlying -> Adapter mapping:",
+        "    - Underlying -> Adapter mapping:",
         Object.fromEntries(mappingAdapters)
       );
       console.log(
-        "Deallocate penalties mapping:",
+        "    - Deallocate penalties mapping:",
         Object.fromEntries(mappingDeallocatePenalties)
       );
 
       // Fourth round: set caps per ID if configured
       if (NEEDS_TO_CAP_BY_ID && CURATORS_SETTINGS_CONFIG.underlying_vaults) {
-        console.log("Setting caps per ID...");
+        console.log("  - Setting caps per ID...");
 
         for (const underlying of CURATORS_SETTINGS_CONFIG.underlying_vaults) {
           if (underlying.caps_per_id && underlying.caps_per_id.length > 0) {
@@ -294,13 +283,13 @@ async function main() {
                 const adapterAddress = mappingAdapters.get(underlying.address);
                 if (!adapterAddress) {
                   console.warn(
-                    `No adapter found for underlying ${underlying.address}, skipping caps for ID ${capConfig.id}`
+                    `    - No adapter found for underlying ${underlying.address}, skipping caps for ID ${capConfig.id}`
                   );
                   continue;
                 }
 
                 console.log(
-                  `Setting caps for ID ${capConfig.id} (from underlying ${underlying.address}, adapter ${adapterAddress})`
+                  `    - Setting caps for ID ${capConfig.id} (from underlying ${underlying.address}, adapter ${adapterAddress})`
                 );
 
                 const idData = getIdData("this", [adapterAddress]);
@@ -314,17 +303,17 @@ async function main() {
                     VAULT_ADDRESS,
                     vaultId
                   );
-                  console.log(
-                    "currentRelativeCap",
-                    currentRelativeCap,
-                    " and capConfig.relative_cap",
-                    capConfig.relative_cap,
-                    " and currentRelativeCap <= capConfig.relative_cap",
-                    currentRelativeCap <= capConfig.relative_cap
-                  );
+                  // console.log(
+                  //   "currentRelativeCap",
+                  //   currentRelativeCap,
+                  //   " and capConfig.relative_cap",
+                  //   capConfig.relative_cap,
+                  //   " and currentRelativeCap <= capConfig.relative_cap",
+                  //   currentRelativeCap <= capConfig.relative_cap
+                  // );
                   if (currentRelativeCap <= capConfig.relative_cap) {
                     console.log(
-                      `Increasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
+                      `    - Increasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
                     );
                     await client.instantIncreaseRelativeCap(
                       VAULT_ADDRESS,
@@ -333,7 +322,7 @@ async function main() {
                     );
                   } else {
                     console.log(
-                      `Decreasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
+                      `    - Decreasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
                     );
                     await client.decreaseRelativeCap(
                       VAULT_ADDRESS,
@@ -355,7 +344,7 @@ async function main() {
                   );
                   if (currentAbsoluteCap <= capConfig.absolute_cap) {
                     console.log(
-                      `Increasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
+                      `    - Increasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
                     );
                     await client.instantIncreaseAbsoluteCap(
                       VAULT_ADDRESS,
@@ -364,7 +353,7 @@ async function main() {
                     );
                   } else {
                     console.log(
-                      `Decreasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
+                      `    -  Decreasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
                     );
                     await client.decreaseAbsoluteCap(
                       VAULT_ADDRESS,
@@ -377,7 +366,7 @@ async function main() {
                 }
               } catch (error) {
                 console.error(
-                  `Error setting caps for ID ${capConfig.id}:`,
+                  `    - Error setting caps for ID ${capConfig.id}:`,
                   error
                 );
               }
