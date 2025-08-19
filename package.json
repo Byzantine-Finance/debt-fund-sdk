@@ -1,6 +1,6 @@
 {
   "name": "@byzantine/debt-fund-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
   "license": "MIT",
   "author": "Byzantine Finance",
@@ -27,10 +27,10 @@
   "homepage": "https://byzantine.fi",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/byzantine-finance/debt-funds-sdk.git"
+    "url": "git+https://github.com/byzantine-finance/debt-fund-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/byzantine-finance/debt-funds-sdk/issues"
+    "url": "https://github.com/byzantine-finance/debt-fund-sdk/issues"
   },
   "publishConfig": {
     "access": "public"
