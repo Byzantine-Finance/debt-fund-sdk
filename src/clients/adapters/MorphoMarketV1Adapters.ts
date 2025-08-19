@@ -15,64 +15,66 @@ export interface DeployAdapterResult
   adapterAddress: string;
 }
 
-export async function deployMorphoVaultV1Adapter(
+export async function deployMorphoMarketV1Adapter(
   contractProvider: ContractProvider,
   vaultAddress: string,
-  underlyingVault: string
+  morphoMarketV1: string
 ): Promise<DeployAdapterResult> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getMorphoMarketV1AdapterFactoryContract();
 
   try {
+    console.log("Deploying Morpho Market V1 Adapter");
     // First simulate the call to get the adapter address that will be created
     const adapterAddress =
-      await adapterFactoryContract.createMorphoVaultV1Adapter.staticCall(
+      await adapterFactoryContract.createMorphoMarketV1Adapter.staticCall(
         vaultAddress,
-        underlyingVault
+        morphoMarketV1
       );
-
+    console.log("Adapter address", adapterAddress);
     // Then execute the actual transaction
     const tx = await executeContractMethod(
       adapterFactoryContract,
-      "createMorphoVaultV1Adapter",
-      vaultAddress,
-      underlyingVault
+      "createMorphoMarketV1Adapter",
+      [vaultAddress, morphoMarketV1]
     );
+
+    console.log("Transaction", tx);
 
     // Add the adapter address property to the transaction object
     (tx as DeployAdapterResult).adapterAddress = adapterAddress;
     return tx as DeployAdapterResult;
   } catch (error) {
-    throw formatContractError("deployMorphoVaultV1Adapter", error);
+    throw formatContractError("createMorphoMarketV1Adapter", error);
   }
 }
 
 // Read Functions
 
-export async function isMorphoVaultV1Adapter(
+export async function isMorphoMarketV1Adapter(
   contractProvider: ContractProvider,
   account: string
 ): Promise<boolean> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getMorphoMarketV1AdapterFactoryContract();
   return await callContractMethod(
     adapterFactoryContract,
-    "isMorphoVaultV1Adapter",
-    account
+    "isMorphoMarketV1Adapter",
+    [account]
   );
 }
 
-export async function findMorphoVaultV1Adapter(
+export async function findMorphoMarketV1Adapter(
   contractProvider: ContractProvider,
   vaultAddress: string,
-  underlyingVault: string
+  morphoMarketV1: string
 ): Promise<string> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getMorphoMarketV1AdapterFactoryContract();
   return await callContractMethod(
     adapterFactoryContract,
-    "morphoVaultV1Adapter",
-    [vaultAddress, underlyingVault]
+    "morphoMarketV1Adapter",
+    [vaultAddress, morphoMarketV1]
   );
 }
 
@@ -80,18 +82,30 @@ export async function findMorphoVaultV1Adapter(
 // Adapters
 // ========================================
 
+export interface MarketParams {
+  loanToken: string;
+  collateralToken: string;
+  oracle: string;
+  irm: string;
+  lltv: string;
+}
+
 /**
- * Get the ids of the markets of a Morpho Vault V1 Adapter
+ * Get the ids of the markets of a Morpho Market V1 Adapter
  * @param contractProvider The contract provider
- * @param adapterAddress The address of the Morpho Vault V1 Adapter
+ * @param adapterAddress The address of the Morpho Market V1 Adapter
+ * @param marketParams The market parameters
  * @returns The ids of the markets
  */
 export async function getIds(
-  contractProvider: ContractProvider,
-  adapterAddress: string
+  contract: ethers.Contract,
+  marketParams: MarketParams
+): Promise<string[]> {
+  return await callContractMethod(contract, "ids", [marketParams]);
+}
+
+export async function getUnderlying(
+  contract: ethers.Contract
 ): Promise<string> {
-  const contract = await contractProvider.getMorphoVaultV1AdapterContract(
-    adapterAddress
-  );
-  return await callContractMethod(contract, "ids", []);
+  return await callContractMethod(contract, "morphoMarketV1", []);
 }

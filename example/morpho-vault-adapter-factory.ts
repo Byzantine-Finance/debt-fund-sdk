@@ -24,19 +24,20 @@ async function main() {
 
     const userAddress = await wallet.getAddress();
 
-    const isUnderlyingVaultAdapter = await client.isMorphoVaultV1Adapter(
-      VAULT_ADDRESS,
+    const isUnderlyingVaultAdapter = await client.isAdapter(
+      "morphoVaultV1",
       UNDERLYING_VAULT
     );
     console.log("Is underlying vault an adapter?", isUnderlyingVaultAdapter);
 
-    const isAdapterAdapter = await client.isMorphoVaultV1Adapter(
-      VAULT_ADDRESS,
+    const isAdapterAdapter = await client.isAdapter(
+      "morphoVaultV1",
       KNOWN_ADAPTER_ADDRESS
     );
     console.log("Is adapter an adapter?", isAdapterAdapter);
 
-    const adapterAddress = await client.findMorphoVaultV1Adapter(
+    const adapterAddress = await client.findAdapter(
+      "morphoVaultV1",
       VAULT_ADDRESS,
       UNDERLYING_VAULT
     );

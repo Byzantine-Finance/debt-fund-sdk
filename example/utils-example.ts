@@ -64,20 +64,94 @@ export async function finalReading(
     Array.from({ length: Number(adaptersLength) }, async (_, index) => {
       const address = await client.getAdapterByIndex(vaultAddress, index);
 
-      // Get caps for each adapter (using address as ID, padded to bytes32)
-      const absoluteCap = await client.getAbsoluteCap(vaultAddress, index);
-      const relativeCap = await client.getRelativeCap(vaultAddress, index);
+      // Get force deallocate penalty for the adapter
       const forceDeallocatePenalty = await client.getForceDeallocatePenalty(
         vaultAddress,
         address
       );
 
+      // Try to determine adapter type and get IDs
+      let ids: string[] = [];
+      let adapterType: string = "unknown";
+      let underlying: string = "unknown";
+
+      try {
+        // Try Morpho Vault V1 first
+        const isVaultV1Adapter = await client.isAdapter(
+          "morphoVaultV1",
+          address
+        );
+        if (isVaultV1Adapter) {
+          adapterType = "morphoVaultV1";
+          const vaultId = await client.getIdsAdapterVaultV1(address);
+          ids = [vaultId]; // Vault V1 returns a single ID
+        } else {
+          // Try Morpho Market V1
+          const isMarketV1Adapter = await client.isAdapter(
+            "morphoMarketV1",
+            address
+          );
+          if (isMarketV1Adapter) {
+            adapterType = "morphoMarketV1";
+            // For Market V1, we would need market params to get IDs
+            // For now, we'll skip this as it requires specific market parameters
+            ids = [];
+          }
+        }
+      } catch (error) {
+        console.log(
+          `Could not determine adapter type for ${address}: ${error}`
+        );
+      }
+
+      if (adapterType === "morphoVaultV1") {
+        underlying = await client.getUnderlyingVaultFromAdapterV1(address);
+      } else if (adapterType === "morphoMarketV1") {
+        underlying = await client.getUnderlyingMarketFromAdapterV1(address);
+      }
+
+      // Get caps for each ID (caps are per ID, not per adapter)
+      const idsWithCaps = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            // Use the ID directly to get caps from the vault
+            // The vault's absoluteCap and relativeCap functions take bytes32 directly
+
+            const absoluteCapResult = await client.getAbsoluteCap(
+              vaultAddress,
+              id
+            );
+            const relativeCapResult = await client.getRelativeCap(
+              vaultAddress,
+              id
+            );
+
+            return {
+              id,
+              absoluteCap: absoluteCapResult.toString(),
+              relativeCap: relativeCapResult.toString(),
+              hasCaps: true,
+            };
+          } catch (error) {
+            console.log(`Error getting caps for ID ${id}: ${error}`);
+            // Still include the ID even if we can't get caps
+            return {
+              id,
+              absoluteCap: "N/A",
+              relativeCap: "N/A",
+              hasCaps: false,
+            };
+          }
+        })
+      );
+
       return {
         index,
         address,
-        absoluteCap: absoluteCap.toString(),
-        relativeCap: relativeCap.toString(),
+        adapterType,
+        underlying,
         forceDeallocatePenalty: forceDeallocatePenalty.toString(),
+        idsWithCaps,
       };
     })
   );
@@ -117,22 +191,43 @@ export async function finalReading(
   console.log("*");
   console.log("* Adapters length:", adaptersLength);
   allAdapters.forEach((adapter) => {
-    const relativeCapPercent =
-      adapter.relativeCap !== "0"
-        ? ((Number(adapter.relativeCap) / 1e18) * 100).toFixed(2) + "%"
-        : "0%";
-    const absoluteCapFormatted =
-      adapter.absoluteCap !== "0"
-        ? (Number(adapter.absoluteCap) / 1e6).toFixed(2)
-        : "0";
     const forceDeallocatePenaltyPercent =
       adapter.forceDeallocatePenalty !== "0"
         ? ((Number(adapter.forceDeallocatePenalty) / 1e18) * 100).toFixed(2) +
           "%"
         : "0%";
+
     console.log(
-      `* Adapter ${adapter.index}: ${adapter.address} | RelativeCap: ${relativeCapPercent} | AbsoluteCap: ${absoluteCapFormatted} USDC | ForceDeallocatePenalty: ${forceDeallocatePenaltyPercent}`
+      `* Adapter ${adapter.index}: ${adapter.address} (${adapter.adapterType} with underlying ${adapter.underlying}) | ForceDeallocatePenalty: ${forceDeallocatePenaltyPercent}`
     );
+
+    if (adapter.idsWithCaps.length > 0) {
+      adapter.idsWithCaps.forEach((idWithCap) => {
+        if (idWithCap.hasCaps) {
+          const relativeCapPercent =
+            idWithCap.relativeCap !== "0"
+              ? ((Number(idWithCap.relativeCap) / 1e18) * 100).toFixed(2) + "%"
+              : "0%";
+          const absoluteCapFormatted =
+            idWithCap.absoluteCap !== "0"
+              ? (Number(idWithCap.absoluteCap) / 1e6).toFixed(2)
+              : "0";
+
+          console.log(
+            `*    |-> ID ${idWithCap.id}: RelativeCap: ${relativeCapPercent} | AbsoluteCap: ${absoluteCapFormatted} USDC`
+          );
+        } else {
+          // Show ID even if we can't get caps
+          console.log(
+            `*    |-> ID ${idWithCap.id}: RelativeCap: N/A | AbsoluteCap: N/A (caps not available)`
+          );
+        }
+      });
+    } else {
+      console.log(
+        `*    |-> No IDs found for this adapter (${adapter.adapterType})`
+      );
+    }
   });
   console.log("*");
   allTimelocks.forEach((timelock) => {

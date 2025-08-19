@@ -11,10 +11,12 @@ export { CuratorsClient } from "./CuratorsClient";
 export * as AdaptersFunctions from "./Adapters";
 export * as TimelockFunctions from "./Timelock";
 export * as ManageRoleFunctions from "./ManageRole";
-export * as MorphoAdaptersFunctions from "./MorphoVaultV1Adapters";
-
-export * as CapFunctions from "./Cap";
+export * as MorphoVaultV1AdaptersFunctions from "../adapters/MorphoVaultV1Adapters";
+export * as MorphoMarketV1AdaptersFunctions from "../adapters/MorphoMarketV1Adapters";
 export * as FeesFunctions from "./Fees";
+
+// Export cap functions
+export * as CapFunctions from "./Cap";
 
 // Export types
 export type { TimelockFunction } from "./Timelock";

@@ -9,18 +9,20 @@ Debt Fund is a decentralized protocol that allows users to create and manage vau
 - **Vault Creation**: Deploy new vaults with deterministic addresses and configurable parameters
 - **Owner Operations**: Complete vault ownership management (roles, metadata, access control)
 - **Curator Management**: Advanced vault administration with fee management, adapter configuration, and timelock controls
+- **Adapter Management**: Deploy and manage Morpho Vault V1 and Market V1 adapters for underlying protocols
 - **Timelock System**: Secure parameter changes with customizable delays for critical operations
 - **Role Management**: Sophisticated access control with owners, curators, sentinels, and allocators
 
 This SDK provides a comprehensive interface for developers to integrate with Debt Fund on:
 
 - **Base Mainnet (Chain ID: 8453)**
+- **Ethereum Sepolia (Chain ID: 11155111)** - for testing
 - _Additional networks coming soon_
 
 ## Installation
 
 ```bash
-npm install byzantine/debt-fund-sdk
+npm install @byzantine/debt-fund-sdk
 ```
 
 ## Basic Setup
@@ -39,7 +41,7 @@ PRIVATE_KEY=your_wallet_private_key_without_0x_prefix
 2. Import and initialize the client:
 
 ```typescript
-import { ByzantineClient } from "debt-fund-sdk";
+import { ByzantineClient } from "@byzantine/debt-fund-sdk";
 import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 
@@ -59,7 +61,7 @@ const client = new ByzantineClient(provider, wallet);
 Here's a complete example showing how to create a new vault:
 
 ```js
-import { ByzantineClient } from "debt-fund-sdk";
+import { ByzantineClient } from "@byzantine/debt-fund-sdk";
 import { ethers } from "ethers";
 import * as dotenv from "dotenv";
 
@@ -101,7 +103,7 @@ main();
 Here's how to manage an existing vault:
 
 ```js
-import { ByzantineClient } from "debt-fund-sdk";
+import { ByzantineClient } from "@byzantine/debt-fund-sdk";
 import { ethers } from "ethers";
 
 async function vaultManagement() {
@@ -154,6 +156,22 @@ async function vaultManagement() {
     // Adapter management
     await client.instantSetIsAdapter(vaultAddress, "0x...", true);
 
+    // Deploy and manage Morpho adapters
+    const morphoVaultAddress = "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A";
+    const adapterTx = await client.deployMorphoVaultV1Adapter(
+      vaultAddress,
+      morphoVaultAddress
+    );
+    const adapterReceipt = await adapterTx.wait();
+    console.log("Deployed adapter:", adapterTx.adapterAddress);
+
+    // Add the adapter to the vault
+    await client.instantSetIsAdapter(
+      vaultAddress,
+      adapterTx.adapterAddress,
+      true
+    );
+
     // Get fee information
     const performanceFee = await client.getPerformanceFee(vaultAddress);
     const managementFee = await client.getManagementFee(vaultAddress);
@@ -203,14 +221,55 @@ await client.getVaultSymbol(vaultAddress);
 await client.getAsset(vaultAddress);
 ```
 
-### Curator Operations
+### Adapter Management
 
 ```js
-// Adapter management
+// Deploy Morpho Vault V1 adapter
+const adapterTx = await client.deployMorphoVaultV1Adapter(
+  vaultAddress,
+  morphoVaultAddress
+);
+const adapterAddress = adapterTx.adapterAddress;
+
+// Deploy Morpho Market V1 adapter
+const marketAdapterTx = await client.deployMorphoMarketV1Adapter(
+  vaultAddress,
+  morphoMarketAddress
+);
+
+// Check if an address is a Morpho Vault V1 adapter
+const isVaultAdapter = await client.isMorphoVaultV1Adapter(
+  vaultAddress,
+  adapterAddress
+);
+
+// Find existing adapter for a Morpho vault
+const existingAdapter = await client.findMorphoVaultV1Adapter(
+  vaultAddress,
+  morphoVaultAddress
+);
+
+// Check if an address is a Morpho Market V1 adapter
+const isMarketAdapter = await client.isMorphoMarketV1Adapter(
+  vaultAddress,
+  adapterAddress
+);
+
+// Find existing adapter for a Morpho market
+const existingMarketAdapter = await client.findMorphoMarketV1Adapter(
+  vaultAddress,
+  morphoMarketAddress
+);
+
+// Adapter configuration in vault
 await client.submitIsAdapter(vaultAddress, adapter, true);
 await client.setIsAdapterAfterTimelock(vaultAddress, adapter, true);
 await client.instantSetIsAdapter(vaultAddress, adapter, true); // Gas-efficient with multicall when 0 timelock
+
+// Query adapter status
 await client.getIsAdapter(vaultAddress, adapter);
+await client.getAdaptersLength(vaultAddress);
+await client.getAdapterByIndex(vaultAddress, 0);
 
 // Fee management
 await client.submitPerformanceFee(vaultAddress, fee);
@@ -292,6 +351,86 @@ client.useSigner(newSigner);
 const contractProvider = client.getContractProvider();
 ```
 
+## Complete Adapter Management Example
+
+Here's a comprehensive example showing how to set up adapters for underlying protocols:
+
+```js
+import { ByzantineClient } from "@byzantine/debt-fund-sdk";
+import { ethers } from "ethers";
+
+async function setupAdapters() {
+  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+  const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC).connect(
+    provider
+  );
+  const client = new ByzantineClient(provider, wallet);
+
+  const vaultAddress = "0x..."; // Your vault address
+
+  // Define underlying protocols to integrate
+  const morphoVaults = [
+    "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
+    "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
+  ];
+
+  try {
+    console.log("🚀 Setting up vault adapters...");
+
+    // Deploy adapters for each underlying vault
+    for (const underlyingVault of morphoVaults) {
+      console.log(`Processing underlying vault: ${underlyingVault}`);
+
+      // Check if adapter already exists
+      let adapterAddress;
+      try {
+        adapterAddress = await client.findMorphoVaultV1Adapter(
+          vaultAddress,
+          underlyingVault
+        );
+        console.log(`Found existing adapter: ${adapterAddress}`);
+      } catch (error) {
+        console.log("No existing adapter found, creating new one...");
+
+        // Deploy new adapter
+        const adapterTx = await client.deployMorphoVaultV1Adapter(
+          vaultAddress,
+          underlyingVault
+        );
+        await adapterTx.wait();
+        adapterAddress = adapterTx.adapterAddress;
+        console.log(`Deployed new adapter: ${adapterAddress}`);
+      }
+
+      // Add adapter to vault (if not already added)
+      const isAdapter = await client.getIsAdapter(vaultAddress, adapterAddress);
+      if (!isAdapter) {
+        console.log("Adding adapter to vault...");
+        await client.instantSetIsAdapter(vaultAddress, adapterAddress, true);
+        console.log("✅ Adapter added to vault");
+      } else {
+        console.log("✅ Adapter already configured in vault");
+      }
+    }
+
+    // Display final adapter configuration
+    const adaptersLength = await client.getAdaptersLength(vaultAddress);
+    console.log(`\n📊 Vault has ${adaptersLength} adapters configured:`);
+
+    for (let i = 0; i < adaptersLength; i++) {
+      const adapter = await client.getAdapterByIndex(vaultAddress, i);
+      console.log(`  ${i + 1}. ${adapter}`);
+    }
+
+    console.log("\n🎉 Adapter setup completed successfully!");
+  } catch (error) {
+    console.error("❌ Error setting up adapters:", error);
+  }
+}
+
+setupAdapters();
+```
+
 ## Key Features
 
 ### 🚀 Comprehensive Vault Management
@@ -299,6 +438,7 @@ const contractProvider = client.getContractProvider();
 - **Vault Creation**: Deploy new vaults with deterministic addresses
 - **Owner Operations**: Complete vault ownership and metadata control
 - **Curator Management**: Advanced fee management and adapter configuration
+- **Adapter Ecosystem**: Deploy and manage Morpho Vault V1 and Market V1 adapters
 - **Timelock System**: Secure parameter changes with customizable delays
 
 ### ⚡ Optimized Performance
@@ -307,6 +447,7 @@ const contractProvider = client.getContractProvider();
 - **Contract Instance Caching**: Contract instances created once and reused
 - **Reduced Redundancy**: No repetitive contract provider calls
 - **Batch Operations**: Support for multiple operations in single transaction
+- **Adapter Deployment**: Efficient adapter creation and integration workflows
 
 ### 🎯 Three-Tier Timelock Operation System
 
@@ -351,6 +492,14 @@ await client.instantSetPerformanceFee(vaultAddress, newFee);
 - **Curator Management**: Fee configuration, adapter management, and advanced parameters
 - **Sentinel System**: Flexible access control for multiple accounts
 - **Allocator System**: Control over vault allocation strategies
+
+### 🔌 Multi-Protocol Adapter Support
+
+- **Morpho Vault V1**: Deploy adapters for Morpho vault integration
+- **Morpho Market V1**: Deploy adapters for Morpho market integration
+- **Adapter Discovery**: Find existing adapters to avoid duplicate deployments
+- **Adapter Validation**: Verify adapter types and configurations
+- **Future-Ready**: Extensible architecture for additional protocol adapters
 
 ### ⚡ Developer Experience
 
@@ -399,11 +548,22 @@ This example shows the full lifecycle of vault creation and configuration.
 ## Supported Networks
 
 - **Base Mainnet (Chain ID: 8453)**
+
+  - Byzantine Factory: `0x9615550EA8Fa52bdAC83de3FC9A280dBa3D981eE`
+  - Morpho Vault V1 Adapter Factory: `0xbA98A4d436e79639A1598aFc988eFB7A828d7F08`
+  - Morpho Market V1 Adapter Factory: `0xf21189365131551Ba4c3613252B1bcCdA60BD1e6`
+
+- **Ethereum Sepolia (Chain ID: 11155111)** - Testing
+
+  - Byzantine Factory: `0xf9332a83747b169f99dc4b247f3f1f7f22863703`
+  - Morpho Vault V1 Adapter Factory: `0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1`
+  - Morpho Market V1 Adapter Factory: `0xE5B709A14859EdF820347D78E587b1634B0ec771`
+
 - _Additional networks coming soon_
 
 ## NPM Package
 
-This SDK will be available on npm as `debt-fund-sdk`.
+This SDK is available on npm as `@byzantine/debt-fund-sdk`.
 
 ## Security
 

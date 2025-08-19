@@ -6,6 +6,8 @@ import { ContractProvider } from "../utils";
 // Import specialized clients
 import { OwnersClient } from "./owners";
 import { CuratorsClient, TimelockFunction } from "./curators";
+import { AdaptersClient, AdaptersFactoryClient, AdapterType } from "./adapters";
+import * as MorphoMarketV1AdaptersFunctions from "./adapters/MorphoMarketV1Adapters";
 
 /**
  * Main SDK client for interacting with Vault ecosystem
@@ -19,6 +21,8 @@ export class ByzantineClient {
   // Specialized clients
   private ownersClient: OwnersClient;
   private curatorsClient: CuratorsClient;
+  private adaptersFactoryClient: AdaptersFactoryClient;
+  private adaptersClient: AdaptersClient;
   /**
    * Initialize a new ByzantineClient
    * @param provider Ethereum provider
@@ -32,6 +36,8 @@ export class ByzantineClient {
     // Initialize specialized clients
     this.ownersClient = new OwnersClient(provider, signer);
     this.curatorsClient = new CuratorsClient(provider, signer);
+    this.adaptersFactoryClient = new AdaptersFactoryClient(provider, signer);
+    this.adaptersClient = new AdaptersClient(provider, signer);
   }
 
   //*******************************************
@@ -711,89 +717,88 @@ export class ByzantineClient {
   }
 
   // Read Cap Functions
-  async getAbsoluteCap(vaultAddress: string, id: number) {
+  async getAbsoluteCap(vaultAddress: string, id: string) {
     return await this.curatorsClient.vault(vaultAddress).getAbsoluteCap(id);
   }
 
-  async getRelativeCap(vaultAddress: string, id: number) {
+  async getRelativeCap(vaultAddress: string, id: string) {
     return await this.curatorsClient.vault(vaultAddress).getRelativeCap(id);
   }
 
   // ========================================
-  // VAULT V1 ADAPTERS
+  // ADAPTERS CLIENT - Adapter Operations
   // ========================================
 
-  async deployMorphoVaultV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ): Promise<import("./curators/MorphoVaultV1Adapters").DeployAdapterResult> {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .deployMorphoVaultV1Adapter(underlyingVault);
-  }
-
-  async isMorphoVaultV1Adapter(vaultAddress: string, account: string) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .isMorphoVaultV1Adapter(account);
-  }
-
-  async findMorphoVaultV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .findMorphoVaultV1Adapter(vaultAddress, underlyingVault);
-  }
-
-  async getIdsVaultV1(adapterAddress: string) {
-    return await this.curatorsClient
-      .vault(adapterAddress)
-      .getIdsVaultV1(adapterAddress);
-  }
+  /**
+   * Get an adapters client for a specific vault
+   * @param vaultAddress The vault address
+   * @returns AdaptersClient instance for the vault
+   */
+  // adapters(vaultAddress: string): AdaptersClient {
+  //   return new AdaptersClient(this.contractProvider, vaultAddress);
+  // }
 
   // ========================================
-  // MARKET V1 ADAPTERS
+  // MORPHO VAULT V1 ADAPTERS
   // ========================================
 
-  async deployMorphoMarketV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ): Promise<import("./curators/MorphoMarketV1Adapters").DeployAdapterResult> {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .deployMorphoMarketV1Adapter(underlyingVault);
+  async deployAdapter(
+    type: AdapterType,
+    parentAddress: string,
+    underlyingAddress: string
+  ): Promise<import("./adapters/MorphoVaultV1Adapters").DeployAdapterResult> {
+    return this.adaptersFactoryClient.deployAdapter(
+      type,
+      parentAddress,
+      underlyingAddress
+    );
   }
 
-  async isMorphoMarketV1Adapter(vaultAddress: string, account: string) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .isMorphoMarketV1Adapter(account);
+  async findAdapter(
+    type: AdapterType,
+    parentAddress: string,
+    underlyingAddress: string
+  ): Promise<string> {
+    return this.adaptersFactoryClient.findAdapter(
+      type,
+      parentAddress,
+      underlyingAddress
+    );
   }
 
-  async findMorphoMarketV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .findMorphoMarketV1Adapter(vaultAddress, underlyingVault);
+  async isAdapter(type: AdapterType, account: string): Promise<boolean> {
+    return this.adaptersFactoryClient.isAdapter(type, account);
   }
 
-  async getIdsMarketV1(
+  async getIdsAdapterVaultV1(adapterAddress: string): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoVaultV1")
+      .getIdsVaultV1();
+  }
+
+  async getIdsAdapterMarketV1(
     adapterAddress: string,
-    marketParams: {
-      loanToken: string;
-      collateralToken: string;
-      oracle: string;
-      irm: string;
-      lltv: string;
-    }
-  ) {
-    return await this.curatorsClient
-      .vault(adapterAddress)
-      .getIdsMarketV1(adapterAddress, marketParams);
+    marketParams: MorphoMarketV1AdaptersFunctions.MarketParams
+  ): Promise<string[]> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoMarketV1")
+      .getIdsMarketV1(marketParams);
+  }
+
+  async getUnderlyingVaultFromAdapterV1(
+    adapterAddress: string
+  ): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoVaultV1")
+      .getUnderlyingVaultFromAdapterV1();
+  }
+
+  async getUnderlyingMarketFromAdapterV1(
+    adapterAddress: string
+  ): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoMarketV1")
+      .getUnderlyingMarketFromAdapterV1();
   }
 
   // ========================================
@@ -809,6 +814,11 @@ export class ByzantineClient {
     this.contractProvider = new ContractProvider(this.provider, signer);
     this.ownersClient = new OwnersClient(this.provider, signer);
     this.curatorsClient = new CuratorsClient(this.provider, signer);
+    this.adaptersFactoryClient = new AdaptersFactoryClient(
+      this.provider,
+      signer
+    );
+    this.adaptersClient = new AdaptersClient(this.provider, signer);
   }
 
   /**

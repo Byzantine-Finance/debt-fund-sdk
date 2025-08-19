@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import {
-  MorphoV1AdapterFactoryABI,
+  MorphoVaultV1AdapterFactoryABI,
   MorphoMarketV1AdapterFactoryABI,
   MorphoVaultV1AdapterABI,
   MorphoMarketV1AdapterABI,
@@ -88,6 +88,22 @@ export class ContractProvider {
     );
   }
 
+  public getVaultV1AdapterContract(adapterAddress: string): ethers.Contract {
+    return new ethers.Contract(
+      adapterAddress,
+      MorphoVaultV1AdapterABI,
+      this.signer || this.provider
+    );
+  }
+
+  public getMarketV1AdapterContract(adapterAddress: string): ethers.Contract {
+    return new ethers.Contract(
+      adapterAddress,
+      MorphoMarketV1AdapterABI,
+      this.signer || this.provider
+    );
+  }
+
   /**
    * Get the VaultFactory contract instance for the current network
    * @returns The VaultFactory contract instance
@@ -110,7 +126,7 @@ export class ContractProvider {
       await this.getMorphoVaultV1AdapterFactoryAddress();
     return new ethers.Contract(
       adapterFactoryAddress,
-      MorphoV1AdapterFactoryABI,
+      MorphoVaultV1AdapterFactoryABI,
       this.signer || this.provider
     );
   }

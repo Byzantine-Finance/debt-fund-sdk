@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { AbiCoder, ethers } from "ethers";
 import { executeContractMethod, callContractMethod } from "../../utils";
 import { getTimelock } from "./Timelock";
 import { TimelockFunction } from "./Timelock";
@@ -6,6 +6,47 @@ import { TimelockFunction } from "./Timelock";
 // ========================================
 // HELPERS - to reduce repetitive code
 // ========================================
+
+// MorphoVaultV1Adapter: Single ID based on keccak256(abi.encode("this", adapterAddress))
+// MorphoMarketV1Adapter: Three IDs:
+// Adapter ID: keccak256(abi.encode("this", adapterAddress))
+// Collateral ID: keccak256(abi.encode("collateralToken", collateralAddress))
+// Market ID: keccak256(abi.encode("this/marketParams", adapterAddress, marketParams))
+
+type idType = "this" | "collateralToken" | "this/marketParams";
+
+/**
+ * Helper to get the ID data for the cap function
+ * @param idType - The type of ID to get ("this", "collateralToken", or "this/marketParams")
+ * @param args - The arguments to pass to the ID function
+ * @returns The encoded ID data as a string
+ *
+ * @example
+ * // For MorphoVaultV1Adapter: single ID based on adapter address
+ * getIdData("this", [adapterAddress]);
+ *
+ * // For MorphoMarketV1Adapter: collateral token ID
+ * Adapter ID: getIdData("collateralToken", [adapterAddress]);
+ * Collateral ID: getIdData("collateralToken", [collateralAddress]);
+ * Market ID: getIdData("this/marketParams", [adapterAddress, marketParams]);
+ */
+
+export function getIdData(idType: idType, args: string[]): string {
+  const abiCoder = new AbiCoder();
+  if (idType === "this") {
+    return abiCoder.encode(["string", "address"], ["this", args[0]]);
+  }
+  if (idType === "collateralToken") {
+    return abiCoder.encode(["string", "address"], ["collateralToken", args[0]]);
+  }
+  if (idType === "this/marketParams") {
+    return abiCoder.encode(
+      ["string", "address", "bytes"],
+      ["this/marketParams", args[0], args[1]]
+    );
+  }
+  throw new Error(`Invalid idType: ${idType}`);
+}
 
 /**
  * Helper for submit increase cap functions
@@ -149,10 +190,12 @@ export async function decreaseAbsoluteCap(
   idData: string,
   newAbsoluteCap: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "decreaseAbsoluteCap", [
+  return executeContractMethod(
+    vaultContract,
+    "decreaseAbsoluteCap",
     idData,
-    newAbsoluteCap,
-  ]);
+    newAbsoluteCap
+  );
 }
 
 // ========================================
@@ -164,10 +207,12 @@ export async function decreaseRelativeCap(
   idData: string,
   newRelativeCap: bigint
 ): Promise<ethers.TransactionResponse> {
-  return executeContractMethod(vaultContract, "decreaseRelativeCap", [
+  return executeContractMethod(
+    vaultContract,
+    "decreaseRelativeCap",
     idData,
-    newRelativeCap,
-  ]);
+    newRelativeCap
+  );
 }
 
 // ========================================
@@ -176,18 +221,15 @@ export async function decreaseRelativeCap(
 
 export async function getAbsoluteCap(
   vaultContract: ethers.Contract,
-  id: number
+  id: string
 ): Promise<bigint> {
-  // Convert the number id to bytes32
-  const idBytes32 = ethers.zeroPadValue(ethers.toBeHex(id), 32);
-  return callContractMethod(vaultContract, "absoluteCap", [idBytes32]);
+  return callContractMethod(vaultContract, "absoluteCap", id);
 }
 
 export async function getRelativeCap(
   vaultContract: ethers.Contract,
-  id: number
+  id: string
 ): Promise<bigint> {
   // Convert the number id to bytes32
-  const idBytes32 = ethers.zeroPadValue(ethers.toBeHex(id), 32);
-  return callContractMethod(vaultContract, "relativeCap", [idBytes32]);
+  return callContractMethod(vaultContract, "relativeCap", id);
 }

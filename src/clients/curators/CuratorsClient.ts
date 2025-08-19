@@ -8,9 +8,6 @@ import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
-import * as CreateAdaptersFunctions from "./MorphoVaultV1Adapters";
-import * as MorphoMarketV1AdaptersFunctions from "./MorphoMarketV1Adapters";
-
 /**
  * Main client for vault curators operations
  * Provides:
@@ -413,11 +410,11 @@ export class VaultCurator {
   }
 
   // Read Cap Functions
-  async getAbsoluteCap(id: number) {
+  async getAbsoluteCap(id: string) {
     return CapFunctions.getAbsoluteCap(this.vaultContract, id);
   }
 
-  async getRelativeCap(id: number) {
+  async getRelativeCap(id: string) {
     return CapFunctions.getRelativeCap(this.vaultContract, id);
   }
 
@@ -474,94 +471,6 @@ export class VaultCurator {
 
   async getIsAllocator(allocator: string) {
     return ManageRoleFunctions.getIsAllocator(this.vaultContract, allocator);
-  }
-
-  // ========================================
-  // VAULT V1 ADAPTERS
-  // ========================================
-
-  async deployMorphoVaultV1Adapter(
-    underlyingVault: string
-  ): Promise<CreateAdaptersFunctions.DeployAdapterResult> {
-    return CreateAdaptersFunctions.deployMorphoVaultV1Adapter(
-      this.contractProvider,
-      this.vaultAddress,
-      underlyingVault
-    );
-  }
-
-  async isMorphoVaultV1Adapter(account: string) {
-    return CreateAdaptersFunctions.isMorphoVaultV1Adapter(
-      this.contractProvider,
-      account
-    );
-  }
-
-  async findMorphoVaultV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ) {
-    return CreateAdaptersFunctions.findMorphoVaultV1Adapter(
-      this.contractProvider,
-      vaultAddress,
-      underlyingVault
-    );
-  }
-
-  async getIdsVaultV1(adapterAddress: string) {
-    return CreateAdaptersFunctions.getIds(
-      this.contractProvider,
-      adapterAddress
-    );
-  }
-
-  // ========================================
-  // MARKET V1 ADAPTERS
-  // ========================================
-
-  async deployMorphoMarketV1Adapter(
-    underlyingVault: string
-  ): Promise<CreateAdaptersFunctions.DeployAdapterResult> {
-    return MorphoMarketV1AdaptersFunctions.deployMorphoMarketV1Adapter(
-      this.contractProvider,
-      this.vaultAddress,
-      underlyingVault
-    );
-  }
-
-  async isMorphoMarketV1Adapter(account: string) {
-    return MorphoMarketV1AdaptersFunctions.isMorphoMarketV1Adapter(
-      this.contractProvider,
-      account
-    );
-  }
-
-  async findMorphoMarketV1Adapter(
-    vaultAddress: string,
-    underlyingVault: string
-  ) {
-    return MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
-      this.contractProvider,
-      vaultAddress,
-      underlyingVault
-    );
-  }
-
-  async getIdsMarketV1(
-    adapterAddress: string,
-    marketParams: {
-      loanToken: string;
-      collateralToken: string;
-      oracle: string;
-      irm: string;
-      lltv: string;
-    }
-  ) {
-    return MorphoMarketV1AdaptersFunctions.getIds(
-      this.contractProvider,
-      adapterAddress,
-      marketParams
-    );
   }
 
   // ========================================
