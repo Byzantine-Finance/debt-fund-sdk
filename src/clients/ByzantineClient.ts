@@ -7,6 +7,7 @@ import { ContractProvider } from "../utils";
 import { OwnersClient } from "./owners";
 import { CuratorsClient, TimelockFunction } from "./curators";
 import { AdaptersClient, AdaptersFactoryClient, AdapterType } from "./adapters";
+import { DepositorsClient } from "./depositors";
 import * as MorphoMarketV1AdaptersFunctions from "./adapters/MorphoMarketV1Adapters";
 
 /**
@@ -23,6 +24,7 @@ export class ByzantineClient {
   private curatorsClient: CuratorsClient;
   private adaptersFactoryClient: AdaptersFactoryClient;
   private adaptersClient: AdaptersClient;
+
   /**
    * Initialize a new ByzantineClient
    * @param provider Ethereum provider
@@ -38,6 +40,216 @@ export class ByzantineClient {
     this.curatorsClient = new CuratorsClient(provider, signer);
     this.adaptersFactoryClient = new AdaptersFactoryClient(provider, signer);
     this.adaptersClient = new AdaptersClient(provider, signer);
+  }
+
+  //*******************************************
+  //* DEPOSITORS CLIENT - Vault Depositor Operations
+  //*******************************************
+
+  /**
+   * Get a depositors client for a specific vault
+   * @param vaultAddress The vault address
+   * @returns DepositorsClient instance for the vault
+   */
+  getDepositorsClient(vaultAddress: string): DepositorsClient {
+    return new DepositorsClient(
+      this.contractProvider,
+      vaultAddress,
+      this.provider
+    );
+  }
+
+  // ========================================
+  // DEPOSIT OPERATIONS
+  // ========================================
+
+  /**
+   * Deposit assets into the vault
+   * @param vaultAddress The vault contract address
+   * @param amountAssets The amount of assets to deposit
+   * @param receiver The address to receive the shares
+   * @returns Transaction response
+   */
+  async deposit(
+    vaultAddress: string,
+    amountAssets: bigint,
+    receiver: string
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).deposit(amountAssets, receiver);
+  }
+
+  /**
+   * Mint shares by depositing assets
+   * @param vaultAddress The vault contract address
+   * @param amountShares The amount of shares to mint
+   * @param receiver The address to receive the shares
+   * @returns Transaction response
+   */
+  async mint(
+    vaultAddress: string,
+    amountShares: bigint,
+    receiver: string
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).mint(amountShares, receiver);
+  }
+
+  // ========================================
+  // WITHDRAW OPERATIONS
+  // ========================================
+
+  /**
+   * Withdraw assets from the vault
+   * @param vaultAddress The vault contract address
+   * @param amountAssets The amount of assets to withdraw
+   * @param receiver The address to receive the assets
+   * @param onBehalf The address of the shares owner
+   * @returns Transaction response
+   */
+  async withdraw(
+    vaultAddress: string,
+    amountAssets: bigint,
+    receiver: string,
+    onBehalf: string
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).withdraw(
+      amountAssets,
+      receiver,
+      onBehalf
+    );
+  }
+
+  /**
+   * Redeem shares for assets
+   * @param vaultAddress The vault contract address
+   * @param amountShares The amount of shares to redeem
+   * @param receiver The address to receive the assets
+   * @param onBehalf The address of the shares owner
+   * @returns Transaction response
+   */
+  async redeem(
+    vaultAddress: string,
+    amountShares: bigint,
+    receiver: string,
+    onBehalf: string
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).redeem(
+      amountShares,
+      receiver,
+      onBehalf
+    );
+  }
+
+  // ========================================
+  // TRANSFER OPERATIONS
+  // ========================================
+
+  /**
+   * Transfer shares to another address
+   * @param vaultAddress The vault contract address
+   * @param to The recipient address
+   * @param shares The amount of shares to transfer
+   * @returns Transaction response
+   */
+  async transfer(
+    vaultAddress: string,
+    to: string,
+    shares: bigint
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).transfer(to, shares);
+  }
+
+  /**
+   * Transfer shares from one address to another (requires approval)
+   * @param vaultAddress The vault contract address
+   * @param from The sender address
+   * @param to The recipient address
+   * @param shares The amount of shares to transfer
+   * @returns Transaction response
+   */
+  async transferFrom(
+    vaultAddress: string,
+    from: string,
+    to: string,
+    shares: bigint
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).transferFrom(from, to, shares);
+  }
+
+  /**
+   * Approve a spender to transfer shares on behalf of the owner
+   * @param vaultAddress The vault contract address
+   * @param spender The spender address
+   * @param shares The amount of shares to approve
+   * @returns Transaction response
+   */
+  async approve(
+    vaultAddress: string,
+    spender: string,
+    shares: bigint
+  ): Promise<ethers.TransactionResponse> {
+    return await this.depositors(vaultAddress).approve(spender, shares);
+  }
+
+  // ========================================
+  // DEPOSITORS READ OPERATIONS
+  // ========================================
+
+  /**
+   * Get the shares balance for a specific account
+   * @param vaultAddress The vault contract address
+   * @param account The account address
+   * @returns The shares balance
+   */
+  async getSharesBalance(
+    vaultAddress: string,
+    account: string
+  ): Promise<bigint> {
+    return await this.depositors(vaultAddress).getSharesBalance(account);
+  }
+
+  /**
+   * Get the allowance for a spender
+   * @param vaultAddress The vault contract address
+   * @param owner The owner address
+   * @param spender The spender address
+   * @returns The allowance amount
+   */
+  async getAllowance(
+    vaultAddress: string,
+    userAddress: string
+  ): Promise<bigint> {
+    return await this.depositors(vaultAddress).getAllowance(userAddress);
+  }
+
+  //*******************************************
+  //* BALANCES READ OPERATIONS
+  //*******************************************
+
+  /**
+   * Get the total assets in the vault
+   * @param vaultAddress The vault contract address
+   * @returns The total assets
+   */
+  async getTotalAssets(vaultAddress: string): Promise<bigint> {
+    return await this.depositors(vaultAddress).getTotalAssets();
+  }
+
+  /**
+   * Get the total supply of shares in the vault
+   * @param vaultAddress The vault contract address
+   * @returns The total supply
+   */
+  async getTotalSupply(vaultAddress: string): Promise<bigint> {
+    return await this.depositors(vaultAddress).getTotalSupply();
+  }
+
+  /**
+   * Get the virtual shares in the vault
+   * @param vaultAddress The vault contract address
+   * @returns The virtual shares
+   */
+  async getVirtualShares(vaultAddress: string): Promise<bigint> {
+    return await this.depositors(vaultAddress).getVirtualShares();
   }
 
   //*******************************************
@@ -67,6 +279,139 @@ export class ByzantineClient {
     const contract = this.contractProvider.getVaultContract(vaultAddress);
     return await contract.asset();
   }
+
+  /**
+   * Get the balance of the underlying asset (e.g., USDC) for a specific account
+   * @param vaultAddress The vault contract address
+   * @param account The account address
+   * @returns The asset balance
+   */
+  async getAssetBalance(
+    vaultAddress: string,
+    account: string
+  ): Promise<bigint> {
+    const assetAddress = await this.getAsset(vaultAddress);
+    const assetContract = new ethers.Contract(
+      assetAddress,
+      ["function balanceOf(address owner) view returns (uint256)"],
+      this.provider
+    );
+    return await assetContract.balanceOf(account);
+  }
+
+  /**
+   * Get the allowance of the underlying asset (e.g., USDC) that the vault can spend
+   * @param vaultAddress The vault contract address
+   * @param owner The owner address
+   * @returns The asset allowance
+   */
+  async getAssetAllowance(
+    vaultAddress: string,
+    owner: string
+  ): Promise<bigint> {
+    const assetAddress = await this.getAsset(vaultAddress);
+    const assetContract = new ethers.Contract(
+      assetAddress,
+      [
+        "function allowance(address owner, address spender) view returns (uint256)",
+      ],
+      this.provider
+    );
+    return await assetContract.allowance(owner, vaultAddress);
+  }
+
+  // ========================================
+  // PREVIEW METHODS
+  // ========================================
+
+  /**
+   * Preview how many shares will be received for a given amount of assets
+   * @param vaultAddress The vault contract address
+   * @param assets The amount of assets to deposit
+   * @returns The amount of shares that would be received
+   *
+   * @example
+   * const shares = await client.previewDeposit(vaultAddress, ethers.parseUnits("1.0", 6));
+   * console.log(`You will receive ${shares} shares`);
+   * // 1000000 USDC -> 1000000000000000000 byzUSDC
+   */
+  async previewDeposit(vaultAddress: string, assets: bigint): Promise<bigint> {
+    return await this.depositors(vaultAddress).previewDeposit(assets);
+  }
+
+  /**
+   * Preview how many assets are needed to mint a given amount of shares
+   * @param vaultAddress The vault contract address
+   * @param shares The amount of shares to mint
+   * @returns The amount of assets needed
+   *
+   * @example
+   * const assets = await client.previewMint(vaultAddress, ethers.parseUnits("1.0", 18));
+   * console.log(`You will need ${assets} assets`);
+   * // 1000000000000000000 byzUSDC -> 1000000 USDC
+   */
+  async previewMint(vaultAddress: string, shares: bigint): Promise<bigint> {
+    return await this.depositors(vaultAddress).previewMint(shares);
+  }
+
+  /**
+   * Preview how many assets will be received for a given amount of shares
+   * @param vaultAddress The vault contract address
+   * @param shares The amount of shares to redeem
+   * @returns The amount of assets that would be received
+   *
+   * @example
+   * const assets = await client.previewRedeem(vaultAddress, ethers.parseUnits("1.0", 18));
+   * console.log(`You will receive ${assets} assets`);
+   * // 1000000000000000000 byzUSDC -> 1000000 USDC
+   */
+  async previewRedeem(vaultAddress: string, shares: bigint): Promise<bigint> {
+    return await this.depositors(vaultAddress).previewRedeem(shares);
+  }
+
+  /**
+   * Preview how many shares are needed to withdraw a given amount of assets
+   * @param vaultAddress The vault contract address
+   * @param assets The amount of assets to withdraw
+   * @returns The amount of shares needed
+   *
+   * @example
+   * const shares = await client.previewWithdraw(vaultAddress, ethers.parseUnits("1.0", 6));
+   * console.log(`You will need ${shares} shares`);
+   * // 1000000 USDC -> 1000000000000000000 byzUSDC
+   */
+  async previewWithdraw(vaultAddress: string, assets: bigint): Promise<bigint> {
+    return await this.depositors(vaultAddress).previewWithdraw(assets);
+  }
+
+  /**
+   * Approve the vault to spend the underlying asset (e.g., USDC)
+   * @param vaultAddress The vault contract address
+   * @param amount The amount to approve
+   * @returns Transaction response
+   */
+  async approveAsset(
+    vaultAddress: string,
+    amount: bigint
+  ): Promise<ethers.TransactionResponse> {
+    if (!this.signer) {
+      throw new Error("Signer is required for approveAsset operation");
+    }
+
+    const assetAddress = await this.getAsset(vaultAddress);
+    const assetContract = new ethers.Contract(
+      assetAddress,
+      [
+        "function approve(address spender, uint256 amount) external returns (bool)",
+      ],
+      this.signer
+    );
+    return await assetContract.approve(vaultAddress, amount);
+  }
+
+  // ========================================
+  // SMART APPROVAL AND OPERATION METHODS
+  // ========================================
 
   //*******************************************
   //* OWNERS CLIENT - Vault Owner Operations
@@ -840,5 +1185,12 @@ export class ByzantineClient {
    */
   get owners() {
     return this.ownersClient;
+  }
+
+  /**
+   * Get access to the depositors client for advanced operations
+   */
+  get depositors() {
+    return this.getDepositorsClient;
   }
 }

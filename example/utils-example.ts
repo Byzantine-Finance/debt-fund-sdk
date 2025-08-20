@@ -1,5 +1,5 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
-import { ethers } from "ethers";
+import { ethers, formatUnits } from "ethers";
 import * as dotenv from "dotenv";
 import { TimelockFunction } from "../src/clients/curators";
 
@@ -48,6 +48,10 @@ export async function finalReading(
   const curator = await client.getCurator(vaultAddress);
   const isSentinel = await client.isSentinel(vaultAddress, userAddress);
   const isAllocator = await client.getIsAllocator(vaultAddress, userAddress);
+
+  const totalAssets = await client.getTotalAssets(vaultAddress);
+  const totalSupply = await client.getTotalSupply(vaultAddress);
+  const virtualShares = await client.getVirtualShares(vaultAddress);
 
   const performanceFee = await client.getPerformanceFee(vaultAddress);
   const managementFee = await client.getManagementFee(vaultAddress);
@@ -168,6 +172,10 @@ export async function finalReading(
   console.log("* Asset:", asset);
   console.log("* Name:", name);
   console.log("* Symbol:", symbol);
+  console.log("*");
+  console.log("* Total Assets:", formatUnits(totalAssets, 6), "USDC");
+  console.log("* Total Supply:", formatUnits(totalSupply, 18), "byzUSDC");
+  console.log("* Virtual Shares:", virtualShares);
   console.log("*");
   console.log("* Your address:", userAddress, "✅");
   console.log("* Owner:", owner, owner === userAddress ? "✅" : "❌");

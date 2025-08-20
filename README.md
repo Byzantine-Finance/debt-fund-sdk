@@ -199,6 +199,42 @@ await client.getChainId();
 await client.getVaultFactoryContract();
 ```
 
+### User Operations (Deposits & Withdrawals)
+
+```js
+// Deposit assets into vault
+await client.deposit(vaultAddress, amountAssets, receiver);
+
+// Mint shares by depositing assets
+await client.mint(vaultAddress, amountShares, receiver);
+
+// Withdraw assets from vault
+await client.withdraw(vaultAddress, amountAssets, receiver, onBehalf);
+
+// Redeem shares for assets
+await client.redeem(vaultAddress, amountShares, receiver, onBehalf);
+
+// Transfer shares
+await client.transfer(vaultAddress, to, shares);
+await client.transferFrom(vaultAddress, from, to, shares);
+
+// Approve assets for vault operations
+await client.approveAsset(vaultAddress, amount);
+
+// Preview functions for calculating amounts
+await client.previewDeposit(vaultAddress, assets); // Calculate shares for deposit
+await client.previewMint(vaultAddress, shares); // Calculate assets needed for mint
+await client.previewRedeem(vaultAddress, shares); // Calculate assets for redemption
+await client.previewWithdraw(vaultAddress, assets); // Calculate shares needed for withdrawal
+
+// Read balances and allowances
+await client.getSharesBalance(vaultAddress, account);
+await client.getAssetBalance(vaultAddress, account);
+await client.getAssetAllowance(vaultAddress, owner);
+await client.getTotalAssets(vaultAddress);
+await client.getTotalSupply(vaultAddress);
+```
+
 ### Owner Operations
 
 ```js
@@ -461,6 +497,7 @@ setupAdapters();
 - **Curator Management**: Advanced fee management and adapter configuration
 - **Adapter Ecosystem**: Deploy and manage Morpho Vault V1 and Market V1 adapters
 - **Timelock System**: Secure parameter changes with customizable delays
+- **User Operations**: Complete deposit/withdrawal lifecycle with intelligent approval management
 
 ### ⚡ Optimized Performance
 
@@ -521,6 +558,14 @@ await client.instantSetPerformanceFee(vaultAddress, newFee);
 - **Adapter Discovery**: Find existing adapters to avoid duplicate deployments
 - **Adapter Validation**: Verify adapter types and configurations
 - **Future-Ready**: Extensible architecture for additional protocol adapters
+
+### 💰 Smart User Operations
+
+- **Preview Functions**: Calculate exact amounts for deposits, mints, withdrawals, and redemptions
+- **Intelligent Approvals**: Automatic calculation of required asset amounts for mint operations
+- **Complete Lifecycle**: Support for all user-facing vault operations (deposit, mint, withdraw, redeem)
+- **Transfer Support**: Full ERC20-like share transfer functionality
+- **Balance Management**: Comprehensive balance and allowance tracking
 
 ### ⚡ Developer Experience
 

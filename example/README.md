@@ -34,6 +34,14 @@ npx tsx example/[filename].ts
 
 **Description:** Complex automation script that creates and fully configures vaults in a single execution. Automatically handles all necessary transactions to set up the vault according to your specifications. Most parameters are optional - the script adapts based on what you define. If you want underlying vaults but don't want to be the final curator, the script temporarily assigns you as curator to add vaults and configure everything, then transfers the role to your intended curator. Same logic applies to other roles. Perfect for production vault deployment with complex configurations.
 
+### 💰 User Deposit Operations
+
+**Command:** `npx tsx example/users-deposit.ts`
+
+**Requirements:** Global requirements above + set `DEPOSIT_CONFIG` with vault address and operation amounts
+
+**Description:** Comprehensive example demonstrating all user-facing vault operations including deposits, mints, withdrawals, and share redemptions. Shows how to properly manage asset approvals using the preview functions (`previewMint`, `previewDeposit`, etc.) and demonstrates the complete lifecycle of user interactions with a vault. Features intelligent approval management that automatically calculates required asset amounts for mint operations. Perfect for understanding how users interact with vaults and how to implement proper approval workflows in your applications.
+
 ### 👑 Manage Owner Settings
 
 **Command:** `npx tsx example/owners-settings.ts`
