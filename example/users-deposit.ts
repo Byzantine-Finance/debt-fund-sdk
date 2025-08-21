@@ -14,20 +14,20 @@ import {
 } from "./utils-example";
 
 interface VaultOperations {
-  vaultAddress: string;
   depositAmount?: bigint;
   mintAmount?: bigint;
   withdrawAmount?: bigint;
   redeemAmount?: bigint;
 }
 
+const VAULT_ADDRESS = "0x169FdF43910Eca52f4F97D361A44D26e71B18134";
+
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  vaultAddress: "0x1E1f0304c44420Ee9045c35245051FfC516d13ac", // Must be a valid vault address
-  depositAmount: parseUnits("1.0", 6), // 1.0 USDC (6 decimals)
-  mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
-  withdrawAmount: parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
-  redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
+  // depositAmount: parseUnits("10.0", 6), // 1.0 USDC (6 decimals)
+  // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
+  // withdrawAmount: parseUnits("3", 6), // 0.3 USDC (6 decimals)
+  // redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
 };
 
 async function main() {
@@ -41,11 +41,11 @@ async function main() {
 
     const userAddress = await wallet.getAddress();
     console.log(`👤 User address: ${userAddress}`);
-    console.log(`🏦 Vault address: ${DEPOSIT_CONFIG.vaultAddress}`);
+    console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");
-    const assetAddress = await client.getAsset(DEPOSIT_CONFIG.vaultAddress);
+    const assetAddress = await client.getAsset(VAULT_ADDRESS);
     console.log(`💰 Asset address: ${assetAddress}`);
 
     if (!assetAddress || assetAddress === ZeroAddress) {
@@ -58,12 +58,9 @@ async function main() {
     // ========================================
     // INITIAL STATE
     // ========================================
-    await displayBalances(
-      client,
-      DEPOSIT_CONFIG.vaultAddress,
-      userAddress,
-      "Initial"
-    );
+    await finalReading(client, VAULT_ADDRESS, userAddress);
+
+    await displayBalances(client, VAULT_ADDRESS, userAddress, "Initial");
 
     // ========================================
     // DEPOSIT ASSETS
@@ -76,14 +73,14 @@ async function main() {
       // Check and approve if needed, then deposit
       await checkAndApproveIfNeeded(
         client,
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.depositAmount,
         userAddress,
         "deposit"
       );
 
       const txDeposit = await client.deposit(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.depositAmount,
         userAddress
       );
@@ -96,7 +93,7 @@ async function main() {
       // Display balances after deposit
       await displayBalances(
         client,
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         userAddress,
         "After Deposit"
       );
@@ -116,14 +113,14 @@ async function main() {
       // Check and approve if needed, then mint
       await checkAndApproveIfNeeded(
         client,
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.mintAmount, // This is in shares, the function will calculate assets needed
         userAddress,
         "mint"
       );
 
       const txMint = await client.mint(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.mintAmount,
         userAddress
       );
@@ -134,12 +131,7 @@ async function main() {
       );
 
       // Display balances after mint
-      await displayBalances(
-        client,
-        DEPOSIT_CONFIG.vaultAddress,
-        userAddress,
-        "After Mint"
-      );
+      await displayBalances(client, VAULT_ADDRESS, userAddress, "After Mint");
     }
 
     // ========================================
@@ -152,7 +144,7 @@ async function main() {
 
       // Check if we have enough shares to withdraw
       const sharesBeforeWithdraw = await client.getSharesBalance(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         userAddress
       );
       console.log(
@@ -164,7 +156,7 @@ async function main() {
 
       // Perform withdraw (no approval needed for shares)
       const txWithdraw = await client.withdraw(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.withdrawAmount,
         userAddress,
         userAddress
@@ -178,7 +170,7 @@ async function main() {
       // Display balances after withdraw
       await displayBalances(
         client,
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         userAddress,
         "After Withdraw"
       );
@@ -197,7 +189,7 @@ async function main() {
 
       // Check if we have enough shares to redeem
       const sharesBeforeRedeem = await client.getSharesBalance(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         userAddress
       );
       console.log(
@@ -221,7 +213,7 @@ async function main() {
 
       // Perform redeem
       const txRedeem = await client.redeem(
-        DEPOSIT_CONFIG.vaultAddress,
+        VAULT_ADDRESS,
         DEPOSIT_CONFIG.redeemAmount,
         userAddress,
         userAddress
@@ -233,18 +225,13 @@ async function main() {
       );
 
       // Display balances after redeem
-      await displayBalances(
-        client,
-        DEPOSIT_CONFIG.vaultAddress,
-        userAddress,
-        "After Redeem"
-      );
+      await displayBalances(client, VAULT_ADDRESS, userAddress, "After Redeem");
     }
     // ========================================
     // FINAL STATE
     // ========================================
 
-    await finalReading(client, DEPOSIT_CONFIG.vaultAddress, userAddress);
+    await finalReading(client, VAULT_ADDRESS, userAddress);
 
     console.log("\n🎉 All vault operations completed successfully!");
     console.log("=".repeat(60));

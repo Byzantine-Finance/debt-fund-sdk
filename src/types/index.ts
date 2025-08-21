@@ -2,7 +2,8 @@
 
 export type ChainsOptions =
   // | 1 // Mainnet
-  | 8453 // Base
+  | 8453 // Base Mainnet
+  | 42161 // Base Testnet
   // | 17000 // Holesky
   | 11155111; // Sepolia
 // | 560048; // Hoodi

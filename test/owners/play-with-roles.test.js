@@ -12,6 +12,7 @@
  */
 
 const { ethers } = require("ethers");
+const { ByzantineClient } = require("../../dist");
 const {
   logTitle,
   logResult,
@@ -19,6 +20,7 @@ const {
   assertThrows,
   createWallet,
   getWalletBalances,
+  setUpTest,
 } = require("../utils");
 
 // 🎯 CONFIGURE YOUR VAULT ADDRESS HERE
@@ -33,6 +35,13 @@ async function runRoleTests() {
   console.log(`Network: Base Mainnet (Chain ID: ${chainId})\n`);
 
   try {
+    const setupResult = await setUpTest();
+    if (!setupResult) {
+      throw new Error(
+        "Test setup failed. Please check your environment variables."
+      );
+    }
+    const { provider, client, networkConfig, userAddress } = setupResult;
     // Load environment variables
     require("dotenv").config();
     const { RPC_URL } = process.env;
@@ -47,18 +56,7 @@ async function runRoleTests() {
       "VAULT_ADDRESS must be a valid address"
     );
 
-    // Get network configuration and ByzantineClient
-    const { getNetworkConfig, ByzantineClient } = require("../../dist");
-    const networkConfig = getNetworkConfig(chainId);
-
-    assert(networkConfig, `Chain ID ${chainId} must be supported`);
-    assert(
-      networkConfig.byzantineFactoryAddress,
-      "Factory address must be configured"
-    );
-
     // Create provider and wallets
-    const provider = /** @type {any} */ (new ethers.JsonRpcProvider(RPC_URL));
     const ownerWallet = createWallet(provider, 0); // Main wallet (should be owner)
     const randomWallet = createWallet(provider, 1); // Random wallet for testing
     const curatorWallet = createWallet(provider, 2); // Will be set as curator

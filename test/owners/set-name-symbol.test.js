@@ -19,12 +19,13 @@ const {
   assert,
   createWallet,
   getWalletBalances,
+  setUpTest,
 } = require("../utils");
 require("dotenv").config();
 
 /**
  * Set vault name and symbol using the optimal method (multicall or individual calls)
- * @param {any} client - The ByzantineClient instance
+ * @param {ByzantineClient} client - The ByzantineClient instance
  * @param {string} vaultAddress - The vault address
  * @param {string|undefined} newName - The new name (optional)
  * @param {string|undefined} newSymbol - The new symbol (optional)
@@ -69,7 +70,7 @@ async function setVaultNameAndSymbolOptimal(
       console.log(`📝 Name: "${currentName}" → "${newName}"`);
       console.log(`🏷️ Symbol: "${currentSymbol}" → "${newSymbol}"`);
 
-      const tx = await client.setSharesNameAndSymbol(
+      const tx = await client.setVaultNameAndSymbol(
         vaultAddress,
         newName,
         newSymbol
@@ -227,71 +228,13 @@ async function runTests() {
   console.log("\n🧪 Vault Name and Symbol Management Test 🧪\n");
 
   try {
-    // Check if environment variables are set
-    const { RPC_URL, MNEMONIC, PRIVATE_KEY, DEFAULT_CHAIN_ID } = process.env;
-    const chainId = DEFAULT_CHAIN_ID ? parseInt(DEFAULT_CHAIN_ID) : 11155111; // Default to Sepolia
-
-    let skipNetworkTests = false;
-    if (!RPC_URL) {
-      console.warn(
-        "⚠️ Warning: RPC_URL not set in .env file. Network tests will be skipped."
-      );
-      skipNetworkTests = true;
-    }
-
-    if (!MNEMONIC && !PRIVATE_KEY) {
-      console.warn(
-        "⚠️ Warning: Neither MNEMONIC nor PRIVATE_KEY set in .env file. Using dummy wallet."
+    const setupResult = await setUpTest();
+    if (!setupResult) {
+      throw new Error(
+        "Test setup failed. Please check your environment variables."
       );
     }
-
-    console.log(
-      `Network: ${
-        chainId === 1
-          ? "Ethereum Mainnet"
-          : chainId === 8453
-          ? "Base Mainnet"
-          : chainId === 11155111
-          ? "Ethereum Sepolia"
-          : "Unknown"
-      } (Chain ID: ${chainId})\n`
-    );
-
-    console.log(`🏦 Vault Address: ${TEST_CONFIG.vaultAddress}`);
-    console.log(`📝 New Name: ${TEST_CONFIG.newName || "(not updating)"}`);
-    console.log(
-      `🏷️ New Symbol: ${TEST_CONFIG.newSymbol || "(not updating)"}\n`
-    );
-
-    if (skipNetworkTests) {
-      console.log(
-        "⚠️ Network tests skipped. Please provide RPC_URL to run tests."
-      );
-      return;
-    }
-
-    // Initialize provider and wallet using utils
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet =
-      MNEMONIC || PRIVATE_KEY
-        ? createWallet(provider, 0)
-        : ethers.Wallet.createRandom().connect(provider);
-
-    const userAddress = await wallet.getAddress();
-
-    // Initialize the ByzantineClient
-    const client = new ByzantineClient(
-      /** @type {any} */ (provider),
-      /** @type {any} */ (wallet)
-    );
-
-    logResult("Client initialization", true);
-    console.log(`👤 User address: ${userAddress}`);
-
-    // Get network configuration
-    const networkConfig = getNetworkConfig(/** @type {any} */ (chainId));
-    console.log(`🌐 Network: ${networkConfig.name}`);
-    console.log(`🏭 Factory: ${networkConfig.byzantineFactoryAddress}\n`);
+    const { provider, client, networkConfig, userAddress } = setupResult;
 
     // =============================================
     // 1. User Wallet Information
@@ -429,7 +372,6 @@ if (!process.env.RPC_URL) {
   console.log("1. Create a .env file with:");
   console.log("   RPC_URL=<your_rpc_endpoint>");
   console.log("   PRIVATE_KEY=<your_private_key> (must be vault owner)");
-  console.log("   DEFAULT_CHAIN_ID=11155111 (for Sepolia)");
   console.log("");
   console.log("2. Update TEST_CONFIG in this file:");
   console.log("   - vaultAddress: your vault address");

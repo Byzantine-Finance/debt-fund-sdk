@@ -6,7 +6,7 @@ import {
   MNEMONIC,
   waitHalfSecond,
 } from "./utils-example";
-import { TimelockFunction } from "../dist/clients/curators";
+import { TimelockFunction } from "../src/clients/curators";
 import { getIdData } from "../src/clients/curators/Cap";
 
 interface CuratorsSettingsConfig {
@@ -40,7 +40,7 @@ interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x2B68d57CC2d5b763609570047E2435B8ECD9ff32";
+const VAULT_ADDRESS = "0x169FdF43910Eca52f4F97D361A44D26e71B18134";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
   allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
@@ -58,7 +58,7 @@ const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
       deallocate_penalty: parseEther("0.02"),
       caps_per_id: [
         {
-          relative_cap: parseUnits("0.24", 18), // 34%
+          relative_cap: parseUnits("1", 18), // 100%
           absolute_cap: parseUnits("200", 6), // 800 USDC
         },
       ],
@@ -67,13 +67,13 @@ const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
       address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
       type: "MorphoVaultV1",
       deallocate_penalty: parseEther("0.02"),
-      // caps_per_id: [
-      //   {
-      //     id: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b", // ID from Adapter 1
-      //     relative_cap: parseUnits("0.3", 18), // 30%
-      //     absolute_cap: parseUnits("300", 6), // 300 USDC
-      //   },
-      // ],
+      caps_per_id: [
+        {
+          // id: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b", // ID from Adapter 1
+          relative_cap: parseUnits("0.4", 18), // 30%
+          absolute_cap: parseUnits("300", 6), // 300 USDC
+        },
+      ],
     },
   ],
 

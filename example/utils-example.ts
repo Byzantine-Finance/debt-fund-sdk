@@ -130,11 +130,14 @@ export async function finalReading(
               id
             );
 
+            const allocation = await client.getAllocation(vaultAddress, id);
+
             return {
               id,
               absoluteCap: absoluteCapResult.toString(),
               relativeCap: relativeCapResult.toString(),
               hasCaps: true,
+              allocation: allocation.toString(),
             };
           } catch (error) {
             console.log(`Error getting caps for ID ${id}: ${error}`);
@@ -144,6 +147,7 @@ export async function finalReading(
               absoluteCap: "N/A",
               relativeCap: "N/A",
               hasCaps: false,
+              allocation: "N/A",
             };
           }
         })
@@ -160,6 +164,11 @@ export async function finalReading(
     })
   );
 
+  const idleBalance = await client.getIdleBalance(vaultAddress);
+
+  const liquidityAdapter = await client.getLiquidityAdapter(vaultAddress);
+  const liquidityData = await client.getLiquidityData(vaultAddress);
+
   const allTimelocks = await Promise.all(
     timelocks.map(async (timelock) => {
       return {
@@ -173,8 +182,20 @@ export async function finalReading(
   console.log("* Name:", name);
   console.log("* Symbol:", symbol);
   console.log("*");
-  console.log("* Total Assets:", formatUnits(totalAssets, 6), "USDC");
-  console.log("* Total Supply:", formatUnits(totalSupply, 18), "byzUSDC");
+  console.log(
+    "* Total Assets:",
+    totalAssets,
+    " (",
+    formatUnits(totalAssets, 6),
+    "USDC)"
+  );
+  console.log(
+    "* Total Supply:",
+    totalSupply,
+    " (",
+    formatUnits(totalSupply, 18),
+    "byzUSDC)"
+  );
   console.log("* Virtual Shares:", virtualShares);
   console.log("*");
   console.log("* Your address:", userAddress, "✅");
@@ -205,8 +226,16 @@ export async function finalReading(
           "%"
         : "0%";
 
+    const isLiquidityAdapter = adapter.address === liquidityAdapter;
+
     console.log(
-      `* Adapter ${adapter.index}: ${adapter.address} (${adapter.adapterType} with underlying ${adapter.underlying}) | ForceDeallocatePenalty: ${forceDeallocatePenaltyPercent}`
+      `* Adapter ${adapter.index}: ${adapter.address} (${
+        adapter.adapterType
+      } with underlying ${
+        adapter.underlying
+      }) | ForceDeallocatePenalty: ${forceDeallocatePenaltyPercent} ${
+        isLiquidityAdapter ? " | (Liquidity Adapter 💦)" : ""
+      }`
     );
 
     if (adapter.idsWithCaps.length > 0) {
@@ -220,9 +249,13 @@ export async function finalReading(
             idWithCap.absoluteCap !== "0"
               ? (Number(idWithCap.absoluteCap) / 1e6).toFixed(2)
               : "0";
+          const allocationFormatted =
+            idWithCap.allocation !== "0"
+              ? (Number(idWithCap.allocation) / 1e18).toFixed(2)
+              : "0";
 
           console.log(
-            `*    |-> ID ${idWithCap.id}: RelativeCap: ${relativeCapPercent} | AbsoluteCap: ${absoluteCapFormatted} USDC`
+            `*    |-> ID ${idWithCap.id}: RelativeCap: ${relativeCapPercent} | AbsoluteCap: ${absoluteCapFormatted} USDC  | Allocation: ${allocationFormatted}`
           );
         } else {
           // Show ID even if we can't get caps
@@ -237,6 +270,17 @@ export async function finalReading(
       );
     }
   });
+  console.log("*");
+  console.log("* Liquidity Adapter:", liquidityAdapter);
+  console.log("* Liquidity Data:", liquidityData);
+  console.log("*");
+  console.log(
+    "* Idle Balance:",
+    idleBalance,
+    " (",
+    formatUnits(idleBalance, 6),
+    "USDC)"
+  );
   console.log("*");
   allTimelocks.forEach((timelock) => {
     console.log(`* Timelock of ${timelock.name}:`, timelock.timelock);

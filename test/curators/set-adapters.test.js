@@ -16,8 +16,6 @@
  * - Verifying curator permissions
  */
 
-const { ethers } = require("ethers");
-const { ByzantineClient, getNetworkConfig } = require("../../dist");
 const {
   logTitle,
   logResult,
@@ -477,7 +475,6 @@ if (!process.env.RPC_URL) {
   console.log("1. Create a .env file with:");
   console.log("   RPC_URL=<your_rpc_endpoint>");
   console.log("   PRIVATE_KEY=<your_private_key> (must be vault curator)");
-  console.log("   DEFAULT_CHAIN_ID=11155111 (for Sepolia)");
   console.log("");
   console.log("2. Update TEST_CONFIG in this file:");
   console.log("   - vaultAddress: your vault address");

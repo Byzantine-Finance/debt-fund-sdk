@@ -1,70 +1,125 @@
-// import { ethers } from "ethers";
-// import { ContractProvider, executeContractMethod } from "../../utils";
-// import { getNetworkConfig } from "../../constants/networks";
+import { Contract, ethers } from "ethers";
+import { ContractProvider } from "../../utils/ContractProvider";
+import * as AllocateFunctions from "./Allocate";
+import * as LiquidityAdapterFunctions from "./LiquidityAdapter";
 
-// export interface SubVault {
-//   vault: string;
-//   percentage: bigint;
-// }
+/**
+ * Client for interacting with vault allocation functions
+ * Handles liquidity adapter configuration and asset allocation/deallocation
+ */
+export class AllocatorsClient {
+  private contractProvider: ContractProvider;
+  private vaultAddress: string;
+  private vaultContract: ethers.Contract;
+  private provider: ethers.Provider;
 
-// export interface CreateMetaVaultParams {
-//   asset: string;
-//   vaultName: string;
-//   vaultSymbol: string;
-//   subVaults: SubVault[];
-//   curatorFeePercentage: bigint;
-// }
+  constructor(
+    contractProvider: ContractProvider,
+    vaultAddress: string,
+    provider: ethers.Provider
+  ) {
+    this.provider = provider;
+    this.contractProvider = contractProvider;
+    this.vaultAddress = vaultAddress;
+    this.vaultContract = contractProvider.getVaultContract(vaultAddress);
+  }
 
-// export class AllocatorsClient {
-//   private contractProvider: ContractProvider;
-//   private provider: ethers.Provider;
+  /**
+   * Set the liquidity adapter and associated data for the vault
+   * @param newLiquidityAdapter - Address of the new liquidity adapter
+   * @param newLiquidityData - Associated data for the liquidity adapter
+   * @returns Contract transaction
+   */
+  async setLiquidityAdapterAndData(
+    newLiquidityAdapter: string,
+    newLiquidityData: string
+  ): Promise<ethers.TransactionResponse> {
+    return await LiquidityAdapterFunctions.setLiquidityAdapterAndData(
+      this.vaultContract,
+      newLiquidityAdapter,
+      newLiquidityData
+    );
+  }
 
-//   constructor(provider: ethers.Provider, signer?: ethers.Signer) {
-//     this.contractProvider = new ContractProvider(provider, signer);
-//     this.provider = provider;
-//   }
+  /**
+   * Allocate assets to a specific adapter
+   * @param adapter - Address of the adapter to allocate assets to
+   * @param data - Additional data for the allocation
+   * @param assets - Amount of assets to allocate
+   * @returns Contract transaction
+   */
+  async allocate(
+    adapter: string,
+    data: string,
+    assets: bigint
+  ): Promise<ethers.TransactionResponse> {
+    return await AllocateFunctions.allocate(
+      this.vaultContract,
+      adapter,
+      data,
+      assets
+    );
+  }
 
-//   /**
-//    * Get the factory address for the current network
-//    * @returns Factory address
-//    */
-//   private async getFactoryAddress(): Promise<string> {
-//     const network = await this.provider.getNetwork();
-//     const chainId = Number(network.chainId) as any;
-//     const networkConfig = getNetworkConfig(chainId);
+  /**
+   * Deallocate assets from a specific adapter
+   * @param adapter - Address of the adapter to deallocate assets from
+   * @param data - Additional data for the deallocation
+   * @param assets - Amount of assets to deallocate
+   * @returns Contract transaction
+   */
+  async deallocate(
+    adapter: string,
+    data: string,
+    assets: bigint
+  ): Promise<ethers.TransactionResponse> {
+    return await AllocateFunctions.deallocate(
+      this.vaultContract,
+      adapter,
+      data,
+      assets
+    );
+  }
 
-//     if (!networkConfig?.byzantineFactoryAddress) {
-//       throw new Error(`MetaVaultFactory not deployed on chain ${chainId}`);
-//     }
+  // ========================================
+  // READ FUNCTIONS
+  // ========================================
 
-//     return networkConfig.byzantineFactoryAddress;
-//   }
+  /**
+   * Get the current liquidity adapter address
+   * @returns Address of the current liquidity adapter
+   */
+  async getLiquidityAdapter(): Promise<string> {
+    return await LiquidityAdapterFunctions.getLiquidityAdapter(
+      this.vaultContract
+    );
+  }
 
-//   /**
-//    * Create a new MetaVault
-//    * @param params Parameters for creating the MetaVault
-//    * @returns Transaction response
-//    */
-//   async createMetaVault(
-//     params: CreateMetaVaultParams
-//   ): Promise<ethers.TransactionResponse> {
-//     const factoryAddress = await this.getFactoryAddress();
-//     const factoryContract =
-//       this.contractProvider.getMetaVaultFactoryContract(factoryAddress);
+  /**
+   * Get the current liquidity data
+   * @returns Current liquidity data as bytes
+   */
+  async getLiquidityData(): Promise<string> {
+    return await LiquidityAdapterFunctions.getLiquidityData(this.vaultContract);
+  }
 
-//     const subVaultsFormatted = params.subVaults.map((subVault) => [
-//       subVault.vault,
-//       subVault.percentage,
-//     ]);
+  /**
+   * Get the allocation for a specific ID
+   * @param id - Allocation ID
+   * @returns Allocation amount as BigNumber
+   */
+  async getAllocation(id: string): Promise<bigint> {
+    return await AllocateFunctions.getAllocation(this.vaultContract, id);
+  }
 
-//     return await executeContractMethod(
-//       factoryContract,
-//       "createMetaVault",
-//       params.asset,
-//       params.vaultName,
-//       params.vaultSymbol,
-//       subVaultsFormatted,
-//       params.curatorFeePercentage
-//     );
-//   }
-// }
+  /**
+   * Get the idle balance of the vault
+   * @returns Idle balance as BigNumber
+   */
+  async getIdleBalance(): Promise<bigint> {
+    return await AllocateFunctions.getIdleBalance(
+      this.provider,
+      this.vaultContract
+    );
+  }
+}

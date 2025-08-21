@@ -6,7 +6,7 @@
  */
 
 const { ethers } = require("ethers");
-const { ByzantineClient, getNetworkConfig } = require("../dist");
+const { ByzantineClient } = require("../dist");
 require("dotenv").config();
 
 const ERC20_ABI = [
@@ -190,15 +190,13 @@ async function getWalletBalances(provider, address, networkConfig) {
 }
 
 const setUpTest = async () => {
-  const { RPC_URL, MNEMONIC, PRIVATE_KEY, DEFAULT_CHAIN_ID } = process.env;
-  const chainId = DEFAULT_CHAIN_ID ? parseInt(DEFAULT_CHAIN_ID) : 11155111; // Default to Sepolia
+  const { RPC_URL, MNEMONIC, PRIVATE_KEY } = process.env;
 
-  let skipNetworkTests = false;
   if (!RPC_URL) {
     console.warn(
       "⚠️ Warning: RPC_URL not set in .env file. Network tests will be skipped."
     );
-    skipNetworkTests = true;
+    return;
   }
 
   if (!MNEMONIC && !PRIVATE_KEY) {
@@ -207,15 +205,22 @@ const setUpTest = async () => {
     );
   }
 
-  if (skipNetworkTests) {
-    console.log(
-      "⚠️ Network tests skipped. Please provide RPC_URL to run tests."
-    );
-    return;
-  }
-
   // Initialize provider and wallet using utils
   const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+  const chainId = await provider.getNetwork();
+  console.log(
+    `Network: ${
+      chainId.chainId === 1n
+        ? "Ethereum Mainnet"
+        : chainId.chainId === 8453n
+        ? "Base Mainnet"
+        : chainId.chainId === 11155111n
+        ? "Ethereum Sepolia"
+        : "Unknown"
+    } (Chain ID: ${chainId.chainId})\n`
+  );
+
   const wallet =
     MNEMONIC || PRIVATE_KEY
       ? createWallet(provider, 0)
@@ -233,11 +238,15 @@ const setUpTest = async () => {
   }
 
   // Get network configuration
-  const networkConfig = getNetworkConfig(/** @type {any} */ (chainId));
+  const networkConfig = await client.getNetworkConfig();
 
   logTitle("Global Information");
   logResult("Client initialization", true, "Success");
-  logResult("Network", true, `${networkConfig.name} (Chain ID: ${chainId})`);
+  logResult(
+    "Network",
+    true,
+    `${networkConfig.name} (Chain ID: ${chainId.chainId})`
+  );
   logResult("Factory", true, networkConfig.byzantineFactoryAddress);
 
   // =============================================

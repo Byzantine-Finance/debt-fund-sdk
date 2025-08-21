@@ -26,6 +26,19 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
         "0xf21189365131551Ba4c3613252B1bcCdA60BD1e6",
     },
   },
+  42161: {
+    name: "Arbitrum Mainnet",
+    byzantineFactoryAddress: "0x4D4A1eF022410b1a5c04049E5c3b1651FDd9EcBA",
+    scanLink: "https://arbiscan.io",
+    USDCaddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    adapters: {
+      morphoVaultV1AdapterFactory: "0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F",
+      aaveStataVaultAdapterFactory:
+        "0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F",
+      morphoMarketV1AdapterFactory:
+        "0xA8b523fcf34F2f63d26e709a16c9bC41801f1fC9",
+    },
+  },
   // Holesky Testnet
   // 17000: {
   //   name: "Holesky",

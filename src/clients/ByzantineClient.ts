@@ -8,6 +8,7 @@ import { OwnersClient } from "./owners";
 import { CuratorsClient, TimelockFunction } from "./curators";
 import { AdaptersClient, AdaptersFactoryClient, AdapterType } from "./adapters";
 import { DepositorsClient } from "./depositors";
+import { AllocatorsClient } from "./allocators";
 import * as MorphoMarketV1AdaptersFunctions from "./adapters/MorphoMarketV1Adapters";
 
 /**
@@ -53,6 +54,17 @@ export class ByzantineClient {
    */
   getDepositorsClient(vaultAddress: string): DepositorsClient {
     return new DepositorsClient(
+      this.contractProvider,
+      vaultAddress,
+      this.provider
+    );
+  }
+
+  //*******************************************
+  //* ALLOCATORS CLIENT - Vault Allocator Operations
+  //*******************************************
+  getAllocatorsClient(vaultAddress: string): AllocatorsClient {
+    return new AllocatorsClient(
       this.contractProvider,
       vaultAddress,
       this.provider
@@ -1147,6 +1159,64 @@ export class ByzantineClient {
   }
 
   // ========================================
+  // ALLOCATORS METHODS
+  // ========================================
+
+  async setLiquidityAdapterAndData(
+    vaultAddress: string,
+    newLiquidityAdapter: string,
+    newLiquidityData: string
+  ) {
+    return await this.getAllocatorsClient(
+      vaultAddress
+    ).setLiquidityAdapterAndData(newLiquidityAdapter, newLiquidityData);
+  }
+
+  async allocate(
+    vaultAddress: string,
+    adapter: string,
+    data: string,
+    assets: bigint
+  ) {
+    return await this.getAllocatorsClient(vaultAddress).allocate(
+      adapter,
+      data,
+      assets
+    );
+  }
+
+  async deallocate(
+    vaultAddress: string,
+    adapter: string,
+    data: string,
+    assets: bigint
+  ) {
+    return await this.getAllocatorsClient(vaultAddress).deallocate(
+      adapter,
+      data,
+      assets
+    );
+  }
+
+  // Read functions
+
+  async getLiquidityAdapter(vaultAddress: string) {
+    return await this.getAllocatorsClient(vaultAddress).getLiquidityAdapter();
+  }
+
+  async getLiquidityData(vaultAddress: string) {
+    return await this.getAllocatorsClient(vaultAddress).getLiquidityData();
+  }
+
+  async getAllocation(vaultAddress: string, id: string) {
+    return await this.getAllocatorsClient(vaultAddress).getAllocation(id);
+  }
+
+  async getIdleBalance(vaultAddress: string) {
+    return await this.getAllocatorsClient(vaultAddress).getIdleBalance();
+  }
+
+  // ========================================
   // UTILITY METHODS
   // ========================================
 
@@ -1192,5 +1262,12 @@ export class ByzantineClient {
    */
   get depositors() {
     return this.getDepositorsClient;
+  }
+
+  /**
+   * Get access to the allocators client for advanced operations
+   */
+  get allocators() {
+    return this.getAllocatorsClient;
   }
 }

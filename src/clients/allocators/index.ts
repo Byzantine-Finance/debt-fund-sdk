@@ -5,4 +5,4 @@
 //  */
 
 // // Export specialized clients
-// export { AllocatorsClient } from "./AllocatorsClient";
+export { AllocatorsClient } from "./AllocatorsClient";

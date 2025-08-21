@@ -1,6 +1,6 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers, parseEther, parseUnits, randomBytes } from "ethers";
-import { TimelockFunction } from "../dist/clients/curators";
+import { TimelockFunction } from "../src/clients/curators";
 import {
   finalReading,
   RPC_URL,

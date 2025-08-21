@@ -57,7 +57,6 @@ export async function getAllowance(
   userAddress: string
 ): Promise<bigint> {
   const assetAddress = await callContractMethod(vaultContract, "asset");
-  const vaultAddress = await callContractMethod(vaultContract, "vault");
 
   const tokenContract = new ethers.Contract(assetAddress, erc20Abi, provider);
 
@@ -65,7 +64,7 @@ export async function getAllowance(
     tokenContract,
     "allowance",
     userAddress,
-    vaultAddress
+    vaultContract.target
   );
 }
 

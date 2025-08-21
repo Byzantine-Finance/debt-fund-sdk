@@ -12,7 +12,6 @@ import * as BalancesFunctions from "./Balances";
  * This eliminates the need to pass vaultAddress repeatedly
  */
 export class DepositorsClient {
-  private contractProvider: ContractProvider;
   private provider: ethers.Provider;
   private vaultAddress: string;
   private vaultContract: ethers.Contract;
@@ -23,7 +22,6 @@ export class DepositorsClient {
     provider: ethers.Provider
   ) {
     this.provider = provider;
-    this.contractProvider = contractProvider;
     this.vaultAddress = vaultAddress;
     this.vaultContract = contractProvider.getVaultContract(vaultAddress);
   }

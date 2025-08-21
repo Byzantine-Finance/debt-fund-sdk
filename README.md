@@ -319,6 +319,27 @@ await client.getIsAllocator(vaultAddress, account);
 await client.isAllocator(vaultAddress, account);
 ```
 
+#### Allocator Operations
+
+```js
+// Liquidity adapter configuration
+await client.setLiquidityAdapterAndData(
+  vaultAddress,
+  newLiquidityAdapter,
+  newLiquidityData
+);
+
+// Asset allocation and deallocation
+await client.allocate(vaultAddress, adapter, data, assets);
+await client.deallocate(vaultAddress, adapter, data, assets);
+
+// Read allocation information
+await client.getLiquidityAdapter(vaultAddress);
+await client.getLiquidityData(vaultAddress);
+await client.getAllocation(vaultAddress, id);
+await client.getIdleBalance(vaultAddress);
+```
+
 #### Adapter Management
 
 ```js

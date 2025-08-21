@@ -74,6 +74,14 @@ npx tsx example/[filename].ts
 
 **Description:** Shows how to set caps (both relative and absolute) for specific adapters within a vault. Demonstrates the process of configuring allocation limits and how to use the instant cap increase functionality. Important for understanding risk management and allocation controls.
 
+### 💼 Configure Allocator Settings
+
+**Command:** `npx tsx example/allocators-settings.ts`
+
+**Requirements:** Global requirements above + allocator role on the target vault, set `VAULT_ADDRESS` and `ALLOCATOR_SETTINGS_CONFIG`
+
+**Description:** Comprehensive example demonstrating all allocator operations including liquidity adapter configuration, asset allocation/deallocation strategies, and emergency force deallocation. Shows how to allocate assets to underlying vaults through adapters, manage allocation data for different adapter types (Vault V1 vs Market V1), and configure liquidity strategies. Perfect for understanding how allocators manage vault capital deployment and risk allocation across different DeFi protocols.
+
 ### 🛠️ Utility Functions
 
 **Command:** Not directly runnable - utility functions for other examples

@@ -39,8 +39,8 @@
 
 //   try {
 //     // Check if environment variables are set
-//     const { RPC_URL, MNEMONIC, PRIVATE_KEY, DEFAULT_CHAIN_ID } = process.env;
-//     const chainId = DEFAULT_CHAIN_ID ? parseInt(DEFAULT_CHAIN_ID) : 11155111; // Default to Sepolia
+//     const { RPC_URL, MNEMONIC, PRIVATE_KEY } = process.env;
+//     const chainId = await provider.getNetwork();
 
 //     if (!RPC_URL) {
 //       throw new Error(
@@ -407,7 +407,6 @@
 //   console.log("1. Create a .env file with:");
 //   console.log("   RPC_URL=<your_rpc_endpoint>");
 //   console.log("   PRIVATE_KEY=<your_private_key> (with USDC balance)");
-//   console.log("   DEFAULT_CHAIN_ID=11155111 (for Sepolia)");
 //   console.log("");
 //   console.log("2. Ensure you have at least 0.5 USDC in your wallet");
 //   console.log("3. Update VAULT_ADDRESS constant in this file");

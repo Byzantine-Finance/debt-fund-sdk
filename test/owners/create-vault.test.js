@@ -24,6 +24,7 @@ const {
   assertThrows,
   createWallet,
   getWalletBalances,
+  setUpTest,
 } = require("../utils");
 const {
   setVaultNameAndSymbolOptimal,
@@ -31,10 +32,6 @@ const {
 } = require("./set-name-symbol.test");
 
 async function runTests() {
-  // Configuration
-  const chainId = 8453; // Base Mainnet
-  /** @type {any} */ const skipNetworkTests = false; // Set to true to skip network calls during development
-
   // ========================================
   // VAULT PARAMETERS - Configure your vault here
   // ========================================
@@ -50,74 +47,22 @@ async function runTests() {
   };
 
   logTitle("Byzantine Factory SDK - Create Vault Test");
-  console.log(`Network: Base Mainnet (Chain ID: ${chainId})\n`);
 
   try {
-    // Load environment variables
-    require("dotenv").config();
-    const { RPC_URL } = process.env;
-
-    assert(RPC_URL, "RPC_URL must be set in .env file");
-
-    // Get network configuration and ByzantineClient
-    const { getNetworkConfig, ByzantineClient } = require("../../dist");
-    const networkConfig = getNetworkConfig(chainId);
-
-    assert(networkConfig, `Chain ID ${chainId} must be supported`);
-    assert(
-      networkConfig.byzantineFactoryAddress,
-      "Factory address must be configured"
-    );
-
-    // Create provider and wallet
-    const provider = /** @type {any} */ (new ethers.JsonRpcProvider(RPC_URL));
-    const wallet = createWallet(provider, 0);
-    const address = await wallet.getAddress();
-
-    logResult("Wallet address", true, address);
-    logResult("Factory address", true, networkConfig.byzantineFactoryAddress);
-
-    if (skipNetworkTests) {
-      console.log("⏭️  Skipping network tests (skipNetworkTests = true)");
-      return;
+    const setupResult = await setUpTest();
+    if (!setupResult) {
+      throw new Error(
+        "Test setup failed. Please check your environment variables."
+      );
     }
-
-    // Verify factory contract exists
-    console.log("\n🔍 Verifying factory contract...");
-    try {
-      const factoryCode = await provider.getCode(
-        networkConfig.byzantineFactoryAddress
-      );
-      assert(
-        factoryCode !== "0x",
-        "Factory contract not found at specified address"
-      );
-      console.log("✅ Factory contract exists");
-      logResult(
-        "Factory verification",
-        true,
-        `Code length: ${factoryCode.length} bytes`
-      );
-
-      // Test factory contract connectivity
-      const tempClient = new ByzantineClient(provider);
-      // @ts-ignore - Method exists in updated SDK
-      const factoryContract = await tempClient.getVaultFactoryContract();
-      console.log(
-        `✅ Factory contract working - Address: ${factoryContract.target}`
-      );
-      console.log(`✅ Factory contract accessible through client`);
-    } catch (error) {
-      console.log(`❌ Factory contract verification failed: ${error.message}`);
-      logResult("Factory verification", false, error.message);
-    }
+    const { provider, client, networkConfig, userAddress } = setupResult;
 
     // Check wallet balance
     console.log("\n💰 Checking wallet balance...");
     try {
       const balances = await getWalletBalances(
         provider,
-        address,
+        userAddress,
         networkConfig
       );
       console.log(`💰 Your ETH Balance: ${balances.ETH.formatted} ETH`);
@@ -146,14 +91,9 @@ async function runTests() {
       console.warn("⚠️ Could not check ETH balance, proceeding anyway...");
     }
 
-    // Initialize Byzantine client
-    const client = new ByzantineClient(provider, /** @type {any} */ (wallet));
-    assert(client, "Byzantine client must be initialized");
-    logResult("Client initialization", true, "ByzantineClient created");
-
     // Prepare final vault parameters
     const finalVaultParams = {
-      owner: address, // The wallet address will be the owner
+      owner: userAddress, // The wallet address will be the owner
       asset: networkConfig.USDCaddress || VAULT_PARAMS.asset, // Use network config or fallback
       salt: VAULT_PARAMS.salt,
       // Optional parameters
@@ -245,8 +185,8 @@ async function runTests() {
           // @ts-ignore - Method exists in updated SDK
           const currentOwner = await client.getOwner(vaultAddress);
           assert(
-            currentOwner.toLowerCase() === address.toLowerCase(),
-            `Wallet must be the vault owner. Current owner: ${currentOwner}, Wallet: ${address}`
+            currentOwner.toLowerCase() === userAddress.toLowerCase(),
+            `Wallet must be the vault owner. Current owner: ${currentOwner}, Wallet: ${userAddress}`
           );
           logResult("Ownership verification", true, "Wallet is vault owner");
 
@@ -277,7 +217,7 @@ async function runTests() {
           // Wait before next transaction to avoid nonce issues if curator is to be set
           if (
             finalVaultParams.curator &&
-            finalVaultParams.curator === address
+            finalVaultParams.curator === userAddress
           ) {
             console.log("⏳ Waiting before curator setup...");
             await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
@@ -286,7 +226,7 @@ async function runTests() {
           // Set curator if provided
           if (
             finalVaultParams.curator &&
-            finalVaultParams.curator === address // Only set curator if it's the same as the owner
+            finalVaultParams.curator === userAddress // Only set curator if it's the same as the owner
           ) {
             console.log(`👤 Setting curator to: ${finalVaultParams.curator}`);
             // @ts-ignore - Method exists in updated SDK

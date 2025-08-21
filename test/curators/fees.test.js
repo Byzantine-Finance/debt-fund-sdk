@@ -16,17 +16,7 @@
  * - Verifying curator permissions
  */
 
-const { ethers } = require("ethers");
-const { ByzantineClient, getNetworkConfig } = require("../../dist");
-const {
-  logTitle,
-  logResult,
-  assert,
-  createWallet,
-  getWalletBalances,
-  setUpTest,
-  vaultUserInformation,
-} = require("../utils");
+const { setUpTest } = require("../utils");
 require("dotenv").config();
 
 // 🎯 CONFIGURE YOUR TEST PARAMETERS HERE
