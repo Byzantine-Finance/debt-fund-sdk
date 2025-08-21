@@ -183,18 +183,10 @@ export async function finalReading(
   console.log("* Symbol:", symbol);
   console.log("*");
   console.log(
-    "* Total Assets:",
-    totalAssets,
-    " (",
-    formatUnits(totalAssets, 6),
-    "USDC)"
+    `* Total Assets: ${totalAssets} (${formatUnits(totalAssets, 6)} USDC)`
   );
   console.log(
-    "* Total Supply:",
-    totalSupply,
-    " (",
-    formatUnits(totalSupply, 18),
-    "byzUSDC)"
+    `* Total Supply: ${totalSupply} (${formatUnits(totalSupply, 18)} byzUSDC)`
   );
   console.log("* Virtual Shares:", virtualShares);
   console.log("*");
@@ -275,11 +267,7 @@ export async function finalReading(
   console.log("* Liquidity Data:", liquidityData);
   console.log("*");
   console.log(
-    "* Idle Balance:",
-    idleBalance,
-    " (",
-    formatUnits(idleBalance, 6),
-    "USDC)"
+    `* Idle Balance: ${idleBalance} (${formatUnits(idleBalance, 6)} USDC)`
   );
   console.log("*");
   allTimelocks.forEach((timelock) => {

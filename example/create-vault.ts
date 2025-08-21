@@ -45,7 +45,7 @@ interface SetupVaultConfig {
 //*******************************************************************
 
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
-  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
   name: "Byzantine Vault",
   symbol: "BYZ",
   performance_fee: parseEther("0.5"), // 50%

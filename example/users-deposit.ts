@@ -20,11 +20,11 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0x169FdF43910Eca52f4F97D361A44D26e71B18134";
+const VAULT_ADDRESS = "0x732f39262402a60af38d0c913c1d737633b87a28";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  // depositAmount: parseUnits("10.0", 6), // 1.0 USDC (6 decimals)
+  depositAmount: parseUnits("1.0", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
   // withdrawAmount: parseUnits("3", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
