@@ -15,8 +15,8 @@ Debt Fund is a decentralized protocol that allows users to create and manage vau
 
 This SDK provides a comprehensive interface for developers to integrate with Debt Fund on:
 
-- **Base Mainnet (Chain ID: 8453)**
-- **Ethereum Sepolia (Chain ID: 11155111)** - for testing
+- **Base Mainnet (Chain ID: 8453)** - It is on mainnet, but please only use it as a testnet with small amounts
+- **Arbitrum One (Chain ID: 42161)** - It is on mainnet, but please only use it as a testnet with small amounts
 - _Additional networks coming soon_
 
 ## Installation
@@ -640,11 +640,11 @@ This example shows the full lifecycle of vault creation and configuration.
   - Morpho Vault V1 Adapter Factory: `0xbA98A4d436e79639A1598aFc988eFB7A828d7F08`
   - Morpho Market V1 Adapter Factory: `0xf21189365131551Ba4c3613252B1bcCdA60BD1e6`
 
-- **Ethereum Sepolia (Chain ID: 11155111)** - Testing
+- **Arbitrum One (Chain ID: 42161)**
 
-  - Byzantine Factory: `0xf9332a83747b169f99dc4b247f3f1f7f22863703`
-  - Morpho Vault V1 Adapter Factory: `0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1`
-  - Morpho Market V1 Adapter Factory: `0xE5B709A14859EdF820347D78E587b1634B0ec771`
+  - Byzantine Factory: `0x4D4A1eF022410b1a5c04049E5c3b1651FDd9EcBA`
+  - Morpho Vault V1 Adapter Factory: `0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F`
+  - Morpho Market V1 Adapter Factory: `0xA8b523fcf34F2f63d26e709a16c9bC41801f1fC9`
 
 - _Additional networks coming soon_
 

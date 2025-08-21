@@ -6,7 +6,7 @@
  */
 
 const { ethers } = require("ethers");
-const { ByzantineClient } = require("../dist");
+const { ByzantineClient } = require("../src/index");
 require("dotenv").config();
 
 const ERC20_ABI = [
@@ -215,6 +215,8 @@ const setUpTest = async () => {
         ? "Ethereum Mainnet"
         : chainId.chainId === 8453n
         ? "Base Mainnet"
+        : chainId.chainId === 42161n
+        ? "Arbitrum One"
         : chainId.chainId === 11155111n
         ? "Ethereum Sepolia"
         : "Unknown"

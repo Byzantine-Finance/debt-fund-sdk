@@ -27,7 +27,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     },
   },
   42161: {
-    name: "Arbitrum Mainnet",
+    name: "Arbitrum One",
     byzantineFactoryAddress: "0x4D4A1eF022410b1a5c04049E5c3b1651FDd9EcBA",
     scanLink: "https://arbiscan.io",
     USDCaddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
