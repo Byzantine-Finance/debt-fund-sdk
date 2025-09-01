@@ -10,6 +10,34 @@ import { TimelockFunction } from "../src/clients/curators";
 import { AdapterType } from "../src/clients/adapters";
 import { setupCuratorsSettings } from "./utils/curator";
 
+// Base vault configuration shared by all vault types
+interface BaseVaultConfig {
+  address: string; // Address of the underlying vault or market
+  deallocate_penalty?: bigint; // 100% = 1e18, max 2% -> 0.02e18 (per adapter)
+
+  // New structure for caps per ID
+  caps_per_id?: {
+    id?: string; // If don't specify, we take the first ID from the adapter
+    relative_cap?: bigint; // 100% = 1e18, max 100% -> 1e18
+    absolute_cap?: bigint;
+  }[];
+}
+
+// Vault configuration for non-CompoundV3 types (comet_rewards is optional)
+interface NonCompoundV3VaultConfig extends BaseVaultConfig {
+  type: "erc4626" | "erc4626Merkl" | "morphoMarketV1";
+  comet_rewards?: string; // Optional for non-CompoundV3 adapters
+}
+
+// Vault configuration for CompoundV3 type (comet_rewards is required)
+interface CompoundV3VaultConfig extends BaseVaultConfig {
+  type: "compoundV3";
+  comet_rewards: string; // Required for compoundV3 adapters
+}
+
+// Union type for all vault configurations
+type VaultConfig = NonCompoundV3VaultConfig | CompoundV3VaultConfig;
+
 export interface CuratorsSettingsConfig {
   allocator?: string[]; // Might have multiple allocators
 
@@ -19,19 +47,7 @@ export interface CuratorsSettingsConfig {
   management_fee_recipient?: string;
   max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
 
-  underlying_vaults?: {
-    address: string; // Address of the underlying vault or market
-    comet_rewards?: string; // Comet rewards address (only required for compoundV3 adapters)
-    type: AdapterType; // "erc4626" | "erc4626Merkl" | "compoundV3" | "morphoMarketV1"
-    deallocate_penalty?: bigint; // 100% = 1e18, max 2% -> 0.02e18 (per adapter)
-
-    // New structure for caps per ID
-    caps_per_id?: {
-      id?: string; // If don't specify, we take the first ID from the adapter
-      relative_cap?: bigint; // 100% = 1e18, max 100% -> 1e18
-      absolute_cap?: bigint;
-    }[];
-  }[];
+  underlying_vaults?: VaultConfig[];
 
   timelockFunctionsToIncrease?: Partial<Record<TimelockFunction, number>>;
 }
@@ -42,16 +58,16 @@ export interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0xFC7BbD89c0b8279cDB465869E38Fb9A8e63C516d";
+const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
-  allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+  // allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
 
-  performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-  management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-  performance_fee: parseUnits("0.05", 18), // 5%
-  management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
-  max_rate: parseUnits("2", 18) / 31536000n, // 200% / year
+  // performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+  // management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+  // performance_fee: parseUnits("0.05", 18), // 5%
+  // management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
+  // max_rate: parseUnits("2", 18) / 31536000n, // 200% / year
 
   underlying_vaults: [
     {
@@ -60,23 +76,23 @@ const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
       deallocate_penalty: parseEther("0.02"),
       caps_per_id: [
         {
-          relative_cap: parseUnits("1", 18), // 100%
-          absolute_cap: parseUnits("200", 6), // 800 USDC
+          // relative_cap: parseUnits("1", 18), // 100%
+          absolute_cap: parseUnits("550", 6), // 800 USDC
         },
       ],
     },
-    {
-      address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
-      type: "erc4626",
-      deallocate_penalty: parseEther("0.02"),
-      caps_per_id: [
-        {
-          // id: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b", // ID from Adapter 1
-          relative_cap: parseUnits("0.4", 18), // 30%
-          absolute_cap: parseUnits("300", 6), // 300 USDC
-        },
-      ],
-    },
+    // {
+    //   address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
+    //   type: "erc4626",
+    //   deallocate_penalty: parseEther("0.02"),
+    //   caps_per_id: [
+    //     {
+    //       // id: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b", // ID from Adapter 1
+    //       relative_cap: parseUnits("0.4", 18), // 30%
+    //       absolute_cap: parseUnits("300", 6), // 300 USDC
+    //     },
+    //   ],
+    // },
   ],
 
   timelockFunctionsToIncrease: {

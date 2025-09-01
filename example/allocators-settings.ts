@@ -7,10 +7,15 @@ import {
   waitHalfSecond,
 } from "./utils/toolbox";
 import { getIdData } from "../src/clients/curators/Cap";
+import { setupAllocatorsSettings } from "./utils";
 
-interface AllocatorSettingsConfig {
+export interface AllocatorSettingsConfig {
   setLiquidityAdapterAndData?: {
     liquidityAdapter: string;
+    liquidityData: string;
+  };
+  setLiquidityAdapterFromUnderlyingVaultAndData?: {
+    underlyingVault: string;
     liquidityData: string;
   };
   allocateConfigFromUnderlyingVault?: {
@@ -45,39 +50,39 @@ interface AllocatorSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x9c6dd63e5e30e6984a322d2a5cdaee49ebc46207";
+const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
 
 const ALLOCATOR_SETTINGS_CONFIG: AllocatorSettingsConfig = {
-  setLiquidityAdapterAndData: {
-    liquidityAdapter: "0xAF8c935F26D6a4bE310bAe15Fdf9B4d1faE4ED62",
-    liquidityData: "0x", // Empty data, adjust as needed
-  },
-  // allocateConfigFromUnderlyingVault: [
+  // setLiquidityAdapterAndData: {
+  //   liquidityAdapter: "0xDA0455494f0E82E440312D0538558Ae236649345",
+  //   liquidityData: "0x", // Empty data, adjust as needed
+  // },
+  allocateConfigFromUnderlyingVault: [
+    {
+      underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
+      amountAsset: parseUnits("0.1", 6), // 0.1 USDC
+    },
+  ],
+  // allocateConfigFromAdapter: [
+  //   {
+  //     adapter: "0x5a83a5c10C4d6c4EAbB4E2B5add5B2C5997f150D",
+  //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
+  //     data: "0x", // Empty data because it's a AdapterVaultV1
+  //   },
+  // ],
+  // deallocateConfigFromUnderlyingVault: [
   //   {
   //     underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
   //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
   //   },
   // ],
-  //   allocateConfigFromAdapter: [
-  //     {
-  //       adapter: "0x9925F74a9386C5c437d83065DA1f6D5c23a5545b",
-  //       amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-  //       data: "0x", // Empty data because it's a AdapterVaultV1
-  //     },
-  //   ],
-  //   deallocateConfigFromUnderlyingVault: [
-  //     {
-  //       underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
-  //       amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-  //     },
-  //   ],
-  //   deallocateConfigFromAdapter: [
-  //     {
-  //       adapter: "0x9925F74a9386C5c437d83065DA1f6D5c23a5545b",
-  //       amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-  //       data: "0x", // Empty data because it's a AdapterVaultV1
-  //     },
-  //   ],
+  // deallocateConfigFromAdapter: [
+  //   {
+  //     adapter: "0xDA0455494f0E82E440312D0538558Ae236649345",
+  //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
+  //     data: "0x", // Empty data because it's a AdapterVaultV1
+  //   },
+  // ],
 
   // Uncomment if you want to force deallocate (emergency function)
   //   forceDeallocateConfig: {
@@ -89,13 +94,11 @@ const ALLOCATOR_SETTINGS_CONFIG: AllocatorSettingsConfig = {
 };
 
 async function main() {
-  console.log("Start example to configure allocator settings of a vault");
-
+  console.log("Start example to set curator settings of a vault");
   try {
     // ****************
     // Setup the test
     // ****************
-
     const provider = new ethers.JsonRpcProvider(RPC_URL);
     const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
     const client = new ByzantineClient(provider, wallet);
@@ -103,184 +106,27 @@ async function main() {
     const userAddress = await wallet.getAddress();
 
     // Check if user is an allocator
+    await client.instantSetIsAllocator(VAULT_ADDRESS, userAddress, true);
+    await waitHalfSecond();
     const isAllocator = await client.isAllocator(VAULT_ADDRESS, userAddress);
     if (!isAllocator) {
       console.log("Access denied: only allocators can proceed here.");
       throw new Error("Access denied: only allocators can proceed here.");
     }
 
-    console.log(`User ${userAddress} is an allocator`);
-
-    // ****************
-    // Read current settings
-    // ****************
-
     await fullReading(client, VAULT_ADDRESS, userAddress);
 
-    // ****************
-    // Configure liquidity adapter and data
-    // ****************
-
-    if (ALLOCATOR_SETTINGS_CONFIG.setLiquidityAdapterAndData) {
-      const newLiquidityAdapter =
-        ALLOCATOR_SETTINGS_CONFIG.setLiquidityAdapterAndData?.liquidityAdapter;
-      const newLiquidityData =
-        ALLOCATOR_SETTINGS_CONFIG.setLiquidityAdapterAndData?.liquidityData;
-
-      if (newLiquidityAdapter && newLiquidityData !== undefined) {
-        console.log(`\n--- Setting Liquidity Adapter and Data ---`);
-        console.log(`New liquidity adapter: ${newLiquidityAdapter}`);
-        console.log(`New liquidity data: ${newLiquidityData}`);
-
-        const tx = await client.setLiquidityAdapterAndData(
-          VAULT_ADDRESS,
-          newLiquidityAdapter,
-          newLiquidityData
-        );
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`Liquidity adapter and data updated successfully`);
-      }
-    }
-
-    // ****************
-    // Allocate assets
-    // ****************
-
-    const allocateConfigFromUnderlyingVault =
-      ALLOCATOR_SETTINGS_CONFIG.allocateConfigFromUnderlyingVault;
-    if (allocateConfigFromUnderlyingVault) {
-      for (const allocateConfig of allocateConfigFromUnderlyingVault) {
-        console.log(`\n--- Allocating Assets from Underlying Vault ---`);
-        console.log(`Underlying Vault: ${allocateConfig.underlyingVault}`);
-        console.log(`Amount Asset: ${allocateConfig.amountAsset} wei`);
-
-        const adapter = await client.findAdapter(
-          "erc4626",
-          VAULT_ADDRESS,
-          allocateConfig.underlyingVault
-        );
-        console.log(`Found adapter: ${adapter}`);
-
-        const tx = await client.allocate(
-          VAULT_ADDRESS,
-          adapter,
-          "0x",
-          allocateConfig.amountAsset
-        );
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`Assets allocated successfully`);
-      }
-    }
-
-    // ****************
-
-    const allocateConfigFromAdapter =
-      ALLOCATOR_SETTINGS_CONFIG.allocateConfigFromAdapter;
-    if (allocateConfigFromAdapter) {
-      for (const allocateConfig of allocateConfigFromAdapter) {
-        console.log(`\n--- Allocating Assets from Adapter ---`);
-        console.log(`Adapter: ${allocateConfig.adapter}`);
-
-        const tx = await client.allocate(
-          VAULT_ADDRESS,
-          allocateConfig.adapter,
-          allocateConfig.data || "0x",
-          allocateConfig.amountAsset
-        );
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`Assets allocated successfully`);
-      }
-    }
-
-    if (allocateConfigFromUnderlyingVault || allocateConfigFromAdapter) {
-      await fullReading(client, VAULT_ADDRESS, userAddress);
-    }
-
-    // ****************
-    // Deallocate assets
-    // ****************
-
-    const deallocateConfigFromUnderlyingVault =
-      ALLOCATOR_SETTINGS_CONFIG.deallocateConfigFromUnderlyingVault;
-    if (deallocateConfigFromUnderlyingVault) {
-      for (const deallocateConfig of deallocateConfigFromUnderlyingVault) {
-        console.log(`\n--- Deallocating Assets from Underlying Vault ---`);
-        console.log(`Underlying Vault: ${deallocateConfig.underlyingVault}`);
-        console.log(`Amount Asset: ${deallocateConfig.amountAsset} wei`);
-
-        const adapter = await client.findAdapter(
-          "erc4626",
-          VAULT_ADDRESS,
-          deallocateConfig.underlyingVault
-        );
-        console.log(`Found adapter: ${adapter}`);
-
-        const tx = await client.deallocate(
-          VAULT_ADDRESS,
-          adapter,
-          "0x",
-          deallocateConfig.amountAsset
-        );
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`Assets deallocated successfully`);
-      }
-    }
-
-    const deallocateConfigFromAdapter =
-      ALLOCATOR_SETTINGS_CONFIG.deallocateConfigFromAdapter;
-    if (deallocateConfigFromAdapter) {
-      for (const deallocateConfig of deallocateConfigFromAdapter) {
-        console.log(`\n--- Deallocating Assets from Adapter ---`);
-        console.log(`Adapter: ${deallocateConfig.adapter}`);
-        console.log(`Amount Asset: ${deallocateConfig.amountAsset} wei`);
-
-        const tx = await client.deallocate(
-          VAULT_ADDRESS,
-          deallocateConfig.adapter,
-          deallocateConfig.data || "0x",
-          deallocateConfig.amountAsset
-        );
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`Assets deallocated successfully`);
-      }
-    }
-
-    if (deallocateConfigFromUnderlyingVault || deallocateConfigFromAdapter) {
-      await fullReading(client, VAULT_ADDRESS, userAddress);
-    }
-
-    // ****************
-    // Force deallocate assets (emergency function)
-    // ****************
-
-    const forceDeallocateConfig =
-      ALLOCATOR_SETTINGS_CONFIG.forceDeallocateConfig;
-    if (forceDeallocateConfig) {
-      console.log(`\n--- Force Deallocating Assets (Emergency) ---`);
-      console.log(`Adapter: ${forceDeallocateConfig.adapter}`);
-      console.log(`Data: ${forceDeallocateConfig.data}`);
-      console.log(`Amount Asset: ${forceDeallocateConfig.amountAsset} wei`);
-      console.log(`On behalf of: ${forceDeallocateConfig.onBehalf}`);
-
-      const tx = await client.deallocate(
-        VAULT_ADDRESS,
-        forceDeallocateConfig.adapter,
-        forceDeallocateConfig.data || "0x",
-        forceDeallocateConfig.amountAsset
-      );
-      await tx.wait();
-      await waitHalfSecond();
-      console.log(`Assets force deallocated successfully`);
-    }
+    await setupAllocatorsSettings(
+      client,
+      VAULT_ADDRESS,
+      userAddress,
+      ALLOCATOR_SETTINGS_CONFIG
+    );
 
     await fullReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
-    console.error("Error configuring allocator settings of a vault:", error);
+    console.error("Error setting curator settings of a vault:", error);
+  } finally {
   }
 }
 

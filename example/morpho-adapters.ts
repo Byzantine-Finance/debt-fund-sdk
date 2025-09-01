@@ -69,7 +69,6 @@ async function main() {
 
     // Try to find existing Morpho Vault V1 adapter
     const existingVaultAdapter = await client.findAdapter(
-      "erc4626",
       VAULT_ADDRESS,
       MORPHO_VAULT_V1
     );
@@ -115,7 +114,6 @@ async function main() {
         console.log(`   ❌ Failed to deploy Vault V1 adapter: ${error}`);
         // Try to find if it was created by another transaction
         finalVaultAdapterAddress = await client.findAdapter(
-          "erc4626",
           VAULT_ADDRESS,
           MORPHO_VAULT_V1
         );

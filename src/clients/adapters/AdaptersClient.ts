@@ -7,7 +7,7 @@ import * as ERC4626MerklAdaptersFunctions from "./ERC4626MerklAdapters";
 import * as CompoundV3AdaptersFunctions from "./CompoundV3Adapters";
 import * as MorphoMarketV1AdaptersFunctions from "./MorphoMarketV1Adapters";
 import * as GlobalAdaptersFunctions from "./GlobalAdapters";
-import { DeployAdapterResult } from "./GlobalAdapters";
+import { DeployAdapterResult, getAdapterType } from "./GlobalAdapters";
 
 export type AdapterType =
   | "erc4626"
@@ -62,44 +62,115 @@ export class AdaptersFactoryClient {
 
   /**
    * Find an existing adapter address
-   * @param type The type of adapter
    * @param parentAddress The parent vault address
    * @param underlyingAddress The underlying address
+   * @param type The type of adapter, if not provided, we will find it
    * @returns The adapter address
    */
+  /**
+   * Find an existing adapter address.
+   * If type is not specified, will try all known types and return the first found (not zero address).
+   * @param parentAddress The parent vault address
+   * @param underlyingAddress The underlying address
+   * @param type The type of adapter, if not provided, will try all types
+   * @returns The adapter address (zero address if not found)
+   */
+  /**
+   * Find an existing adapter address.
+   * If type is specified, use the corresponding function.
+   * If not, will try all known types and return the first found (not zero address).
+   * @param parentAddress The parent vault address
+   * @param underlyingAddress The underlying address
+   * @param type The type of adapter, if not provided, will try all types
+   * @returns The adapter address (zero address if not found)
+   */
   async findAdapter(
-    type: AdapterType,
     parentAddress: string,
-    underlyingAddress: string
+    underlyingAddress: string,
+    type?: AdapterType
   ): Promise<string> {
-    switch (type) {
-      case "erc4626":
-        return await ERC4626AdaptersFunctions.findERC4626Adapter(
-          this.contractProvider,
-          parentAddress,
-          underlyingAddress
-        );
-      case "erc4626Merkl":
-        return await ERC4626MerklAdaptersFunctions.findERC4626MerklAdapter(
-          this.contractProvider,
-          parentAddress,
-          underlyingAddress
-        );
-      case "compoundV3":
-        return await CompoundV3AdaptersFunctions.findCompoundV3Adapter(
-          this.contractProvider,
-          parentAddress,
-          underlyingAddress
-        );
-      case "morphoMarketV1":
-        return await MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
-          this.contractProvider,
-          parentAddress,
-          underlyingAddress
-        );
-      default:
+    // Fast path: if type is specified, use the corresponding function directly
+    if (type) {
+      // Use a mapping for optimal lookup instead of switch-case
+      const adapterFinders: Record<
+        AdapterType,
+        (
+          provider: ContractProvider,
+          parent: string,
+          underlying: string
+        ) => Promise<string>
+      > = {
+        erc4626: ERC4626AdaptersFunctions.findERC4626Adapter,
+        erc4626Merkl: ERC4626MerklAdaptersFunctions.findERC4626MerklAdapter,
+        compoundV3: CompoundV3AdaptersFunctions.findCompoundV3Adapter,
+        morphoMarketV1:
+          MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter,
+      };
+
+      const finder = adapterFinders[type];
+      if (!finder) {
         throw new Error(`Invalid adapter type: ${type}`);
+      }
+      return await finder(
+        this.contractProvider,
+        parentAddress,
+        underlyingAddress
+      );
     }
+
+    // If type is not specified, try all known types and return the first found (not zero address)
+    const zeroAddress = "0x0000000000000000000000000000000000000000";
+    const adapterTypes: AdapterType[] = [
+      "erc4626",
+      "erc4626Merkl",
+      "compoundV3",
+      "morphoMarketV1",
+    ];
+
+    for (const t of adapterTypes) {
+      let found: string = zeroAddress;
+      try {
+        switch (t) {
+          case "erc4626":
+            found = await ERC4626AdaptersFunctions.findERC4626Adapter(
+              this.contractProvider,
+              parentAddress,
+              underlyingAddress
+            );
+            break;
+          case "erc4626Merkl":
+            found = await ERC4626MerklAdaptersFunctions.findERC4626MerklAdapter(
+              this.contractProvider,
+              parentAddress,
+              underlyingAddress
+            );
+            break;
+          case "compoundV3":
+            found = await CompoundV3AdaptersFunctions.findCompoundV3Adapter(
+              this.contractProvider,
+              parentAddress,
+              underlyingAddress
+            );
+            break;
+          case "morphoMarketV1":
+            found =
+              await MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
+                this.contractProvider,
+                parentAddress,
+                underlyingAddress
+              );
+            break;
+        }
+      } catch (e) {
+        // Ignore errors and continue to next type
+        found = zeroAddress;
+      }
+      if (found && found !== zeroAddress) {
+        return found;
+      }
+    }
+    // If no adapter found, return zero address
+    return zeroAddress;
   }
 
   /**

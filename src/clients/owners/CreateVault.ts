@@ -4,6 +4,7 @@ import {
   executeContractMethod,
   formatContractError,
 } from "../../utils";
+import { BYTECODE } from "./bytecode";
 
 /**
  * Vault creation functions for owners

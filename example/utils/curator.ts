@@ -120,9 +120,9 @@ export async function setupCuratorsSettings(
         // Try to find existing adapter
         try {
           adapterAddress = await client.findAdapter(
-            underlying.type,
             vaultAddress,
-            underlying.address
+            underlying.address,
+            underlying.type
           );
           console.log(
             `  - Found existing adapter: ${adapterAddress} for ${underlying.address}`

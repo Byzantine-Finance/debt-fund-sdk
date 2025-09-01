@@ -12,6 +12,7 @@ import {
   RPC_URL,
   MNEMONIC,
 } from "./utils/toolbox";
+import { checkAndApproveIfNeeded } from "./utils/depositor";
 
 interface VaultOperations {
   depositAmount?: bigint;
@@ -20,11 +21,11 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0xA9c1A676D046dF4BE50280b3f7F1EcaB5aFFd39B";
+const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  // depositAmount: parseUnits("0.4", 6), // 1.0 USDC (6 decimals)
+  depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
   // withdrawAmount: parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
@@ -280,54 +281,6 @@ async function displayBalances(
   } catch (error) {
     console.log(`   ❌ Error getting balances: ${error}`);
   }
-}
-
-// Helper function to check and approve asset if needed
-async function checkAndApproveIfNeeded(
-  client: ByzantineClient,
-  vaultAddress: string,
-  amount: bigint,
-  userAddress: string,
-  operation: "deposit" | "mint" | "withdraw" | "redeem" = "deposit"
-): Promise<boolean> {
-  // For mint operations, we need to calculate how many assets are needed
-  let amountToApprove = amount;
-
-  if (operation === "mint") {
-    amountToApprove = await client.previewMint(vaultAddress, amount);
-    console.log(
-      `   📊 For minting ${formatUnits(amount, 18)} shares, need ${formatUnits(
-        amountToApprove,
-        6
-      )} USDC`
-    );
-  }
-
-  const currentAllowance = await client.getAssetAllowance(
-    vaultAddress,
-    userAddress
-  );
-
-  if (currentAllowance < amountToApprove) {
-    console.log(
-      `   🔓 Approving vault to spend ${formatUnits(
-        amountToApprove,
-        6
-      )} USDC for ${operation}`
-    );
-    const tx = await client.approveAsset(vaultAddress, amountToApprove);
-    await tx.wait();
-    await waitHalfSecond();
-    return true; // Approval was needed and performed
-  }
-
-  console.log(
-    `   ✅ Vault already has sufficient allowance (${formatUnits(
-      currentAllowance,
-      6
-    )} USDC) for ${operation}`
-  );
-  return false; // No approval needed
 }
 
 main();
