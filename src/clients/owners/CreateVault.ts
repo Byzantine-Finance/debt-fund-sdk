@@ -1,9 +1,17 @@
 import { ethers } from "ethers";
-import { ContractProvider, executeContractMethod } from "../../utils";
+import {
+  ContractProvider,
+  executeContractMethod,
+  formatContractError,
+} from "../../utils";
 
 /**
  * Vault creation functions for owners
  */
+
+export interface CreateVaultResult extends ethers.ContractTransactionResponse {
+  vaultAddress: string;
+}
 
 /**
  * Create a new vault using the factory
@@ -18,13 +26,28 @@ export async function createVault(
   owner: string,
   asset: string,
   salt: string
-): Promise<ethers.TransactionResponse> {
-  const factoryContract = await contractProvider.getVaultFactoryContract();
-  return await executeContractMethod(
-    factoryContract,
-    "createVaultV2",
-    owner,
-    asset,
-    salt
-  );
+): Promise<CreateVaultResult> {
+  try {
+    const factoryContract = await contractProvider.getVaultFactoryContract();
+
+    const vaultAddress = await factoryContract.createVaultV2.staticCall(
+      owner,
+      asset,
+      salt
+    );
+
+    const tx = await executeContractMethod(
+      factoryContract,
+      "createVaultV2",
+      owner,
+      asset,
+      salt
+    );
+
+    (tx as CreateVaultResult).vaultAddress = vaultAddress;
+
+    return tx as CreateVaultResult;
+  } catch (error) {
+    throw formatContractError("deployMorphoVaultV1Adapter", error);
+  }
 }

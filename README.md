@@ -218,6 +218,9 @@ await client.redeem(vaultAddress, amountShares, receiver, onBehalf);
 await client.transfer(vaultAddress, to, shares);
 await client.transferFrom(vaultAddress, from, to, shares);
 
+// Approve shares for transfers
+await client.approve(vaultAddress, spender, shares);
+
 // Approve assets for vault operations
 await client.approveAsset(vaultAddress, amount);
 
@@ -231,8 +234,11 @@ await client.previewWithdraw(vaultAddress, assets); // Calculate shares needed f
 await client.getSharesBalance(vaultAddress, account);
 await client.getAssetBalance(vaultAddress, account);
 await client.getAssetAllowance(vaultAddress, owner);
+await client.getAllowance(vaultAddress, userAddress);
 await client.getTotalAssets(vaultAddress);
 await client.getTotalSupply(vaultAddress);
+await client.getVirtualShares(vaultAddress);
+await client.getAsset(vaultAddress);
 ```
 
 ### Owner Operations
@@ -345,21 +351,24 @@ await client.getIdleBalance(vaultAddress);
 ```js
 // Generic adapter deployment and management
 const adapterTx = await client.deployAdapter(
-  "morphoVaultV1", // or "morphoMarketV1"
+  "erc4626", // or "erc4626Merkl", or "compoundV3", or "morphoMarketV1"
   vaultAddress,
-  underlyingAddress
+  underlyingAddress,
+  cometRewards // optional, only for compoundV3 adapters
 );
 const adapterAddress = adapterTx.adapterAddress;
 
 // Find existing adapters
 const existingAdapter = await client.findAdapter(
-  "morphoVaultV1", // or "morphoMarketV1"
+  "erc4626", // or "erc4626Merkl", or "compoundV3", or "morphoMarketV1"
   vaultAddress,
   underlyingAddress
 );
 
 // Check adapter types
-const isVaultAdapter = await client.isAdapter("morphoVaultV1", account);
+const isERC4626Adapter = await client.isAdapter("erc4626", account);
+const isERC4626MerklAdapter = await client.isAdapter("erc4626Merkl", account);
+const isCompoundV3Adapter = await client.isAdapter("compoundV3", account);
 const isMarketAdapter = await client.isAdapter("morphoMarketV1", account);
 
 // Adapter configuration in vault
@@ -373,10 +382,22 @@ await client.getAdaptersLength(vaultAddress);
 await client.getAdapterByIndex(vaultAddress, 0);
 
 // Get adapter information
-await client.getIdsAdapterVaultV1(adapterAddress);
+await client.getIdsAdapterERC4626(adapterAddress);
+await client.getIdsAdapterERC4626Merkl(adapterAddress);
+await client.getIdsAdapterCompoundV3(adapterAddress);
 await client.getIdsAdapterMarketV1(adapterAddress, marketParams);
-await client.getUnderlyingVaultFromAdapterV1(adapterAddress);
-await client.getUnderlyingMarketFromAdapterV1(adapterAddress);
+await client.getUnderlyingAdapterERC4626(adapterAddress);
+await client.getUnderlyingAdapterERC4626Merkl(adapterAddress);
+await client.getUnderlyingAdapterCompoundV3(adapterAddress);
+await client.getUnderlyingAdapterMarketV1(adapterAddress);
+
+// Global adapter utilities
+await client.getAdapterFactoryAddress(adapterAddress);
+await client.getAdapterType(adapterAddress); // Return "erc4626", "erc4626Merkl", "compoundV3", or "morphoMarketV1"
+
+// Morpho Market V1 specific
+await client.getAdapterMarketParamsListLength(adapterAddress);
+await client.getAdapterMarketParamsList(adapterAddress, index);
 ```
 
 #### Cap Management
@@ -428,6 +449,45 @@ await client.abdicateSubmit(vaultAddress, functionName);
 // Utility
 client.getTimelockFunctionSelector(functionName);
 ```
+
+## Adapter Types and Protocol Integration
+
+### Understanding Adapter Types
+
+The SDK supports different adapter types to integrate with various DeFi protocols:
+
+#### **ERC4626 Adapters**
+
+Standard ERC4626 vault integration for protocols like Morpho Vaults, Aave, or Spark. Users manually claim rewards or the vault receives them.
+
+#### **ERC4626Merkl Adapters**
+
+ERC4626 vault integration with automated Merkl rewards claiming and compounding. A designated "skim claimer" or bot can claim and compound Merkl rewards directly for better "native" yield.
+
+#### **CompoundV3 Adapters**
+
+Direct integration with Compound V3 markets for lending/borrowing operations with supply and borrow functionality.
+
+#### **MorphoMarketV1 Adapters**
+
+Integration with Morpho V1 markets for peer-to-peer lending operations (supply, borrow, repay, withdraw) with multiple market parameters.
+
+### Supported Protocols and Adapters
+
+| Protocol           | Adapter Type                | Description                                         | Find Vaults                                                        |
+| ------------------ | --------------------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
+| **Morpho Vaults**  | `erc4626` or `erc4626Merkl` | Morpho's ERC4626 vaults with optional Merkl rewards | [Morpho Earn](https://app.morpho.org/base/earn)                    |
+| **Morpho Markets** | `morphoMarketV1`            | Morpho V1 peer-to-peer lending markets              | [Morpho Explore](https://app.morpho.org/ethereum/explore)          |
+| **Aave**           | `erc4626` or `erc4626Merkl` | Aave's ERC4626-compatible vaults (stataUSDC, etc.)  | [Aave Search](https://search.onaave.com/?q=stata%20USDC)           |
+| **Compound V3**    | `compoundV3`                | Compound V3 lending markets                         | [Compound Docs](https://docs.compound.finance/#protocol-contracts) |
+| **Spark**          | `erc4626`                   | Sky's savings tokens (sUSDC, etc.)                  | [Spark Docs](https://docs.spark.fi/dev/deployments/)               |
+
+### How to Choose the Right Adapter
+
+- **ERC4626-compatible vaults**: Use `erc4626` for basic integration or `erc4626Merkl` if the protocol offers Merkl rewards
+- **Compound V3**: Use `compoundV3` adapter
+- **Morpho V1 markets**: Use `morphoMarketV1` adapter
+- **Always verify**: Check protocol documentation for correct adapter type and underlying address
 
 ## Complete Adapter Management Example
 

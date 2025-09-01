@@ -2,10 +2,18 @@ import { ethers } from "ethers";
 import { ContractProvider } from "../../utils";
 
 // Import all the specialized functions
-import * as MorphoVaultV1AdaptersFunctions from "./MorphoVaultV1Adapters";
+import * as ERC4626AdaptersFunctions from "./ERC4626Adapters";
+import * as ERC4626MerklAdaptersFunctions from "./ERC4626MerklAdapters";
+import * as CompoundV3AdaptersFunctions from "./CompoundV3Adapters";
 import * as MorphoMarketV1AdaptersFunctions from "./MorphoMarketV1Adapters";
+import * as GlobalAdaptersFunctions from "./GlobalAdapters";
+import { DeployAdapterResult } from "./GlobalAdapters";
 
-export type AdapterType = "morphoVaultV1" | "morphoMarketV1";
+export type AdapterType =
+  | "erc4626"
+  | "erc4626Merkl"
+  | "compoundV3"
+  | "morphoMarketV1";
 
 /**
  * Factory client for deploying and managing adapters
@@ -30,28 +38,22 @@ export class AdaptersFactoryClient {
    * @param type The type of adapter to deploy
    * @param parentAddress The parent vault address
    * @param underlyingAddress The underlying address (morphoVault or morpho)
+   * @param cometRewards The comet rewards address (only required for compoundV3 adapters)
    * @returns Transaction response with adapter address
    */
   async deployAdapter(
     type: AdapterType,
     parentAddress: string,
-    underlyingAddress: string
-  ): Promise<MorphoVaultV1AdaptersFunctions.DeployAdapterResult> {
-    if (type === "morphoVaultV1") {
-      return await MorphoVaultV1AdaptersFunctions.deployMorphoVaultV1Adapter(
-        this.contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    } else if (type === "morphoMarketV1") {
-      return await MorphoMarketV1AdaptersFunctions.deployMorphoMarketV1Adapter(
-        this.contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    } else {
-      throw new Error(`Invalid adapter type: ${type}`);
-    }
+    underlyingAddress: string,
+    cometRewards?: string
+  ): Promise<DeployAdapterResult> {
+    return await GlobalAdaptersFunctions.deployAdapter(
+      this.contractProvider,
+      type,
+      parentAddress,
+      underlyingAddress,
+      cometRewards
+    );
   }
 
   // ========================================
@@ -70,20 +72,33 @@ export class AdaptersFactoryClient {
     parentAddress: string,
     underlyingAddress: string
   ): Promise<string> {
-    if (type === "morphoVaultV1") {
-      return await MorphoVaultV1AdaptersFunctions.findMorphoVaultV1Adapter(
-        this.contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    } else if (type === "morphoMarketV1") {
-      return await MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
-        this.contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    } else {
-      throw new Error(`Invalid adapter type: ${type}`);
+    switch (type) {
+      case "erc4626":
+        return await ERC4626AdaptersFunctions.findERC4626Adapter(
+          this.contractProvider,
+          parentAddress,
+          underlyingAddress
+        );
+      case "erc4626Merkl":
+        return await ERC4626MerklAdaptersFunctions.findERC4626MerklAdapter(
+          this.contractProvider,
+          parentAddress,
+          underlyingAddress
+        );
+      case "compoundV3":
+        return await CompoundV3AdaptersFunctions.findCompoundV3Adapter(
+          this.contractProvider,
+          parentAddress,
+          underlyingAddress
+        );
+      case "morphoMarketV1":
+        return await MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter(
+          this.contractProvider,
+          parentAddress,
+          underlyingAddress
+        );
+      default:
+        throw new Error(`Invalid adapter type: ${type}`);
     }
   }
 
@@ -94,18 +109,11 @@ export class AdaptersFactoryClient {
    * @returns True if the address is a valid adapter
    */
   async isAdapter(type: AdapterType, account: string): Promise<boolean> {
-    if (type === "morphoVaultV1") {
-      return await MorphoVaultV1AdaptersFunctions.isMorphoVaultV1Adapter(
-        this.contractProvider,
-        account
-      );
-    } else if (type === "morphoMarketV1") {
-      return await MorphoMarketV1AdaptersFunctions.isMorphoMarketV1Adapter(
-        this.contractProvider,
-        account
-      );
-    }
-    throw new Error(`Invalid adapter type: ${type}`);
+    return await GlobalAdaptersFunctions.getIsAdapter(
+      this.contractProvider,
+      type,
+      account
+    );
   }
 
   // ========================================
@@ -113,10 +121,24 @@ export class AdaptersFactoryClient {
   // ========================================
 
   /**
-   * Get the Morpho Vault V1 Factory contract instance
+   * Get the Morpho Vault V1 Factory contract instance, named ERC4626Factory
    */
-  async getMorphoVaultV1Factory(): Promise<ethers.Contract> {
-    return await this.contractProvider.getMorphoVaultV1AdapterFactoryContract();
+  async getERC4626Factory(): Promise<ethers.Contract> {
+    return await this.contractProvider.getERC4626AdapterFactoryContract();
+  }
+
+  /**
+   * Get the ERC4626Merkl Factory contract instance, named ERC4626MerklFactory
+   */
+  async getERC4626MerklFactory(): Promise<ethers.Contract> {
+    return await this.contractProvider.getERC4626MerklAdapterFactoryContract();
+  }
+
+  /**
+   * Get the Compound V3 Factory contract instance, named CompoundV3Factory
+   */
+  async getCompoundV3Factory(): Promise<ethers.Contract> {
+    return await this.contractProvider.getCompoundV3AdapterFactoryContract();
   }
 
   /**
@@ -155,6 +177,14 @@ export class AdaptersClient {
   adapter(adapterAddress: string, type: AdapterType): AdapterInstance {
     return new AdapterInstance(this.contractProvider, adapterAddress, type);
   }
+
+  globalAdapter(adapterAddress: string): AdapterInstance {
+    return new AdapterInstance(
+      this.contractProvider,
+      adapterAddress,
+      "erc4626"
+    ); // The type is not important here
+  }
 }
 
 /**
@@ -177,14 +207,25 @@ export class AdapterInstance {
     this.adapterType = type;
 
     // Get the appropriate contract based on type
-    if (type === "morphoVaultV1") {
-      this.adapterContract =
-        contractProvider.getVaultV1AdapterContract(adapterAddress);
-    } else if (type === "morphoMarketV1") {
-      this.adapterContract =
-        contractProvider.getMarketV1AdapterContract(adapterAddress);
-    } else {
-      throw new Error(`Invalid adapter type: ${type}`);
+    switch (type) {
+      case "erc4626":
+        this.adapterContract =
+          contractProvider.getERC4626AdapterContract(adapterAddress);
+        break;
+      case "erc4626Merkl":
+        this.adapterContract =
+          contractProvider.getERC4626MerklAdapterContract(adapterAddress);
+        break;
+      case "compoundV3":
+        this.adapterContract =
+          contractProvider.getCompoundV3AdapterContract(adapterAddress);
+        break;
+      case "morphoMarketV1":
+        this.adapterContract =
+          contractProvider.getMorphoMarketV1AdapterContract(adapterAddress);
+        break;
+      default:
+        throw new Error(`Invalid adapter type: ${type}`);
     }
   }
 
@@ -192,29 +233,87 @@ export class AdapterInstance {
   // ADAPTER OPERATIONS
   // ========================================
 
+  // ========================================
+  // = ERC4626 ADAPTER OPERATIONS
+  // ========================================
   /**
    * Get the IDs for a Morpho Vault V1 Adapter
    * Note: This method only works for morphoVaultV1 adapters
    * @returns The adapter ID
    */
-  async getIdsVaultV1(): Promise<string> {
-    if (this.adapterType !== "morphoVaultV1") {
-      throw new Error("getIdsVaultV1 only works with morphoVaultV1 adapters");
+  async getIdsERC4626(): Promise<string> {
+    if (this.adapterType !== "erc4626") {
+      throw new Error("getIdsERC4626 only works with erc4626 adapters");
     }
-    return await MorphoVaultV1AdaptersFunctions.getIds(this.adapterContract);
+    return await ERC4626AdaptersFunctions.getIds(this.adapterContract);
   }
 
-  async getUnderlyingVaultFromAdapterV1(): Promise<string> {
-    if (this.adapterType !== "morphoVaultV1") {
+  async getUnderlyingERC4626(): Promise<string> {
+    if (this.adapterType !== "erc4626") {
       throw new Error(
-        "getUnderlyingVaultFromAdapterV1 only works with morphoVaultV1 adapters"
+        "getUnderlyingVaultFromAdapterV1 only works with erc4626 adapters"
       );
     }
-    return await MorphoVaultV1AdaptersFunctions.getUnderlying(
+    return await ERC4626AdaptersFunctions.getUnderlying(this.adapterContract);
+  }
+
+  // ========================================
+  // = ERC4626Merkl ADAPTER OPERATIONS
+  // ========================================
+  /**
+   * Get the IDs for a Morpho Vault V1 Adapter
+   * Note: This method only works for morphoVaultV1 adapters
+   * @returns The adapter ID
+   */
+  async getIdsERC4626Merkl(): Promise<string> {
+    if (this.adapterType !== "erc4626Merkl") {
+      throw new Error(
+        "getIdsERC4626Merkl only works with erc4626Merkl adapters"
+      );
+    }
+    return await ERC4626MerklAdaptersFunctions.getIds(this.adapterContract);
+  }
+
+  async getUnderlyingERC4626Merkl(): Promise<string> {
+    if (this.adapterType !== "erc4626Merkl") {
+      throw new Error(
+        "getUnderlyingVaultFromAdapterV1 only works with erc4626Merkl adapters"
+      );
+    }
+    return await ERC4626MerklAdaptersFunctions.getUnderlying(
       this.adapterContract
     );
   }
 
+  // ========================================
+  // = Compound V3 ADAPTER OPERATIONS
+  // ========================================
+  /**
+   * Get the IDs for a Compound V3 Adapter
+   * Note: This method only works for compoundV3 adapters
+   * @returns The adapter ID
+   */
+  async getIdsCompoundV3(): Promise<string> {
+    if (this.adapterType !== "compoundV3") {
+      throw new Error("getIdsCompoundV3 only works with compoundV3 adapters");
+    }
+    return await CompoundV3AdaptersFunctions.getIds(this.adapterContract);
+  }
+
+  async getUnderlyingCompoundV3(): Promise<string> {
+    if (this.adapterType !== "compoundV3") {
+      throw new Error(
+        "getUnderlyingVaultFromAdapterV1 only works with compoundV3 adapters"
+      );
+    }
+    return await CompoundV3AdaptersFunctions.getUnderlying(
+      this.adapterContract
+    );
+  }
+
+  // ========================================
+  // = Morpho Market V1 ADAPTER OPERATIONS
+  // ========================================
   /**
    * Get the IDs for a Morpho Market V1 Adapter
    * Note: This method only works for morphoMarketV1 adapters
@@ -241,6 +340,49 @@ export class AdapterInstance {
     }
     return await MorphoMarketV1AdaptersFunctions.getUnderlying(
       this.adapterContract
+    );
+  }
+
+  async getMarketParamsListLength(): Promise<number> {
+    if (this.adapterType !== "morphoMarketV1") {
+      throw new Error(
+        "getMarketParamsListLength only works with morphoMarketV1 adapters"
+      );
+    }
+    return await MorphoMarketV1AdaptersFunctions.getMarketParamsListLength(
+      this.adapterContract
+    );
+  }
+
+  async getMarketParamsList(
+    index: number
+  ): Promise<MorphoMarketV1AdaptersFunctions.MarketParams> {
+    if (this.adapterType !== "morphoMarketV1") {
+      throw new Error(
+        "getMarketParamsList only works with morphoMarketV1 adapters"
+      );
+    }
+    return await MorphoMarketV1AdaptersFunctions.getMarketParamsList(
+      this.adapterContract,
+      index
+    );
+  }
+
+  // ========================================
+  // Global Adapters
+  // ========================================
+
+  async getAdapterFactoryAddress(): Promise<string> {
+    return await GlobalAdaptersFunctions.getAdapterFactoryAddress(
+      this.contractProvider,
+      this.adapterAddress
+    );
+  }
+
+  async getAdapterType(): Promise<AdapterType | undefined> {
+    return await GlobalAdaptersFunctions.getAdapterType(
+      this.contractProvider,
+      this.adapterAddress
     );
   }
 

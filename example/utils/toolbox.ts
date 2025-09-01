@@ -1,7 +1,8 @@
-import { ByzantineClient } from "../src/clients/ByzantineClient";
+import { ByzantineClient } from "../../src/clients/ByzantineClient";
 import { ethers, formatUnits } from "ethers";
 import * as dotenv from "dotenv";
-import { TimelockFunction } from "../src/clients/curators";
+import { TimelockFunction } from "../../src/clients/curators";
+import { AdapterType } from "../../src/clients/adapters";
 
 dotenv.config();
 
@@ -26,14 +27,18 @@ export const timelocks: TimelockFunction[] = [
   "setForceDeallocatePenalty",
 ];
 
+export const waitSecond = () =>
+  new Promise((resolve) => setTimeout(resolve, 1000));
+
 export const waitHalfSecond = () =>
   new Promise((resolve) => setTimeout(resolve, 500));
 
-export async function finalReading(
+export async function fullReading(
   client: ByzantineClient,
   vaultAddress: string,
   userAddress: string
 ) {
+  await waitHalfSecond();
   console.log("\n*********************************************************");
   console.log("*                                                       *");
   console.log(`*   Vault: ${vaultAddress}   *`);
@@ -76,31 +81,44 @@ export async function finalReading(
 
       // Try to determine adapter type and get IDs
       let ids: string[] = [];
-      let adapterType: string = "unknown";
+      let adapterType: AdapterType | undefined = undefined;
       let underlying: string = "unknown";
 
       try {
-        // Try Morpho Vault V1 first
-        const isVaultV1Adapter = await client.isAdapter(
-          "morphoVaultV1",
-          address
-        );
-        if (isVaultV1Adapter) {
-          adapterType = "morphoVaultV1";
-          const vaultId = await client.getIdsAdapterVaultV1(address);
-          ids = [vaultId]; // Vault V1 returns a single ID
-        } else {
-          // Try Morpho Market V1
-          const isMarketV1Adapter = await client.isAdapter(
-            "morphoMarketV1",
-            address
-          );
-          if (isMarketV1Adapter) {
-            adapterType = "morphoMarketV1";
-            // For Market V1, we would need market params to get IDs
-            // For now, we'll skip this as it requires specific market parameters
+        adapterType = await client.getAdapterType(address);
+        switch (adapterType) {
+          case "erc4626":
+            const erc4626Id = await client.getIdsAdapterERC4626(address);
+            ids = [erc4626Id]; // ERC4626 returns a single ID
+            break;
+          case "erc4626Merkl":
+            const erc4626MerklId = await client.getIdsAdapterERC4626Merkl(
+              address
+            );
+            ids = [erc4626MerklId]; // ERC4626 Merkl returns a single ID
+            break;
+          case "compoundV3":
+            const compoundV3Id = await client.getIdsAdapterCompoundV3(address);
+            ids = [compoundV3Id]; // Compound V3 returns a single ID
+            break;
+          case "morphoMarketV1":
+            const marketParamsListLength =
+              await client.getAdapterMarketParamsListLength(address);
+            for (let i = 0; i < marketParamsListLength; i++) {
+              const marketParams = await client.getAdapterMarketParamsList(
+                address,
+                i
+              );
+              const idsForMarket = await client.getIdsAdapterMarketV1(
+                address,
+                marketParams
+              );
+              ids.push(...idsForMarket);
+            }
+            break;
+          default:
             ids = [];
-          }
+            break;
         }
       } catch (error) {
         console.log(
@@ -108,10 +126,16 @@ export async function finalReading(
         );
       }
 
-      if (adapterType === "morphoVaultV1") {
-        underlying = await client.getUnderlyingVaultFromAdapterV1(address);
+      if (adapterType === "erc4626") {
+        underlying = await client.getUnderlyingAdapterERC4626(address);
+      } else if (adapterType === "erc4626Merkl") {
+        underlying = await client.getUnderlyingAdapterERC4626Merkl(address);
+      } else if (adapterType === "compoundV3") {
+        underlying = await client.getUnderlyingAdapterCompoundV3(address);
       } else if (adapterType === "morphoMarketV1") {
-        underlying = await client.getUnderlyingMarketFromAdapterV1(address);
+        underlying = await client.getUnderlyingAdapterMarketV1(address);
+      } else if (adapterType === "morphoMarketV1") {
+        underlying = await client.getUnderlyingAdapterMarketV1(address);
       }
 
       // Get caps for each ID (caps are per ID, not per adapter)
@@ -199,6 +223,8 @@ export async function finalReading(
   console.log("* Performance Fee:", (Number(performanceFee) / 1e18) * 100, "%");
   console.log(
     "* Management Fee:",
+    managementFee,
+    " -> ",
     Math.round((Number(managementFee) / 1e18) * 31536000 * 1e5) / 1e5,
     "%/year"
   );
@@ -206,7 +232,9 @@ export async function finalReading(
   console.log("* Management Fee Recipient:", managementFeeRecipient);
   console.log(
     "* Max Rate:",
-    ((Number(maxRate) / 1e18) * 31536000 * 1e5) / 1e5,
+    maxRate,
+    " -> ",
+    (Number(maxRate) / 1e16) * 31536000,
     "%/year"
   );
   console.log("*");
@@ -214,7 +242,7 @@ export async function finalReading(
   allAdapters.forEach((adapter) => {
     const forceDeallocatePenaltyPercent =
       adapter.forceDeallocatePenalty !== "0"
-        ? ((Number(adapter.forceDeallocatePenalty) / 1e18) * 100).toFixed(2) +
+        ? ((Number(adapter.forceDeallocatePenalty) / 1e16) * 100).toFixed(2) +
           "%"
         : "0%";
 
@@ -243,7 +271,7 @@ export async function finalReading(
               : "0";
           const allocationFormatted =
             idWithCap.allocation !== "0"
-              ? (Number(idWithCap.allocation) / 1e18).toFixed(2)
+              ? (Number(idWithCap.allocation) / 1e6).toFixed(2)
               : "0";
 
           console.log(

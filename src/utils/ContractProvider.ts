@@ -4,6 +4,10 @@ import {
   MorphoMarketV1AdapterFactoryABI,
   MorphoVaultV1AdapterABI,
   MorphoMarketV1AdapterABI,
+  ERC4626MerklAdapterFactoryABI,
+  ERC4626MerklAdapterABI,
+  CompoundV3AdapterFactoryABI,
+  CompoundV3AdapterABI,
   VAULT_FACTORY_ABI,
   VAULT_ABI,
 } from "../constants";
@@ -65,9 +69,19 @@ export class ContractProvider {
    * @returns Adapter factory address
    */
 
-  private async getMorphoVaultV1AdapterFactoryAddress(): Promise<string> {
+  private async getERC4626AdapterFactoryAddress(): Promise<string> {
     const chainId = await this.getChainId();
-    return getNetworkConfig(chainId).adapters.morphoVaultV1AdapterFactory;
+    return getNetworkConfig(chainId).adapters.erc4626AdapterFactory;
+  }
+
+  private async getERC4626MerklAdapterFactoryAddress(): Promise<string> {
+    const chainId = await this.getChainId();
+    return getNetworkConfig(chainId).adapters.erc4626MerklAdapterFactory;
+  }
+
+  private async getCompoundV3AdapterFactoryAddress(): Promise<string> {
+    const chainId = await this.getChainId();
+    return getNetworkConfig(chainId).adapters.compoundV3AdapterFactory;
   }
 
   private async getMorphoMarketV1AdapterFactoryAddress(): Promise<string> {
@@ -88,7 +102,7 @@ export class ContractProvider {
     );
   }
 
-  public getVaultV1AdapterContract(adapterAddress: string): ethers.Contract {
+  public getERC4626AdapterContract(adapterAddress: string): ethers.Contract {
     return new ethers.Contract(
       adapterAddress,
       MorphoVaultV1AdapterABI,
@@ -96,10 +110,30 @@ export class ContractProvider {
     );
   }
 
-  public getMarketV1AdapterContract(adapterAddress: string): ethers.Contract {
+  public getERC4626MerklAdapterContract(
+    adapterAddress: string
+  ): ethers.Contract {
+    return new ethers.Contract(
+      adapterAddress,
+      ERC4626MerklAdapterABI,
+      this.signer || this.provider
+    );
+  }
+
+  public getMorphoMarketV1AdapterContract(
+    adapterAddress: string
+  ): ethers.Contract {
     return new ethers.Contract(
       adapterAddress,
       MorphoMarketV1AdapterABI,
+      this.signer || this.provider
+    );
+  }
+
+  public getCompoundV3AdapterContract(adapterAddress: string): ethers.Contract {
+    return new ethers.Contract(
+      adapterAddress,
+      CompoundV3AdapterABI,
       this.signer || this.provider
     );
   }
@@ -121,12 +155,31 @@ export class ContractProvider {
    * Get the Morpho Vault V1 Adapter Factory contract instance
    * @returns The Morpho Vault V1 Adapter Factory contract instance
    */
-  public async getMorphoVaultV1AdapterFactoryContract(): Promise<ethers.Contract> {
-    const adapterFactoryAddress =
-      await this.getMorphoVaultV1AdapterFactoryAddress();
+  public async getERC4626AdapterFactoryContract(): Promise<ethers.Contract> {
+    const adapterFactoryAddress = await this.getERC4626AdapterFactoryAddress();
     return new ethers.Contract(
       adapterFactoryAddress,
       MorphoVaultV1AdapterFactoryABI,
+      this.signer || this.provider
+    );
+  }
+
+  public async getERC4626MerklAdapterFactoryContract(): Promise<ethers.Contract> {
+    const adapterFactoryAddress =
+      await this.getERC4626MerklAdapterFactoryAddress();
+    return new ethers.Contract(
+      adapterFactoryAddress,
+      ERC4626MerklAdapterFactoryABI,
+      this.signer || this.provider
+    );
+  }
+
+  public async getCompoundV3AdapterFactoryContract(): Promise<ethers.Contract> {
+    const adapterFactoryAddress =
+      await this.getCompoundV3AdapterFactoryAddress();
+    return new ethers.Contract(
+      adapterFactoryAddress,
+      CompoundV3AdapterFactoryABI,
       this.signer || this.provider
     );
   }
@@ -141,36 +194,6 @@ export class ContractProvider {
     return new ethers.Contract(
       adapterFactoryAddress,
       MorphoMarketV1AdapterFactoryABI,
-      this.signer || this.provider
-    );
-  }
-
-  /**
-   * Get the Morpho Vault V1 Adapter contract instance
-   * @param adapterAddress The address of the Morpho Vault V1 Adapter
-   * @returns The Morpho Vault V1 Adapter contract instance
-   */
-  public async getMorphoVaultV1AdapterContract(
-    adapterAddress: string
-  ): Promise<ethers.Contract> {
-    return new ethers.Contract(
-      adapterAddress,
-      MorphoVaultV1AdapterABI,
-      this.signer || this.provider
-    );
-  }
-
-  /**
-   * Get the Morpho Market V1 Adapter contract instance
-   * @param adapterAddress The address of the Morpho Market V1 Adapter
-   * @returns The Morpho Market V1 Adapter contract instance
-   */
-  public async getMorphoMarketV1AdapterContract(
-    adapterAddress: string
-  ): Promise<ethers.Contract> {
-    return new ethers.Contract(
-      adapterAddress,
-      MorphoMarketV1AdapterABI,
       this.signer || this.provider
     );
   }

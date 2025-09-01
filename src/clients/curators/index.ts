@@ -11,7 +11,7 @@ export { CuratorsClient } from "./CuratorsClient";
 export * as AdaptersFunctions from "./Adapters";
 export * as TimelockFunctions from "./Timelock";
 export * as ManageRoleFunctions from "./ManageRole";
-export * as MorphoVaultV1AdaptersFunctions from "../adapters/MorphoVaultV1Adapters";
+export * as MorphoVaultV1AdaptersFunctions from "../adapters/ERC4626Adapters";
 export * as MorphoMarketV1AdaptersFunctions from "../adapters/MorphoMarketV1Adapters";
 export * as FeesFunctions from "./Fees";
 

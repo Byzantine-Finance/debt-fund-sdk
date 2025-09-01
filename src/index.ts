@@ -5,6 +5,9 @@
 // Export main clients
 export { ByzantineClient } from "./clients/ByzantineClient";
 
+// Export owner functions
+export { createVault } from "./clients/owners";
+
 // Export types
 export * from "./types";
 

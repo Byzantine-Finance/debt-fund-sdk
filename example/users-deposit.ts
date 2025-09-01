@@ -7,11 +7,11 @@ import {
   ZeroAddress,
 } from "ethers";
 import {
-  finalReading,
+  fullReading,
   waitHalfSecond,
   RPC_URL,
   MNEMONIC,
-} from "./utils-example";
+} from "./utils/toolbox";
 
 interface VaultOperations {
   depositAmount?: bigint;
@@ -20,13 +20,13 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0x732f39262402a60af38d0c913c1d737633b87a28";
+const VAULT_ADDRESS = "0xA9c1A676D046dF4BE50280b3f7F1EcaB5aFFd39B";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  depositAmount: parseUnits("1.0", 6), // 1.0 USDC (6 decimals)
+  // depositAmount: parseUnits("0.4", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
-  // withdrawAmount: parseUnits("3", 6), // 0.3 USDC (6 decimals)
+  // withdrawAmount: parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
 };
 
@@ -58,7 +58,7 @@ async function main() {
     // ========================================
     // INITIAL STATE
     // ========================================
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
 
     await displayBalances(client, VAULT_ADDRESS, userAddress, "Initial");
 
@@ -231,7 +231,7 @@ async function main() {
     // FINAL STATE
     // ========================================
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
 
     console.log("\n🎉 All vault operations completed successfully!");
     console.log("=".repeat(60));
@@ -315,7 +315,8 @@ async function checkAndApproveIfNeeded(
         6
       )} USDC for ${operation}`
     );
-    await client.approveAsset(vaultAddress, amountToApprove);
+    const tx = await client.approveAsset(vaultAddress, amountToApprove);
+    await tx.wait();
     await waitHalfSecond();
     return true; // Approval was needed and performed
   }

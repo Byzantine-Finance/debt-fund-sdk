@@ -37,13 +37,13 @@ export class OwnersClient {
    * @param owner The address of the vault owner
    * @param asset The address of the underlying asset
    * @param salt Unique salt for deterministic vault address
-   * @returns Transaction response
+   * @returns Transaction response with vault address
    */
   async createVault(
     owner: string,
     asset: string,
     salt: string
-  ): Promise<ethers.TransactionResponse> {
+  ): Promise<CreateVaultFunctions.CreateVaultResult> {
     return CreateVaultFunctions.createVault(
       this.contractProvider,
       owner,

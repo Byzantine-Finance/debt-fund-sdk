@@ -19,11 +19,11 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://basescan.org",
     USDCaddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
     adapters: {
-      morphoVaultV1AdapterFactory: "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
-      aaveStataVaultAdapterFactory:
-        "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
+      compoundV3AdapterFactory: "0xbab80daae43ebdf77b12c0b95af9b95c44172f3c",
+      erc4626AdapterFactory: "0xd5e0fe34ae0827a778043e89e045881b058e5dcd",
+      erc4626MerklAdapterFactory: "0x77fb32c0056ca58790d70799a980776349a2d4e7",
       morphoMarketV1AdapterFactory:
-        "0xf21189365131551Ba4c3613252B1bcCdA60BD1e6",
+        "0x40ee5564691d04e77764f155cfa1494c7304ce13",
     },
   },
   42161: {
@@ -32,11 +32,11 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://arbiscan.io",
     USDCaddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
     adapters: {
-      morphoVaultV1AdapterFactory: "0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F",
-      aaveStataVaultAdapterFactory:
-        "0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F",
+      compoundV3AdapterFactory: "0x1f0fae18354695e9c84b4a705242eb3405862bb4",
+      erc4626AdapterFactory: "0x752edbfa451d979af0dcced1886c0d4b18d797a6",
+      erc4626MerklAdapterFactory: "0x6c2e70da7d8114ae3a550d36e6860a294eb4888b",
       morphoMarketV1AdapterFactory:
-        "0xA8b523fcf34F2f63d26e709a16c9bC41801f1fC9",
+        "0xba98a4d436e79639a1598afc988efb7a828d7f08",
     },
   },
   // Holesky Testnet
@@ -53,9 +53,9 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://sepolia.etherscan.io",
     USDCaddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     adapters: {
-      morphoVaultV1AdapterFactory: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
-      aaveStataVaultAdapterFactory:
-        "0xbA98A4d436e79639A1598aFc988eFB7A828d7F08",
+      erc4626AdapterFactory: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
+      erc4626MerklAdapterFactory: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
+      compoundV3AdapterFactory: "0x650CDA0043f61E49383dD201b318Ad94f4C3A7A1",
       morphoMarketV1AdapterFactory:
         "0xE5B709A14859EdF820347D78E587b1634B0ec771",
     },

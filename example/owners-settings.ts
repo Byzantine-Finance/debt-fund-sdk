@@ -1,11 +1,11 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers } from "ethers";
 import {
-  finalReading,
+  fullReading,
   RPC_URL,
   MNEMONIC,
   waitHalfSecond,
-} from "./utils-example";
+} from "./utils/toolbox";
 
 interface OwnerSettingsConfig {
   name?: string;
@@ -91,7 +91,7 @@ async function main() {
       console.log(`Owner ${newOwner} set`);
     }
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
     console.error("Error setting owner settings of a vault:", error);
   }

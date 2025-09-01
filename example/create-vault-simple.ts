@@ -1,11 +1,6 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers, randomBytes } from "ethers";
-import {
-  finalReading,
-  waitHalfSecond,
-  RPC_URL,
-  MNEMONIC,
-} from "./utils-example";
+import { fullReading, RPC_URL, MNEMONIC } from "./utils";
 
 // Example of minimal configuration
 // We'll set your address as the owner
@@ -29,16 +24,16 @@ async function main() {
       SETUP_VAULT_CONFIG.asset,
       ethers.hexlify(randomBytes(32))
     );
-    await waitHalfSecond();
+    await txCreateVault.wait();
+
     console.log("Vault creation transaction sent", txCreateVault.hash);
-    const receiptCreateVault = await txCreateVault.wait();
-    const VAULT_ADDRESS = receiptCreateVault?.logs[0]?.address;
+    const VAULT_ADDRESS = txCreateVault.vaultAddress;
 
     if (!VAULT_ADDRESS) {
       throw new Error("Vault address not found");
     }
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
     console.error("Error creating vault simple:", error);
   }

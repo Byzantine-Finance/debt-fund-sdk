@@ -1,11 +1,11 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { AbiCoder, ethers, keccak256, parseUnits } from "ethers";
 import {
-  finalReading,
+  fullReading,
   waitHalfSecond,
   RPC_URL,
   MNEMONIC,
-} from "./utils-example";
+} from "./utils/toolbox";
 import { getIdData } from "../src/clients/curators/Cap";
 
 // This is what you need to set in order to set cap for an adapter
@@ -40,7 +40,7 @@ async function main() {
     const txGet = await client.getRelativeCap(VAULT_ADDRESS, adapterId);
     console.log("Relative cap:", txGet);
 
-    // await finalReading(client, VAULT_ADDRESS, userAddress);
+    // await fullReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
     console.error("Error setting cap for an adapter:", error);
   }

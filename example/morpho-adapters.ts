@@ -1,11 +1,11 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers } from "ethers";
 import {
-  finalReading,
+  fullReading,
   waitHalfSecond,
   RPC_URL,
   MNEMONIC,
-} from "./utils-example";
+} from "./utils/toolbox";
 
 // ========================================
 // CONFIGURATION
@@ -53,7 +53,7 @@ async function main() {
 
     // Check if addresses are already adapters
     const isMorphoVaultAdapter = await client.isAdapter(
-      "morphoVaultV1",
+      "erc4626",
       MORPHO_VAULT_V1
     );
     console.log(
@@ -69,7 +69,7 @@ async function main() {
 
     // Try to find existing Morpho Vault V1 adapter
     const existingVaultAdapter = await client.findAdapter(
-      "morphoVaultV1",
+      "erc4626",
       VAULT_ADDRESS,
       MORPHO_VAULT_V1
     );
@@ -91,7 +91,7 @@ async function main() {
 
       try {
         const txDeployVaultAdapter = await client.deployAdapter(
-          "morphoVaultV1",
+          "erc4626",
           VAULT_ADDRESS,
           MORPHO_VAULT_V1
         );
@@ -115,7 +115,7 @@ async function main() {
         console.log(`   ❌ Failed to deploy Vault V1 adapter: ${error}`);
         // Try to find if it was created by another transaction
         finalVaultAdapterAddress = await client.findAdapter(
-          "morphoVaultV1",
+          "erc4626",
           VAULT_ADDRESS,
           MORPHO_VAULT_V1
         );
@@ -137,7 +137,7 @@ async function main() {
       finalVaultAdapterAddress !== ethers.ZeroAddress
     ) {
       const isValidAdapter = await client.isAdapter(
-        "morphoVaultV1",
+        "erc4626",
         finalVaultAdapterAddress
       );
       console.log(`   Is valid adapter: ${isValidAdapter}`);
@@ -156,7 +156,7 @@ async function main() {
     ) {
       try {
         // Get IDs for Vault V1 adapter
-        const vaultAdapterIds = await client.getIdsAdapterVaultV1(
+        const vaultAdapterIds = await client.getIdsAdapterERC4626(
           finalVaultAdapterAddress
         );
         console.log(`   Morpho Vault V1 adapter IDs: ${vaultAdapterIds}`);

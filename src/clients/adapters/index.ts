@@ -10,16 +10,31 @@ export {
 } from "./AdaptersClient";
 
 // Export adapter functions
-export * as MorphoVaultV1Adapters from "./MorphoVaultV1Adapters";
+export * as MorphoVaultV1Adapters from "./ERC4626Adapters";
 export * as MorphoMarketV1Adapters from "./MorphoMarketV1Adapters";
+export { DeployAdapterResult } from "./GlobalAdapters";
 
 // Export specific functions for convenience
 export {
-  deployMorphoVaultV1Adapter,
-  isMorphoVaultV1Adapter,
-  findMorphoVaultV1Adapter,
+  deployERC4626Adapter,
+  isERC4626Adapter,
+  findERC4626Adapter,
+  getIds as getIdsERC4626,
+} from "./ERC4626Adapters";
+
+export {
+  deployERC4626MerklAdapter,
+  isERC4626MerklAdapter,
+  findERC4626MerklAdapter,
   getIds as getIdsVaultV1,
-} from "./MorphoVaultV1Adapters";
+} from "./ERC4626MerklAdapters";
+
+export {
+  deployCompoundV3Adapter,
+  isCompoundV3Adapter,
+  findCompoundV3Adapter,
+  getIds as getIdsCompoundV3,
+} from "./CompoundV3Adapters";
 
 export {
   deployMorphoMarketV1Adapter,
@@ -27,3 +42,10 @@ export {
   findMorphoMarketV1Adapter,
   getIds as getIdsMarketV1,
 } from "./MorphoMarketV1Adapters";
+
+export {
+  deployAdapter,
+  getIsAdapter,
+  getAdapterType,
+  getAdapterFactoryAddress,
+} from "./GlobalAdapters";

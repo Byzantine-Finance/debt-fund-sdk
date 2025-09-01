@@ -5,15 +5,11 @@ import {
   formatContractError,
 } from "../../utils/contractErrorHandler";
 import { ContractProvider } from "../../utils";
+import { DeployAdapterResult } from "./GlobalAdapters";
 
 // ========================================
 // Factory Functions
 // ========================================
-
-export interface DeployAdapterResult
-  extends ethers.ContractTransactionResponse {
-  adapterAddress: string;
-}
 
 export async function deployMorphoMarketV1Adapter(
   contractProvider: ContractProvider,
@@ -106,4 +102,19 @@ export async function getUnderlying(
   contract: ethers.Contract
 ): Promise<string> {
   return await callContractMethod(contract, "morphoMarketV1", []);
+}
+
+// function marketParamsListLength() external view returns (uint256);
+export async function getMarketParamsListLength(
+  contract: ethers.Contract
+): Promise<number> {
+  return await callContractMethod(contract, "marketParamsListLength", []);
+}
+
+// function marketParamsList(uint256 index) external view returns (address, address, address, address, uint256);
+export async function getMarketParamsList(
+  contract: ethers.Contract,
+  index: number
+): Promise<MarketParams> {
+  return await callContractMethod(contract, "marketParamsList", [index]);
 }

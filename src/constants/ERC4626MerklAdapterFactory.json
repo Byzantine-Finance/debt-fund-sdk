@@ -1,0 +1,56 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "parentVault",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "erc4626Vault",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "erc4626MerklAdapter",
+        "type": "address"
+      }
+    ],
+    "name": "CreateERC4626MerklAdapter",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "parentVault", "type": "address" },
+      { "internalType": "address", "name": "erc4626Vault", "type": "address" }
+    ],
+    "name": "createERC4626MerklAdapter",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "parentVault", "type": "address" },
+      { "internalType": "address", "name": "erc4626Vault", "type": "address" }
+    ],
+    "name": "erc4626MerklAdapter",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "name": "isERC4626MerklAdapter",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

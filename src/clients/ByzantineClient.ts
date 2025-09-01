@@ -10,6 +10,7 @@ import { AdaptersClient, AdaptersFactoryClient, AdapterType } from "./adapters";
 import { DepositorsClient } from "./depositors";
 import { AllocatorsClient } from "./allocators";
 import * as MorphoMarketV1AdaptersFunctions from "./adapters/MorphoMarketV1Adapters";
+import { DeployAdapterResult } from "./adapters";
 
 /**
  * Main SDK client for interacting with Vault ecosystem
@@ -273,13 +274,13 @@ export class ByzantineClient {
    * @param owner The address of the vault owner
    * @param asset The address of the underlying asset
    * @param salt Unique salt for deterministic vault address
-   * @returns Transaction response
+   * @returns Transaction response with vault address
    */
   async createVault(
     owner: string,
     asset: string,
     salt: string
-  ): Promise<ethers.TransactionResponse> {
+  ): Promise<import("./owners/CreateVault").CreateVaultResult> {
     return await this.ownersClient.createVault(owner, asset, salt);
   }
 
@@ -1099,18 +1100,35 @@ export class ByzantineClient {
   // MORPHO VAULT V1 ADAPTERS
   // ========================================
 
+  /**
+   * Deploy a new adapter of the specified type
+   * @param type The type of adapter to deploy
+   * @param parentAddress The parent vault address
+   * @param underlyingAddress The underlying address (morphoVault or morpho)
+   * @param cometRewards The comet rewards address (only required for compoundV3 adapters)
+   * @returns Transaction response with adapter address
+   */
   async deployAdapter(
     type: AdapterType,
     parentAddress: string,
-    underlyingAddress: string
-  ): Promise<import("./adapters/MorphoVaultV1Adapters").DeployAdapterResult> {
+    underlyingAddress: string,
+    cometRewards?: string
+  ): Promise<DeployAdapterResult> {
     return this.adaptersFactoryClient.deployAdapter(
       type,
       parentAddress,
-      underlyingAddress
+      underlyingAddress,
+      cometRewards
     );
   }
 
+  /**
+   * Find an existing adapter address
+   * @param type The type of adapter
+   * @param parentAddress The parent vault address
+   * @param underlyingAddress The underlying address
+   * @returns The adapter address
+   */
   async findAdapter(
     type: AdapterType,
     parentAddress: string,
@@ -1127,10 +1145,22 @@ export class ByzantineClient {
     return this.adaptersFactoryClient.isAdapter(type, account);
   }
 
-  async getIdsAdapterVaultV1(adapterAddress: string): Promise<string> {
+  async getIdsAdapterERC4626(adapterAddress: string): Promise<string> {
     return this.adaptersClient
-      .adapter(adapterAddress, "morphoVaultV1")
-      .getIdsVaultV1();
+      .adapter(adapterAddress, "erc4626")
+      .getIdsERC4626();
+  }
+
+  async getIdsAdapterERC4626Merkl(adapterAddress: string): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "erc4626Merkl")
+      .getIdsERC4626Merkl();
+  }
+
+  async getIdsAdapterCompoundV3(adapterAddress: string): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "compoundV3")
+      .getIdsCompoundV3();
   }
 
   async getIdsAdapterMarketV1(
@@ -1142,20 +1172,86 @@ export class ByzantineClient {
       .getIdsMarketV1(marketParams);
   }
 
-  async getUnderlyingVaultFromAdapterV1(
+  async getUnderlyingAdapterERC4626(adapterAddress: string): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "erc4626")
+      .getUnderlyingERC4626();
+  }
+
+  async getUnderlyingAdapterERC4626Merkl(
     adapterAddress: string
   ): Promise<string> {
     return this.adaptersClient
-      .adapter(adapterAddress, "morphoVaultV1")
-      .getUnderlyingVaultFromAdapterV1();
+      .adapter(adapterAddress, "erc4626Merkl")
+      .getUnderlyingERC4626Merkl();
   }
 
-  async getUnderlyingMarketFromAdapterV1(
+  async getUnderlyingAdapterCompoundV3(
     adapterAddress: string
   ): Promise<string> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "compoundV3")
+      .getUnderlyingCompoundV3();
+  }
+
+  async getUnderlyingAdapterMarketV1(adapterAddress: string): Promise<string> {
     return this.adaptersClient
       .adapter(adapterAddress, "morphoMarketV1")
       .getUnderlyingMarketFromAdapterV1();
+  }
+
+  /**
+   * Get the length of the market params list for a Morpho Market V1 Adapter
+   * @param adapterAddress The address of the Morpho Market V1 Adapter
+   * @returns The length of the market params list
+   */
+  async getAdapterMarketParamsListLength(
+    adapterAddress: string
+  ): Promise<number> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoMarketV1")
+      .getMarketParamsListLength();
+  }
+
+  /**
+   * Get the market params list for a Morpho Market V1 Adapter
+   * @param adapterAddress The address of the Morpho Market V1 Adapter
+   * @param index The index of the market params
+   * @returns The market params
+   */
+  async getAdapterMarketParamsList(
+    adapterAddress: string,
+    index: number
+  ): Promise<MorphoMarketV1AdaptersFunctions.MarketParams> {
+    return this.adaptersClient
+      .adapter(adapterAddress, "morphoMarketV1")
+      .getMarketParamsList(index);
+  }
+
+  // ========================================
+  // GLOBAL ADAPTERS
+  // ========================================
+
+  /**
+   * Get the factory address of an adapter
+   * @param adapterAddress The address of the adapter
+   * @returns The lowercase factory address of the adapter
+   */
+  async getAdapterFactoryAddress(adapterAddress: string): Promise<string> {
+    return this.adaptersClient
+      .globalAdapter(adapterAddress)
+      .getAdapterFactoryAddress();
+  }
+
+  /**
+   * Get the type of an adapter
+   * @param adapterAddress The address of the adapter
+   * @returns The type of the adapter -> morphoVaultV1, morphoMarketV1
+   */
+  async getAdapterType(
+    adapterAddress: string
+  ): Promise<AdapterType | undefined> {
+    return this.adaptersClient.globalAdapter(adapterAddress).getAdapterType();
   }
 
   // ========================================

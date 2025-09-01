@@ -5,28 +5,24 @@ import {
   formatContractError,
 } from "../../utils/contractErrorHandler";
 import { ContractProvider } from "../../utils";
+import { DeployAdapterResult } from "./GlobalAdapters";
 
 // ========================================
 // Factory Functions
 // ========================================
 
-export interface DeployAdapterResult
-  extends ethers.ContractTransactionResponse {
-  adapterAddress: string;
-}
-
-export async function deployMorphoVaultV1Adapter(
+export async function deployERC4626MerklAdapter(
   contractProvider: ContractProvider,
   vaultAddress: string,
   morphoVaultV1: string
 ): Promise<DeployAdapterResult> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getERC4626MerklAdapterFactoryContract();
 
   try {
     // First simulate the call to get the adapter address that will be created
     const adapterAddress =
-      await adapterFactoryContract.createMorphoVaultV1Adapter.staticCall(
+      await adapterFactoryContract.createERC4626MerklAdapter.staticCall(
         vaultAddress,
         morphoVaultV1
       );
@@ -34,7 +30,7 @@ export async function deployMorphoVaultV1Adapter(
     // Then execute the actual transaction
     const tx = await executeContractMethod(
       adapterFactoryContract,
-      "createMorphoVaultV1Adapter",
+      "createERC4626MerklAdapter",
       vaultAddress,
       morphoVaultV1
     );
@@ -43,35 +39,35 @@ export async function deployMorphoVaultV1Adapter(
     (tx as DeployAdapterResult).adapterAddress = adapterAddress;
     return tx as DeployAdapterResult;
   } catch (error) {
-    throw formatContractError("deployMorphoVaultV1Adapter", error);
+    throw formatContractError("createERC4626MerklAdapter", error);
   }
 }
 
 // Read Functions
 
-export async function isMorphoVaultV1Adapter(
+export async function isERC4626MerklAdapter(
   contractProvider: ContractProvider,
   account: string
 ): Promise<boolean> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getERC4626MerklAdapterFactoryContract();
   return await callContractMethod(
     adapterFactoryContract,
-    "isMorphoVaultV1Adapter",
+    "isERC4626MerklAdapter",
     [account]
   );
 }
 
-export async function findMorphoVaultV1Adapter(
+export async function findERC4626MerklAdapter(
   contractProvider: ContractProvider,
   vaultAddress: string,
   morphoVaultV1: string
 ): Promise<string> {
   const adapterFactoryContract =
-    await contractProvider.getMorphoVaultV1AdapterFactoryContract();
+    await contractProvider.getERC4626MerklAdapterFactoryContract();
   return await callContractMethod(
     adapterFactoryContract,
-    "morphoVaultV1Adapter",
+    "erc4626MerklAdapter",
     [vaultAddress, morphoVaultV1]
   );
 }
@@ -93,7 +89,7 @@ export async function getIds(contract: ethers.Contract): Promise<string> {
 export async function getUnderlying(
   contract: ethers.Contract
 ): Promise<string> {
-  return await callContractMethod(contract, "morphoVaultV1", []);
+  return await callContractMethod(contract, "erc4626Vault", []);
 }
 
 // Read Functions

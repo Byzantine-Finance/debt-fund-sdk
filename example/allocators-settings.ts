@@ -1,11 +1,11 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers, parseEther, parseUnits } from "ethers";
 import {
-  finalReading,
+  fullReading,
   RPC_URL,
   MNEMONIC,
   waitHalfSecond,
-} from "./utils-example";
+} from "./utils/toolbox";
 import { getIdData } from "../src/clients/curators/Cap";
 
 interface AllocatorSettingsConfig {
@@ -45,19 +45,19 @@ interface AllocatorSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x169FdF43910Eca52f4F97D361A44D26e71B18134";
+const VAULT_ADDRESS = "0x9c6dd63e5e30e6984a322d2a5cdaee49ebc46207";
 
 const ALLOCATOR_SETTINGS_CONFIG: AllocatorSettingsConfig = {
   setLiquidityAdapterAndData: {
-    liquidityAdapter: "0x9925F74a9386C5c437d83065DA1f6D5c23a5545b",
+    liquidityAdapter: "0xAF8c935F26D6a4bE310bAe15Fdf9B4d1faE4ED62",
     liquidityData: "0x", // Empty data, adjust as needed
   },
-  //   allocateConfigFromUnderlyingVault: [
-  //     {
-  //       underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
-  //       amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-  //     },
-  //   ],
+  // allocateConfigFromUnderlyingVault: [
+  //   {
+  //     underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
+  //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
+  //   },
+  // ],
   //   allocateConfigFromAdapter: [
   //     {
   //       adapter: "0x9925F74a9386C5c437d83065DA1f6D5c23a5545b",
@@ -115,7 +115,7 @@ async function main() {
     // Read current settings
     // ****************
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
 
     // ****************
     // Configure liquidity adapter and data
@@ -156,7 +156,7 @@ async function main() {
         console.log(`Amount Asset: ${allocateConfig.amountAsset} wei`);
 
         const adapter = await client.findAdapter(
-          "morphoVaultV1",
+          "erc4626",
           VAULT_ADDRESS,
           allocateConfig.underlyingVault
         );
@@ -195,7 +195,9 @@ async function main() {
       }
     }
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    if (allocateConfigFromUnderlyingVault || allocateConfigFromAdapter) {
+      await fullReading(client, VAULT_ADDRESS, userAddress);
+    }
 
     // ****************
     // Deallocate assets
@@ -210,7 +212,7 @@ async function main() {
         console.log(`Amount Asset: ${deallocateConfig.amountAsset} wei`);
 
         const adapter = await client.findAdapter(
-          "morphoVaultV1",
+          "erc4626",
           VAULT_ADDRESS,
           deallocateConfig.underlyingVault
         );
@@ -247,7 +249,10 @@ async function main() {
         console.log(`Assets deallocated successfully`);
       }
     }
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+
+    if (deallocateConfigFromUnderlyingVault || deallocateConfigFromAdapter) {
+      await fullReading(client, VAULT_ADDRESS, userAddress);
+    }
 
     // ****************
     // Force deallocate assets (emergency function)
@@ -273,7 +278,7 @@ async function main() {
       console.log(`Assets force deallocated successfully`);
     }
 
-    await finalReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
   } catch (error) {
     console.error("Error configuring allocator settings of a vault:", error);
   }
