@@ -23,15 +23,6 @@
   },
   {
     "type": "function",
-    "name": "abdicateSubmit",
-    "inputs": [
-      { "name": "selector", "type": "bytes4", "internalType": "bytes4" }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "absoluteCap",
     "inputs": [{ "name": "id", "type": "bytes32", "internalType": "bytes32" }],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -57,6 +48,13 @@
   },
   {
     "type": "function",
+    "name": "adapterRegistry",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "adapters",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -68,6 +66,15 @@
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "addAdapter",
+    "inputs": [
+      { "name": "account", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -448,6 +455,15 @@
   },
   {
     "type": "function",
+    "name": "pendingCount",
+    "inputs": [
+      { "name": "selector", "type": "bytes4", "internalType": "bytes4" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "performanceFee",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint96", "internalType": "uint96" }],
@@ -520,6 +536,13 @@
   },
   {
     "type": "function",
+    "name": "receiveSharesGate",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "redeem",
     "inputs": [
       { "name": "shares", "type": "uint256", "internalType": "uint256" },
@@ -538,6 +561,15 @@
   },
   {
     "type": "function",
+    "name": "removeAdapter",
+    "inputs": [
+      { "name": "account", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "revoke",
     "inputs": [{ "name": "data", "type": "bytes", "internalType": "bytes" }],
     "outputs": [],
@@ -549,6 +581,26 @@
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "sendSharesGate",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setAdapterRegistry",
+    "inputs": [
+      {
+        "name": "newAdapterRegistry",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -569,16 +621,6 @@
         "type": "uint256",
         "internalType": "uint256"
       }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setIsAdapter",
-    "inputs": [
-      { "name": "account", "type": "address", "internalType": "address" },
-      { "name": "newIsAdapter", "type": "bool", "internalType": "bool" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -711,6 +753,19 @@
   },
   {
     "type": "function",
+    "name": "setReceiveSharesGate",
+    "inputs": [
+      {
+        "name": "newReceiveSharesGate",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setSendAssetsGate",
     "inputs": [
       {
@@ -724,9 +779,13 @@
   },
   {
     "type": "function",
-    "name": "setSharesGate",
+    "name": "setSendSharesGate",
     "inputs": [
-      { "name": "newSharesGate", "type": "address", "internalType": "address" }
+      {
+        "name": "newSendSharesGate",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -739,13 +798,6 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "sharesGate",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -825,19 +877,6 @@
   },
   {
     "type": "event",
-    "name": "AbdicateSubmit",
-    "inputs": [
-      {
-        "name": "selector",
-        "type": "bytes4",
-        "indexed": true,
-        "internalType": "bytes4"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Accept",
     "inputs": [
       {
@@ -851,6 +890,12 @@
         "type": "bytes",
         "indexed": false,
         "internalType": "bytes"
+      },
+      {
+        "name": "pendingCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -882,6 +927,19 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AddAdapter",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1292,6 +1350,19 @@
   },
   {
     "type": "event",
+    "name": "RemoveAdapter",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Revoke",
     "inputs": [
       {
@@ -1311,6 +1382,25 @@
         "type": "bytes",
         "indexed": false,
         "internalType": "bytes"
+      },
+      {
+        "name": "pendingCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SetAdapterRegistry",
+    "inputs": [
+      {
+        "name": "newAdapterRegistry",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1343,25 +1433,6 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "SetIsAdapter",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "newIsAdapter",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -1535,6 +1606,19 @@
   },
   {
     "type": "event",
+    "name": "SetReceiveSharesGate",
+    "inputs": [
+      {
+        "name": "newReceiveSharesGate",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "SetSendAssetsGate",
     "inputs": [
       {
@@ -1548,10 +1632,10 @@
   },
   {
     "type": "event",
-    "name": "SetSharesGate",
+    "name": "SetSendSharesGate",
     "inputs": [
       {
-        "name": "newSharesGate",
+        "name": "newSendSharesGate",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1590,6 +1674,12 @@
       },
       {
         "name": "executableAt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "pendingCount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1662,6 +1752,7 @@
   { "type": "error", "name": "AbsoluteCapExceeded", "inputs": [] },
   { "type": "error", "name": "AbsoluteCapNotDecreasing", "inputs": [] },
   { "type": "error", "name": "AbsoluteCapNotIncreasing", "inputs": [] },
+  { "type": "error", "name": "AutomaticallyTimelocked", "inputs": [] },
   { "type": "error", "name": "CannotReceiveAssets", "inputs": [] },
   { "type": "error", "name": "CannotReceiveShares", "inputs": [] },
   { "type": "error", "name": "CannotSendAssets", "inputs": [] },
@@ -1671,19 +1762,17 @@
   { "type": "error", "name": "DataNotTimelocked", "inputs": [] },
   { "type": "error", "name": "FeeInvariantBroken", "inputs": [] },
   { "type": "error", "name": "FeeTooHigh", "inputs": [] },
-  { "type": "error", "name": "InfiniteTimelock", "inputs": [] },
   { "type": "error", "name": "InvalidSigner", "inputs": [] },
   { "type": "error", "name": "MaxRateTooHigh", "inputs": [] },
   { "type": "error", "name": "NoCode", "inputs": [] },
   { "type": "error", "name": "NotAdapter", "inputs": [] },
+  { "type": "error", "name": "NotInAdapterRegistry", "inputs": [] },
   { "type": "error", "name": "PenaltyTooHigh", "inputs": [] },
   { "type": "error", "name": "PermitDeadlineExpired", "inputs": [] },
   { "type": "error", "name": "RelativeCapAboveOne", "inputs": [] },
   { "type": "error", "name": "RelativeCapExceeded", "inputs": [] },
   { "type": "error", "name": "RelativeCapNotDecreasing", "inputs": [] },
   { "type": "error", "name": "RelativeCapNotIncreasing", "inputs": [] },
-  { "type": "error", "name": "TimelockCapIsFixed", "inputs": [] },
-  { "type": "error", "name": "TimelockDurationTooHigh", "inputs": [] },
   { "type": "error", "name": "TimelockNotDecreasing", "inputs": [] },
   { "type": "error", "name": "TimelockNotExpired", "inputs": [] },
   { "type": "error", "name": "TimelockNotIncreasing", "inputs": [] },

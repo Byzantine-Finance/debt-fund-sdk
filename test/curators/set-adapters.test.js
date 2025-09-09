@@ -8,7 +8,8 @@
  *
  * Features tested:
  * - Reading current adapter status
- * - Adding/removing adapters
+ * - Adding adapters (addAdapter)
+ * - Removing adapters (removeAdapter)
  * - Submitting adapter changes (with timelock)
  * - Setting adapters after timelock
  * - Instant adapter setting (when timelock is 0)
@@ -42,9 +43,10 @@ const TEST_CONFIG = {
  */
 async function checkAdapterStatus(client, vaultAddress, adapterAddress) {
   try {
-    const isAdapter = await client.getIsAdapter(vaultAddress, adapterAddress);
-    const numberOfAdapters = await client.getAdaptersLength(vaultAddress);
-    const timelock = await client.getTimelock(vaultAddress, "setIsAdapter");
+    const vaultCurator = client.curators.vault(vaultAddress);
+    const isAdapter = await vaultCurator.getIsAdapter(adapterAddress);
+    const numberOfAdapters = await vaultCurator.getAdaptersLength();
+    const timelock = await client.getTimelock(vaultAddress, "addAdapter");
     return { isAdapter, numberOfAdapters, timelock };
   } catch (error) {
     logResult("Check adapter status", false, `Error: ${error.message}`);
@@ -62,17 +64,15 @@ async function checkAdapterStatus(client, vaultAddress, adapterAddress) {
 async function checkTimelock(
   client,
   vaultAddress,
-  functionName = "setIsAdapter"
+  functionName = "addAdapter"
 ) {
   try {
-    // TODO: Re-enable when the SDK is rebuilt with new timelock methods
-    // const timelockBigInt = await client.getTimelock(vaultAddress, functionName);
-    // const timelockSeconds = Number(timelockBigInt);
-    const timelockSeconds = 0; // Default to 0 for now
+    const timelockBigInt = await client.getTimelock(vaultAddress, functionName);
+    const timelockSeconds = Number(timelockBigInt);
     logResult(
       `Timelock for ${functionName}`,
       true,
-      `${timelockSeconds} seconds (default)`
+      `${timelockSeconds} seconds`
     );
     return timelockSeconds;
   } catch (error) {
@@ -82,98 +82,93 @@ async function checkTimelock(
 }
 
 /**
- * Set adapter status using the optimal method based on timelock
+ * Add adapter using the optimal method based on timelock
  * @param {any} client - The ByzantineClient instance
  * @param {string} vaultAddress - The vault address
  * @param {string} adapterAddress - The adapter address
- * @param {boolean} isAdapter - Whether to enable or disable the adapter
  * @param {number} timelock - The current timelock value
  * @returns {Promise<{success: boolean, method: string}>}
  */
-async function setAdapterOptimal(
+async function addAdapterOptimal(
   client,
   vaultAddress,
   adapterAddress,
-  isAdapter,
   timelock
 ) {
-  const action = isAdapter ? "enable" : "disable";
-
   try {
+    const vaultCurator = client.curators.vault(vaultAddress);
     let tx;
     let method;
 
     if (timelock === 0) {
-      // Use instant setting when timelock is 0
-      console.log(
-        `🚀 Using instant method to ${action} adapter (timelock = 0)...`
-      );
-      tx = await client.instantSetIsAdapter(
-        vaultAddress,
-        adapterAddress,
-        isAdapter
-      );
+      // Use instant method when timelock is 0
+      console.log(`🚀 Using instant method to add adapter (timelock = 0)...`);
+      tx = await vaultCurator.instantAddAdapter(adapterAddress);
       method = "instant";
     } else {
       // Use submit method when timelock > 0
       console.log(
-        `⏰ Using submit method to ${action} adapter (timelock = ${timelock}s)...`
+        `⏰ Using submit method to add adapter (timelock = ${timelock}s)...`
       );
-      tx = await client.submitIsAdapter(
-        vaultAddress,
-        adapterAddress,
-        isAdapter
-      );
+      tx = await vaultCurator.submitAddAdapter(adapterAddress);
       method = "submit";
     }
 
-    logResult(`${action} adapter transaction sent`, true, tx.hash);
+    logResult(`Add adapter transaction sent`, true, tx.hash);
 
     // Wait for transaction confirmation
     console.log("⏳ Waiting for transaction confirmation...");
     const receipt = await tx.wait();
 
     if (receipt.status === 1) {
-      logResult(
-        `${action} adapter confirmed`,
-        true,
-        `Block: ${receipt.blockNumber}`
-      );
+      logResult(`Add adapter confirmed`, true, `Block: ${receipt.blockNumber}`);
       return { success: true, method };
     } else {
-      logResult(`${action} adapter failed`, false, "Transaction reverted");
+      logResult(`Add adapter failed`, false, "Transaction reverted");
       return { success: false, method };
     }
   } catch (error) {
-    logResult(`${action} adapter`, false, `Error: ${error.message}`);
+    logResult(`Add adapter`, false, `Error: ${error.message}`);
     return { success: false, method: "unknown" };
   }
 }
 
 /**
- * Execute adapter setting after timelock (for submitted changes)
+ * Remove adapter using the optimal method based on timelock
  * @param {any} client - The ByzantineClient instance
  * @param {string} vaultAddress - The vault address
  * @param {string} adapterAddress - The adapter address
- * @param {boolean} isAdapter - Whether to enable or disable the adapter
- * @returns {Promise<boolean>}
+ * @param {number} timelock - The current timelock value
+ * @returns {Promise<{success: boolean, method: string}>}
  */
-async function executeAdapterAfterTimelock(
+async function removeAdapterOptimal(
   client,
   vaultAddress,
   adapterAddress,
-  isAdapter
+  timelock
 ) {
-  const action = isAdapter ? "enable" : "disable";
-
   try {
-    console.log(`⚡ Executing ${action} adapter after timelock...`);
-    const tx = await client.setIsAdapterAfterTimelock(
-      vaultAddress,
-      adapterAddress,
-      isAdapter
-    );
-    logResult(`Execute ${action} adapter transaction sent`, true, tx.hash);
+    const vaultCurator = client.curators.vault(vaultAddress);
+    let tx;
+    let method;
+
+    if (timelock === 0) {
+      // Use instant method when timelock is 0
+      console.log(
+        `🚀 Using instant method to remove adapter (timelock = 0)...`
+      );
+      tx = await vaultCurator.instantRemoveAdapter(adapterAddress);
+      method = "instant";
+    } else {
+      // Use submit method when timelock > 0
+      console.log(
+        `⏰ Using submit method to remove adapter (timelock = ${timelock}s)...`
+      );
+      tx = await vaultCurator.submitRemoveAdapter(adapterAddress);
+      method = "submit";
+    }
+
+    logResult(`Remove adapter transaction sent`, true, tx.hash);
 
     // Wait for transaction confirmation
     console.log("⏳ Waiting for transaction confirmation...");
@@ -181,21 +176,95 @@ async function executeAdapterAfterTimelock(
 
     if (receipt.status === 1) {
       logResult(
-        `Execute ${action} adapter confirmed`,
+        `Remove adapter confirmed`,
+        true,
+        `Block: ${receipt.blockNumber}`
+      );
+      return { success: true, method };
+    } else {
+      logResult(`Remove adapter failed`, false, "Transaction reverted");
+      return { success: false, method };
+    }
+  } catch (error) {
+    logResult(`Remove adapter`, false, `Error: ${error.message}`);
+    return { success: false, method: "unknown" };
+  }
+}
+
+/**
+ * Execute add adapter after timelock (for submitted changes)
+ * @param {any} client - The ByzantineClient instance
+ * @param {string} vaultAddress - The vault address
+ * @param {string} adapterAddress - The adapter address
+ * @returns {Promise<boolean>}
+ */
+async function executeAddAdapterAfterTimelock(
+  client,
+  vaultAddress,
+  adapterAddress
+) {
+  try {
+    console.log(`⚡ Executing add adapter after timelock...`);
+    const vaultCurator = client.curators.vault(vaultAddress);
+    const tx = await vaultCurator.addAdapterAfterTimelock(adapterAddress);
+    logResult(`Execute add adapter transaction sent`, true, tx.hash);
+
+    // Wait for transaction confirmation
+    console.log("⏳ Waiting for transaction confirmation...");
+    const receipt = await tx.wait();
+
+    if (receipt.status === 1) {
+      logResult(
+        `Execute add adapter confirmed`,
         true,
         `Block: ${receipt.blockNumber}`
       );
       return true;
     } else {
-      logResult(
-        `Execute ${action} adapter failed`,
-        false,
-        "Transaction reverted"
-      );
+      logResult(`Execute add adapter failed`, false, "Transaction reverted");
       return false;
     }
   } catch (error) {
-    logResult(`Execute ${action} adapter`, false, `Error: ${error.message}`);
+    logResult(`Execute add adapter`, false, `Error: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Execute remove adapter after timelock (for submitted changes)
+ * @param {any} client - The ByzantineClient instance
+ * @param {string} vaultAddress - The vault address
+ * @param {string} adapterAddress - The adapter address
+ * @returns {Promise<boolean>}
+ */
+async function executeRemoveAdapterAfterTimelock(
+  client,
+  vaultAddress,
+  adapterAddress
+) {
+  try {
+    console.log(`⚡ Executing remove adapter after timelock...`);
+    const vaultCurator = client.curators.vault(vaultAddress);
+    const tx = await vaultCurator.removeAdapterAfterTimelock(adapterAddress);
+    logResult(`Execute remove adapter transaction sent`, true, tx.hash);
+
+    // Wait for transaction confirmation
+    console.log("⏳ Waiting for transaction confirmation...");
+    const receipt = await tx.wait();
+
+    if (receipt.status === 1) {
+      logResult(
+        `Execute remove adapter confirmed`,
+        true,
+        `Block: ${receipt.blockNumber}`
+      );
+      return true;
+    } else {
+      logResult(`Execute remove adapter failed`, false, "Transaction reverted");
+      return false;
+    }
+  } catch (error) {
+    logResult(`Execute remove adapter`, false, `Error: ${error.message}`);
     return false;
   }
 }
@@ -248,7 +317,7 @@ async function runTests() {
         : `${TEST_CONFIG.adapterAddress} is not an adapter`
     );
     logResult("Number of adapters", true, numberOfAdapters.toString());
-    logResult("Timelock to setIsAdapter", true, timelock.toString());
+    logResult("Timelock to addAdapter", true, timelock.toString());
 
     const timelockDecrease = await client.getTimelock(
       TEST_CONFIG.vaultAddress,
@@ -262,41 +331,43 @@ async function runTests() {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (isAdapter) {
-      logTitle("Adapter is already enabled, remove it");
-      await client.instantSetIsAdapter(
+      logTitle("Adapter is already added, remove it");
+      const removeResult = await removeAdapterOptimal(
+        client,
         TEST_CONFIG.vaultAddress,
         TEST_CONFIG.adapterAddress,
-        false
+        timelock
       );
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      const { isAdapter } = await checkAdapterStatus(
+      const { isAdapter: isAdapterAfter } = await checkAdapterStatus(
         client,
         TEST_CONFIG.vaultAddress,
         TEST_CONFIG.adapterAddress
       );
-      if (!isAdapter) {
+      if (!isAdapterAfter) {
         logResult("Adapter removal", true, "Successfully removed");
       } else {
         logResult("Adapter removal", false, "Failed to remove");
       }
       return;
     } else {
-      logTitle("Adapter is disabled, enable it");
-      await client.instantSetIsAdapter(
+      logTitle("Adapter is not added, add it");
+      const addResult = await addAdapterOptimal(
+        client,
         TEST_CONFIG.vaultAddress,
         TEST_CONFIG.adapterAddress,
-        true
+        timelock
       );
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      const { isAdapter } = await checkAdapterStatus(
+      const { isAdapter: isAdapterAfter } = await checkAdapterStatus(
         client,
         TEST_CONFIG.vaultAddress,
         TEST_CONFIG.adapterAddress
       );
-      if (isAdapter) {
-        logResult("Adapter enable", true, "Successfully enabled");
+      if (isAdapterAfter) {
+        logResult("Adapter addition", true, "Successfully added");
       } else {
-        logResult("Adapter enable", false, "Failed to enable");
+        logResult("Adapter addition", false, "Failed to add");
       }
     }
 
@@ -310,64 +381,53 @@ async function runTests() {
     logTitle("Set timelock to 5s");
     const timelockBefore = await client.getTimelock(
       TEST_CONFIG.vaultAddress,
-      "setIsAdapter"
+      "addAdapter"
     );
     logResult("Current timelock", true, timelockBefore.toString());
     await client.increaseTimelock(
       TEST_CONFIG.vaultAddress,
-      "setIsAdapter",
+      "addAdapter",
       BigInt(5)
     );
     const timelockAfter = await client.getTimelock(
       TEST_CONFIG.vaultAddress,
-      "setIsAdapter"
+      "addAdapter"
     );
     logResult("New timelock", true, timelockAfter.toString());
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    logTitle("Submit with fail");
-    await client.submitIsAdapter(
-      TEST_CONFIG.vaultAddress,
-      TEST_CONFIG.adapterAddress,
-      true
-    );
+    logTitle("Submit add adapter with fail");
+    const vaultCurator = client.curators.vault(TEST_CONFIG.vaultAddress);
+    await vaultCurator.submitAddAdapter(TEST_CONFIG.adapterAddress);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
       // should fail because timelock is 5s, and we are trying to execute it immediately
 
       const timelockAfter = await client.getTimelock(
         TEST_CONFIG.vaultAddress,
-        "setIsAdapter"
+        "addAdapter"
       );
       logResult("Timelock after submit", true, timelockAfter.toString());
-      await client.setIsAdapterAfterTimelock(
-        TEST_CONFIG.vaultAddress,
-        TEST_CONFIG.adapterAddress,
-        true
-      );
+      await vaultCurator.addAdapterAfterTimelock(TEST_CONFIG.adapterAddress);
       logResult("Action was supposed to fail", false, "It passed");
     } catch (error) {
       logResult("Action failed", true, "It was supposed to fail");
     }
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    logTitle("Execute after 5s");
+    logTitle("Execute add adapter after 5s");
 
     const timelockBeforeExecute = await client.getTimelock(
       TEST_CONFIG.vaultAddress,
-      "setIsAdapter"
+      "addAdapter"
     );
     logResult(
       "Reading first timelock before execute",
       true,
       timelockBeforeExecute.toString()
     );
-    await client.setIsAdapterAfterTimelock(
-      TEST_CONFIG.vaultAddress,
-      TEST_CONFIG.adapterAddress,
-      true
-    );
+    await vaultCurator.addAdapterAfterTimelock(TEST_CONFIG.adapterAddress);
     logResult("Action was successful", true, "It passed");
 
     // // put back to 0s
@@ -479,10 +539,6 @@ if (!process.env.RPC_URL) {
   console.log("2. Update TEST_CONFIG in this file:");
   console.log("   - vaultAddress: your vault address");
   console.log("   - adapterAddress: adapter address to manage");
-  console.log("   - enableAdapter: true to enable, false to disable");
-  console.log(
-    "   - testTimelockExecution: true to test executing after timelock"
-  );
   console.log("");
   console.log("3. Run: node test/curators/set-adapters.test.js");
   console.log("");
@@ -491,7 +547,7 @@ if (!process.env.RPC_URL) {
     "💡 Tip: Check vault timelock - if > 0, you need two transactions:"
   );
   console.log("   1. Submit the change (this test)");
-  console.log("   2. Execute after timelock (set testTimelockExecution=true)");
+  console.log("   2. Execute after timelock");
 }
 
 // Run tests if file is executed directly
@@ -507,7 +563,9 @@ if (require.main === module) {
 module.exports = {
   runTests,
   checkAdapterStatus,
-  setAdapterOptimal,
-  executeAdapterAfterTimelock,
+  addAdapterOptimal,
+  removeAdapterOptimal,
+  executeAddAdapterAfterTimelock,
+  executeRemoveAdapterAfterTimelock,
   checkTimelock,
 };

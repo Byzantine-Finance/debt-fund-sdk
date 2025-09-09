@@ -5,10 +5,10 @@ import { executeContractMethod, callContractMethod } from "../../utils";
  * Supported timelock functions with their hardcoded selectors
  */
 export type TimelockFunction =
-  | "abdicateSubmit" // 0x4520a18c
+  | "addAdapter" // 0x60d54d41
+  | "removeAdapter" // 0x585cd34b
   //
-  | "setIsAdapter" // 0xb332ebf2
-  //
+  | "increaseTimelock" // 0x47966291
   | "decreaseTimelock" // 0x5c1a1a4f
   //
   | "increaseAbsoluteCap" // 0xf6f98fd5
@@ -42,10 +42,12 @@ export function getTimelockFunctionSelector(
   functionName: TimelockFunction
 ): string {
   switch (functionName) {
-    case "abdicateSubmit":
-      return "0x4520a18c";
-    case "setIsAdapter":
-      return "0xb332ebf2";
+    case "addAdapter":
+      return "0x60d54d41";
+    case "removeAdapter":
+      return "0x585cd34b";
+    case "increaseTimelock":
+      return "0x47966291";
     case "decreaseTimelock":
       return "0x5c1a1a4f";
     case "increaseAbsoluteCap":
@@ -234,18 +236,4 @@ export async function revoke(
     params
   );
   return await executeContractMethod(vaultContract, "revoke", calldata);
-}
-
-/**
- * Abdicate submit privileges for a specific function
- * @param vaultContract The vault contract instance
- * @param functionName The function to abdicate submit for
- * @returns Transaction response
- */
-export async function abdicateSubmit(
-  vaultContract: ethers.Contract,
-  functionName: TimelockFunction
-) {
-  const selector = getTimelockFunctionSelector(functionName);
-  return await executeContractMethod(vaultContract, "abdicateSubmit", selector);
 }

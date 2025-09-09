@@ -628,11 +628,11 @@ export class ByzantineClient {
       .setNameAndSymbol(newName, newSymbol);
   }
 
-  async getVaultName(vaultAddress: string): Promise<string> {
+  async getSharesName(vaultAddress: string): Promise<string> {
     return await this.ownersClient.vault(vaultAddress).getName();
   }
 
-  async getVaultSymbol(vaultAddress: string): Promise<string> {
+  async getSharesSymbol(vaultAddress: string): Promise<string> {
     return await this.ownersClient.vault(vaultAddress).getSymbol();
   }
 
@@ -677,34 +677,40 @@ export class ByzantineClient {
   //* CURATORS CLIENT - Vault Curator Operations
   //*******************************************
 
-  async submitIsAdapter(
-    vaultAddress: string,
-    adapter: string,
-    isAdapter: boolean
-  ) {
+  async submitAddAdapter(vaultAddress: string, adapter: string) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .submitIsAdapter(adapter, isAdapter);
+      .submitAddAdapter(adapter);
   }
 
-  async setIsAdapterAfterTimelock(
-    vaultAddress: string,
-    adapter: string,
-    isAdapter: boolean
-  ) {
+  async addAdapterAfterTimelock(vaultAddress: string, adapter: string) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .setIsAdapterAfterTimelock(adapter, isAdapter);
+      .addAdapterAfterTimelock(adapter);
   }
 
-  async instantSetIsAdapter(
-    vaultAddress: string,
-    adapter: string,
-    isAdapter: boolean
-  ) {
+  async instantAddAdapter(vaultAddress: string, adapter: string) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .instantSetIsAdapter(adapter, isAdapter);
+      .instantAddAdapter(adapter);
+  }
+
+  async submitRemoveAdapter(vaultAddress: string, adapter: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitRemoveAdapter(adapter);
+  }
+
+  async removeAdapterAfterTimelock(vaultAddress: string, adapter: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .removeAdapterAfterTimelock(adapter);
+  }
+
+  async instantRemoveAdapter(vaultAddress: string, adapter: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantRemoveAdapter(adapter);
   }
 
   async getIsAdapter(vaultAddress: string, adapter: string) {
@@ -789,12 +795,6 @@ export class ByzantineClient {
       .revoke(functionName as any, params);
   }
 
-  async abdicateSubmit(vaultAddress: string, functionName: string) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .abdicateSubmit(functionName as any);
-  }
-
   // ========================================
   // FEES MANAGEMENT
   // ========================================
@@ -821,7 +821,16 @@ export class ByzantineClient {
       .instantSetPerformanceFee(performanceFee);
   }
 
-  async getPerformanceFee(vaultAddress: string) {
+  /**
+   * Get the performance fee of the vault
+   * @param vaultAddress The vault contract address
+   * @returns Performance fee
+   *
+   * @example
+   * const performanceFee = await client.getPerformanceFee(vaultAddress);
+   * console.log(performanceFee); // 1585489599n -> 0.02%
+   */
+  async getPerformanceFee(vaultAddress: string): Promise<bigint> {
     return await this.curatorsClient.vault(vaultAddress).getPerformanceFee();
   }
 
@@ -847,7 +856,16 @@ export class ByzantineClient {
       .instantSetManagementFee(managementFee);
   }
 
-  async getManagementFee(vaultAddress: string) {
+  /**
+   * Get the management fee of the vault
+   * @param vaultAddress The vault contract address
+   * @returns Management fee
+   *
+   * @example
+   * const managementFee = await client.getManagementFee(vaultAddress);
+   * console.log(managementFee); // 1585489599  ->  0.05 %/year
+   */
+  async getManagementFee(vaultAddress: string): Promise<bigint> {
     return await this.curatorsClient.vault(vaultAddress).getManagementFee();
   }
 
@@ -879,6 +897,15 @@ export class ByzantineClient {
       .instantSetPerformanceFeeRecipient(newFeeRecipient);
   }
 
+  /**
+   * Get the performance fee recipient of the vault
+   * @param vaultAddress The vault contract address
+   * @returns Performance fee recipient
+   *
+   * @example
+   * const performanceFeeRecipient = await client.getPerformanceFeeRecipient(vaultAddress);
+   * console.log(performanceFeeRecipient); // 0x0000000000000000000000000000000000000000
+   */
   async getPerformanceFeeRecipient(vaultAddress: string) {
     return await this.curatorsClient
       .vault(vaultAddress)
@@ -913,7 +940,16 @@ export class ByzantineClient {
       .instantSetManagementFeeRecipient(newFeeRecipient);
   }
 
-  async getManagementFeeRecipient(vaultAddress: string) {
+  /**
+   * Get the management fee recipient of the vault
+   * @param vaultAddress The vault contract address
+   * @returns Management fee recipient
+   *
+   * @example
+   * const managementFeeRecipient = await client.getManagementFeeRecipient(vaultAddress);
+   * console.log(managementFeeRecipient); // 0x0000000000000000000000000000000000000000
+   */
+  async getManagementFeeRecipient(vaultAddress: string): Promise<string> {
     return await this.curatorsClient
       .vault(vaultAddress)
       .getManagementFeeRecipient();

@@ -39,13 +39,12 @@ interface CompoundV3VaultConfig extends BaseVaultConfig {
 type VaultConfig = NonCompoundV3VaultConfig | CompoundV3VaultConfig;
 
 export interface CuratorsSettingsConfig {
-  allocator?: string[]; // Might have multiple allocators
+  allocators?: string[]; // Might have multiple allocators
 
   performance_fee?: bigint; // 100% = 1e18, max 50% -> 0.5e18
   management_fee?: bigint; // 100% = 1e18, max 5%/year -> 0.05e18/31_536_000 = 1.3698630136986301e15
   performance_fee_recipient?: string;
   management_fee_recipient?: string;
-  max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
 
   underlying_vaults?: VaultConfig[];
 
@@ -58,7 +57,7 @@ export interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
+const VAULT_ADDRESS = "0x7a7223270059f25d9d71fe96c2085f0ee1cde980";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
   // allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
@@ -67,17 +66,16 @@ const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
   // management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
   // performance_fee: parseUnits("0.05", 18), // 5%
   // management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
-  // max_rate: parseUnits("2", 18) / 31536000n, // 200% / year
 
   underlying_vaults: [
     {
-      address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
+      address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
       type: "erc4626",
-      deallocate_penalty: parseEther("0.02"),
+      // deallocate_penalty: parseEther("0.02"),
       caps_per_id: [
         {
-          // relative_cap: parseUnits("1", 18), // 100%
-          absolute_cap: parseUnits("550", 6), // 800 USDC
+          relative_cap: parseUnits("1", 18), // 100%
+          // absolute_cap: parseUnits("550", 6), // 800 USDC
         },
       ],
     },
@@ -95,17 +93,17 @@ const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
     // },
   ],
 
-  timelockFunctionsToIncrease: {
-    setSharesGate: 3600,
-    setReceiveAssetsGate: 3600,
-    setSendAssetsGate: 3600,
-    setPerformanceFee: 3600,
-    setPerformanceFeeRecipient: 3600,
-    setManagementFee: 3600,
-    setManagementFeeRecipient: 3600,
-    setMaxRate: 3600,
-    setForceDeallocatePenalty: 3600,
-  },
+  // timelockFunctionsToIncrease: {
+  //   setSharesGate: 3600,
+  //   setReceiveAssetsGate: 3600,
+  //   setSendAssetsGate: 3600,
+  //   setPerformanceFee: 3600,
+  //   setPerformanceFeeRecipient: 3600,
+  //   setManagementFee: 3600,
+  //   setManagementFeeRecipient: 3600,
+  //   setMaxRate: 3600,
+  //   setForceDeallocatePenalty: 3600,
+  // },
 };
 
 async function main() {

@@ -16,50 +16,7 @@ export async function setupCuratorsSettings(
       throw new Error("Access denied: only the curator can proceed here.");
     }
 
-    console.log("💰 Setting fees");
-
-    if (curatorsSettings.performance_fee_recipient) {
-      const tx = await client.instantSetPerformanceFeeRecipient(
-        vaultAddress,
-        curatorsSettings.performance_fee_recipient
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.management_fee_recipient) {
-      const tx = await client.instantSetManagementFeeRecipient(
-        vaultAddress,
-        curatorsSettings.management_fee_recipient
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.performance_fee) {
-      const tx = await client.instantSetPerformanceFee(
-        vaultAddress,
-        curatorsSettings.performance_fee
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.management_fee) {
-      const tx = await client.instantSetManagementFee(
-        vaultAddress,
-        curatorsSettings.management_fee
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.max_rate) {
-      const tx = await client.instantSetMaxRate(
-        vaultAddress,
-        curatorsSettings.max_rate
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-
-    const newAllocators = curatorsSettings.allocator;
+    const newAllocators = curatorsSettings.allocators;
 
     if (newAllocators && newAllocators.length > 0) {
       for (const allocator of newAllocators) {
@@ -69,7 +26,7 @@ export async function setupCuratorsSettings(
             allocator
           );
           if (isAllocator) {
-            console.log(`Allocator ${allocator} is already set`);
+            console.log(`👷‍ Allocator ${allocator} is already set`);
             continue;
           }
           const tx = await client.instantSetIsAllocator(
@@ -88,13 +45,60 @@ export async function setupCuratorsSettings(
           );
         }
         await waitHalfSecond();
-        console.log(`Allocator ${allocator} set to true`);
+        console.log(`👷‍ Allocator ${allocator} set to true`);
       }
     }
 
-    const NEEDS_TO_ADD_UNDERLYING_VAULT = // Because only curator can add underlying vault
-      curatorsSettings.underlying_vaults &&
-      curatorsSettings.underlying_vaults.length > 0;
+    console.log("💰 Setting fees");
+
+    if (curatorsSettings.performance_fee_recipient) {
+      console.log(
+        `  - Setting performance fee recipient to ${curatorsSettings.performance_fee_recipient}`
+      );
+      const tx = await client.instantSetPerformanceFeeRecipient(
+        vaultAddress,
+        curatorsSettings.performance_fee_recipient
+      );
+      await tx.wait();
+      await waitHalfSecond();
+    }
+    if (curatorsSettings.management_fee_recipient) {
+      console.log(
+        `  - Setting management fee recipient to ${curatorsSettings.management_fee_recipient}`
+      );
+      const tx = await client.instantSetManagementFeeRecipient(
+        vaultAddress,
+        curatorsSettings.management_fee_recipient
+      );
+      await tx.wait();
+      await waitHalfSecond();
+    }
+    if (curatorsSettings.performance_fee) {
+      console.log(
+        `  - Setting performance fee to ${curatorsSettings.performance_fee}`
+      );
+      const tx = await client.instantSetPerformanceFee(
+        vaultAddress,
+        curatorsSettings.performance_fee
+      );
+      await tx.wait();
+      await waitHalfSecond();
+    }
+    if (curatorsSettings.management_fee) {
+      console.log(
+        `  - Setting management fee to ${curatorsSettings.management_fee}`
+      );
+      const tx = await client.instantSetManagementFee(
+        vaultAddress,
+        curatorsSettings.management_fee
+      );
+      await tx.wait();
+      await waitHalfSecond();
+    }
+
+    // const NEEDS_TO_ADD_UNDERLYING_VAULT = // Because only curator can add underlying vault
+    //   curatorsSettings.underlying_vaults &&
+    //   curatorsSettings.underlying_vaults.length > 0;
     const NEEDS_TO_CAP_BY_ID = // There must be at least one underlying vault with at least one cap_per_id
       curatorsSettings.underlying_vaults &&
       curatorsSettings.underlying_vaults.reduce(
@@ -174,7 +178,7 @@ export async function setupCuratorsSettings(
           console.log(
             `    - Setting adapter ${adapterAddress} for underlying ${underlyingAddress}`
           );
-          await client.instantSetIsAdapter(vaultAddress, adapterAddress, true);
+          await client.instantAddAdapter(vaultAddress, adapterAddress);
           await waitHalfSecond();
         } catch (error) {
           console.error(

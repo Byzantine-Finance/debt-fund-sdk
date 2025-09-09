@@ -10,8 +10,8 @@ export const RPC_URL = process.env.RPC_URL || "";
 export const MNEMONIC = process.env.MNEMONIC || "";
 
 export const timelocks: TimelockFunction[] = [
-  "abdicateSubmit",
-  "setIsAdapter",
+  "addAdapter",
+  "removeAdapter",
   "decreaseTimelock",
   "increaseAbsoluteCap",
   "increaseRelativeCap",
@@ -27,17 +27,63 @@ export const timelocks: TimelockFunction[] = [
   "setForceDeallocatePenalty",
 ];
 
+export const waitDelay = (delay: number) =>
+  new Promise((resolve) => setTimeout(resolve, delay));
+
 export const waitSecond = () =>
   new Promise((resolve) => setTimeout(resolve, 1000));
 
 export const waitHalfSecond = () =>
   new Promise((resolve) => setTimeout(resolve, 500));
 
+interface FullReadingVault {
+  sharesName: string;
+  sharesSymbol: string;
+
+  asset: string;
+  totalAssets: bigint;
+  totalSupply: bigint;
+  virtualShares: bigint;
+
+  owner: string;
+  curator: string;
+  isSentinel: boolean;
+  isAllocator: boolean;
+
+  performanceFee: number;
+  managementFee: number;
+  performanceFeeRecipient: string;
+  managementFeeRecipient: string;
+  maxRate: number;
+
+  adapters: {
+    index: number;
+    address: string;
+    adapterType: AdapterType | undefined;
+    underlying: string;
+    forceDeallocatePenalty: string;
+    idsWithCaps: {
+      id: string;
+      absoluteCap: bigint;
+      relativeCap: bigint;
+      allocation: bigint;
+    }[];
+  }[];
+
+  idleBalance: bigint;
+  liquidityAdapter: string;
+  liquidityData: any;
+  timelocks: {
+    name: string;
+    timelock: bigint;
+  }[];
+}
+
 export async function fullReading(
   client: ByzantineClient,
   vaultAddress: string,
   userAddress: string
-) {
+): Promise<FullReadingVault> {
   await waitHalfSecond();
   console.log("\n*********************************************************");
   console.log("*                                                       *");
@@ -45,28 +91,35 @@ export async function fullReading(
   console.log("*                                                       *");
   console.log("*********************************************************");
   console.log("*                                                       *");
-  const asset = await client.getAsset(vaultAddress);
-  const name = await client.getVaultName(vaultAddress);
-  const symbol = await client.getVaultSymbol(vaultAddress);
 
-  const owner = await client.getOwner(vaultAddress);
-  const curator = await client.getCurator(vaultAddress);
-  const isSentinel = await client.isSentinel(vaultAddress, userAddress);
-  const isAllocator = await client.getIsAllocator(vaultAddress, userAddress);
+  const fullReadingVault: FullReadingVault = {
+    sharesName: await client.getSharesName(vaultAddress),
+    sharesSymbol: await client.getSharesSymbol(vaultAddress),
 
-  const totalAssets = await client.getTotalAssets(vaultAddress);
-  const totalSupply = await client.getTotalSupply(vaultAddress);
-  const virtualShares = await client.getVirtualShares(vaultAddress);
+    asset: await client.getAsset(vaultAddress),
+    totalAssets: await client.getTotalAssets(vaultAddress),
+    totalSupply: await client.getTotalSupply(vaultAddress),
+    virtualShares: await client.getVirtualShares(vaultAddress),
 
-  const performanceFee = await client.getPerformanceFee(vaultAddress);
-  const managementFee = await client.getManagementFee(vaultAddress);
-  const performanceFeeRecipient = await client.getPerformanceFeeRecipient(
-    vaultAddress
-  );
-  const managementFeeRecipient = await client.getManagementFeeRecipient(
-    vaultAddress
-  );
-  const maxRate = await client.getMaxRate(vaultAddress);
+    owner: await client.getOwner(vaultAddress),
+    curator: await client.getCurator(vaultAddress),
+    isSentinel: await client.isSentinel(vaultAddress, userAddress),
+    isAllocator: await client.getIsAllocator(vaultAddress, userAddress),
+    performanceFee: Number(await client.getPerformanceFee(vaultAddress)),
+    managementFee: Number(await client.getManagementFee(vaultAddress)),
+    performanceFeeRecipient: await client.getPerformanceFeeRecipient(
+      vaultAddress
+    ),
+    managementFeeRecipient: await client.getManagementFeeRecipient(
+      vaultAddress
+    ),
+    maxRate: Number(await client.getMaxRate(vaultAddress)) / 1e16,
+    adapters: [], // Will be updated later
+    idleBalance: await client.getIdleBalance(vaultAddress),
+    liquidityAdapter: await client.getLiquidityAdapter(vaultAddress),
+    liquidityData: await client.getLiquidityData(vaultAddress),
+    timelocks: [], // Will be updated later
+  };
 
   const adaptersLength = await client.getAdaptersLength(vaultAddress);
   const allAdapters = await Promise.all(
@@ -158,20 +211,18 @@ export async function fullReading(
 
             return {
               id,
-              absoluteCap: absoluteCapResult.toString(),
-              relativeCap: relativeCapResult.toString(),
-              hasCaps: true,
-              allocation: allocation.toString(),
+              absoluteCap: absoluteCapResult,
+              relativeCap: relativeCapResult,
+              allocation: allocation,
             };
           } catch (error) {
             console.log(`Error getting caps for ID ${id}: ${error}`);
             // Still include the ID even if we can't get caps
             return {
               id,
-              absoluteCap: "N/A",
-              relativeCap: "N/A",
-              hasCaps: false,
-              allocation: "N/A",
+              absoluteCap: BigInt(0),
+              relativeCap: BigInt(0),
+              allocation: BigInt(0),
             };
           }
         })
@@ -202,48 +253,88 @@ export async function fullReading(
     })
   );
 
-  console.log("* Asset:", asset);
-  console.log("* Name:", name);
-  console.log("* Symbol:", symbol);
+  // Update fullReadingVault with all additional data
+  fullReadingVault.adapters = allAdapters;
+  fullReadingVault.idleBalance = idleBalance;
+  fullReadingVault.liquidityAdapter = liquidityAdapter;
+  fullReadingVault.liquidityData = liquidityData;
+  fullReadingVault.timelocks = allTimelocks;
+
+  console.log("* Asset:", fullReadingVault.asset);
+  console.log("* Name:", fullReadingVault.sharesName);
+  console.log("* Symbol:", fullReadingVault.sharesSymbol);
   console.log("*");
   console.log(
-    `* Total Assets: ${totalAssets} (${formatUnits(totalAssets, 6)} USDC)`
+    `* Total Assets: ${fullReadingVault.totalAssets} (${formatUnits(
+      fullReadingVault.totalAssets,
+      6
+    )} USDC)`
   );
   console.log(
-    `* Total Supply: ${totalSupply} (${formatUnits(totalSupply, 18)} byzUSDC)`
+    `* Total Supply: ${fullReadingVault.totalSupply} (${formatUnits(
+      fullReadingVault.totalSupply,
+      18
+    )} byzUSDC)`
   );
-  console.log("* Virtual Shares:", virtualShares);
+  console.log("* Virtual Shares:", fullReadingVault.virtualShares);
   console.log("*");
   console.log("* Your address:", userAddress, "✅");
-  console.log("* Owner:", owner, owner === userAddress ? "✅" : "❌");
-  console.log("* Curator:", curator, curator === userAddress ? "✅" : "❌");
-  console.log("* Is Sentinel:", isSentinel, isSentinel ? "✅" : "❌");
-  console.log("* Is allocator:", isAllocator, isAllocator ? "✅" : "❌");
+  console.log(
+    "* Owner:",
+    fullReadingVault.owner,
+    fullReadingVault.owner === userAddress ? "✅" : "❌"
+  );
+  console.log(
+    "* Curator:",
+    fullReadingVault.curator,
+    fullReadingVault.curator === userAddress ? "✅" : "❌"
+  );
+  console.log(
+    "* Is Sentinel:",
+    fullReadingVault.isSentinel,
+    fullReadingVault.isSentinel ? "✅" : "❌"
+  );
+  console.log(
+    "* Is allocator:",
+    fullReadingVault.isAllocator,
+    fullReadingVault.isAllocator ? "✅" : "❌"
+  );
   console.log("*");
-  console.log("* Performance Fee:", (Number(performanceFee) / 1e18) * 100, "%");
+  console.log(
+    "* Performance Fee:",
+    (Number(fullReadingVault.performanceFee) / 1e18) * 100,
+    "%"
+  );
   console.log(
     "* Management Fee:",
-    managementFee,
+    fullReadingVault.managementFee,
     " -> ",
-    Math.round((Number(managementFee) / 1e18) * 31536000 * 1e5) / 1e5,
+    Math.round(
+      (Number(fullReadingVault.managementFee) / 1e18) * 31536000 * 1e5
+    ) / 1e5,
     "%/year"
   );
-  console.log("* Performance Fee Recipient:", performanceFeeRecipient);
-  console.log("* Management Fee Recipient:", managementFeeRecipient);
+  console.log(
+    "* Performance Fee Recipient:",
+    fullReadingVault.performanceFeeRecipient
+  );
+  console.log(
+    "* Management Fee Recipient:",
+    fullReadingVault.managementFeeRecipient
+  );
   console.log(
     "* Max Rate:",
-    maxRate,
+    fullReadingVault.maxRate,
     " -> ",
-    (Number(maxRate) / 1e16) * 31536000,
+    (Number(fullReadingVault.maxRate) / 1e16) * 31536000,
     "%/year"
   );
   console.log("*");
-  console.log("* Adapters length:", adaptersLength);
+  console.log("* Adapters length:", fullReadingVault.adapters.length);
   allAdapters.forEach((adapter) => {
     const forceDeallocatePenaltyPercent =
       adapter.forceDeallocatePenalty !== "0"
-        ? ((Number(adapter.forceDeallocatePenalty) / 1e16) * 100).toFixed(2) +
-          "%"
+        ? (Number(adapter.forceDeallocatePenalty) / 1e16).toFixed(2) + "%"
         : "0%";
 
     const isLiquidityAdapter = adapter.address === liquidityAdapter;
@@ -260,17 +351,20 @@ export async function fullReading(
 
     if (adapter.idsWithCaps.length > 0) {
       adapter.idsWithCaps.forEach((idWithCap) => {
-        if (idWithCap.hasCaps) {
+        if (
+          idWithCap.absoluteCap !== BigInt(0) &&
+          idWithCap.relativeCap !== BigInt(0)
+        ) {
           const relativeCapPercent =
-            idWithCap.relativeCap !== "0"
+            idWithCap.relativeCap !== BigInt(0)
               ? ((Number(idWithCap.relativeCap) / 1e18) * 100).toFixed(2) + "%"
               : "0%";
           const absoluteCapFormatted =
-            idWithCap.absoluteCap !== "0"
+            idWithCap.absoluteCap !== BigInt(0)
               ? (Number(idWithCap.absoluteCap) / 1e6).toFixed(2)
               : "0";
           const allocationFormatted =
-            idWithCap.allocation !== "0"
+            idWithCap.allocation !== BigInt(0)
               ? (Number(idWithCap.allocation) / 1e6).toFixed(2)
               : "0";
 
@@ -303,4 +397,6 @@ export async function fullReading(
   });
   console.log("*                                                       *");
   console.log("*********************************************************");
+
+  return fullReadingVault;
 }

@@ -11,6 +11,7 @@ import {
   waitHalfSecond,
   RPC_URL,
   MNEMONIC,
+  waitSecond,
 } from "./utils/toolbox";
 import { checkAndApproveIfNeeded } from "./utils/depositor";
 
@@ -21,14 +22,14 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
+const VAULT_ADDRESS = "0xC725Ca60eCB33FD8326227Ce2A83F629a4Be41b7";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
+  // depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
-  // withdrawAmount: parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
-  // redeemAmount: parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
+  // withdrawAmount: 249989n, //parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
+  // redeemAmount: 1198496n, // parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
 };
 
 async function main() {
@@ -43,6 +44,13 @@ async function main() {
     const userAddress = await wallet.getAddress();
     console.log(`👤 User address: ${userAddress}`);
     console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
+
+    // await client.setCurator(VAULT_ADDRESS, userAddress);
+    // await waitSecond();
+    // await client.setIsSentinel(VAULT_ADDRESS, userAddress, true);
+    // await waitSecond();
+    // await client.instantSetIsAllocator(VAULT_ADDRESS, userAddress, true);
+    // await waitSecond();
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");
@@ -59,7 +67,7 @@ async function main() {
     // ========================================
     // INITIAL STATE
     // ========================================
-    await fullReading(client, VAULT_ADDRESS, userAddress);
+    // await fullReading(client, VAULT_ADDRESS, userAddress);
 
     await displayBalances(client, VAULT_ADDRESS, userAddress, "Initial");
 

@@ -10,6 +10,8 @@ import { getIdData } from "../src/clients/curators/Cap";
 import { setupAllocatorsSettings } from "./utils";
 
 export interface AllocatorSettingsConfig {
+  max_rate?: bigint; // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
+
   setLiquidityAdapterAndData?: {
     liquidityAdapter: string;
     liquidityData: string;
@@ -50,26 +52,31 @@ export interface AllocatorSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x76870462853d83bA0c7F5b7c4db6f71156da71FE";
+const VAULT_ADDRESS = "0x7a7223270059f25D9d71FE96C2085F0ee1Cde980";
 
 const ALLOCATOR_SETTINGS_CONFIG: AllocatorSettingsConfig = {
   // setLiquidityAdapterAndData: {
   //   liquidityAdapter: "0xDA0455494f0E82E440312D0538558Ae236649345",
   //   liquidityData: "0x", // Empty data, adjust as needed
   // },
-  allocateConfigFromUnderlyingVault: [
-    {
-      underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
-      amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-    },
-  ],
-  // allocateConfigFromAdapter: [
+  // allocateConfigFromUnderlyingVault: [
   //   {
-  //     adapter: "0x5a83a5c10C4d6c4EAbB4E2B5add5B2C5997f150D",
+  //     underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
   //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
-  //     data: "0x", // Empty data because it's a AdapterVaultV1
   //   },
   // ],
+  allocateConfigFromAdapter: [
+    {
+      adapter: "0x2c45952a0e04d32C7876F85c6cC9013dc60FB94b",
+      amountAsset: parseUnits("0.02", 6), // 0.1 USDC
+      // data: "0x", // Empty data because it's a AdapterVaultV1
+    },
+    {
+      adapter: "0xEe272680fbD9aB7B05e4ED1F780582fAc3f8D51d",
+      amountAsset: parseUnits("0.03", 6), // 0.1 USDC
+      // data: "0x", // Empty data because it's a AdapterVaultV1
+    },
+  ],
   // deallocateConfigFromUnderlyingVault: [
   //   {
   //     underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
@@ -78,8 +85,8 @@ const ALLOCATOR_SETTINGS_CONFIG: AllocatorSettingsConfig = {
   // ],
   // deallocateConfigFromAdapter: [
   //   {
-  //     adapter: "0xDA0455494f0E82E440312D0538558Ae236649345",
-  //     amountAsset: parseUnits("0.1", 6), // 0.1 USDC
+  //     adapter: "0x6F4302b0019008DC1C91E55929926c7089F3D221",
+  //     amountAsset: parseUnits("0.2", 6), // 0.1 USDC
   //     data: "0x", // Empty data because it's a AdapterVaultV1
   //   },
   // ],

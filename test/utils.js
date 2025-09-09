@@ -249,7 +249,7 @@ const setUpTest = async () => {
     true,
     `${networkConfig.name} (Chain ID: ${chainId.chainId})`
   );
-  logResult("Factory", true, networkConfig.byzantineFactoryAddress);
+  logResult("Factory", true, networkConfig.vaultV2Factory);
 
   // =============================================
   // User Wallet Information

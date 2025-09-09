@@ -4,7 +4,6 @@ import {
   executeContractMethod,
   formatContractError,
 } from "../../utils";
-import { BYTECODE } from "./bytecode";
 
 /**
  * Vault creation functions for owners
@@ -29,6 +28,9 @@ export async function createVault(
   salt: string
 ): Promise<CreateVaultResult> {
   try {
+    console.log("Creating vault with owner", owner);
+    console.log("Creating vault with asset", asset);
+    console.log("Creating vault with salt", salt);
     const factoryContract = await contractProvider.getVaultFactoryContract();
 
     const vaultAddress = await factoryContract.createVaultV2.staticCall(

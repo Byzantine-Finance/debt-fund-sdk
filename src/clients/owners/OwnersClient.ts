@@ -219,7 +219,7 @@ export class VaultOwner {
    * @returns The vault name
    */
   async getName(): Promise<string> {
-    return NameAndSymbolFunctions.getVaultName(this.vaultContract);
+    return NameAndSymbolFunctions.getSharesName(this.vaultContract);
   }
 
   /**
@@ -227,7 +227,7 @@ export class VaultOwner {
    * @returns The vault symbol
    */
   async getSymbol(): Promise<string> {
-    return NameAndSymbolFunctions.getVaultSymbol(this.vaultContract);
+    return NameAndSymbolFunctions.getSharesSymbol(this.vaultContract);
   }
 
   // ========================================

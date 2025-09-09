@@ -15,22 +15,22 @@ import {
   setupCuratorsSettings,
   checkAndApproveIfNeeded,
   setupAllocatorsSettings,
+  waitSecond,
+  waitDelay,
 } from "./utils";
 import { CuratorsSettingsConfig } from "./curators-settings";
 import { AllocatorSettingsConfig } from "./allocators-settings";
+import { setupOwnerSettings } from "./utils/owner";
+import { OwnerSettingsConfig } from "./owners-settings";
 
 interface SetupVaultConfig {
   owner?: string; // If not provided, we will use the user address
   asset: string;
   salt?: string; // To make the address deterministic
-  name?: string;
-  symbol?: string;
-
-  curator?: string;
-  allocator?: string[]; // Might have multiple allocators
-  sentinel?: string[]; // Might have multiple sentinels
 
   deposit_amount?: bigint;
+
+  owner_settings?: OwnerSettingsConfig;
 
   curators_settings?: CuratorsSettingsConfig;
 
@@ -49,19 +49,23 @@ interface SetupVaultConfig {
 
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-  name: "Byzantine Vault",
-  symbol: "BYZ",
 
-  curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
+  deposit_amount: parseUnits("0.1", 6), // 0.1 USDC
 
-  deposit_amount: parseUnits("1", 6), // 1 USDC
+  owner_settings: {
+    shares_name: "Byzantine Vault",
+    shares_symbol: "BYZ",
+    curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
+    sentinels: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+  },
 
   curators_settings: {
-    performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-    management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-    performance_fee: parseUnits("0.05", 18), // 5%
-    management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
-    max_rate: parseUnits("200", 16) / 31536000n, // 200% / year
+    allocators: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+
+    // performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+    // management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+    // performance_fee: parseUnits("0.05", 18), // 5%
+    // management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
 
     underlying_vaults: [
       {
@@ -125,6 +129,8 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   },
 
   allocator_settings: {
+    // max_rate: parseUnits("200", 16) / 31536000n, // 200% / year
+
     setLiquidityAdapterFromUnderlyingVaultAndData: {
       underlyingVault: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
       liquidityData: "0x",
@@ -141,6 +147,9 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
     ],
   },
 };
+
+const OWNER_SETTINGS: OwnerSettingsConfig =
+  SETUP_VAULT_CONFIG.owner_settings || {};
 
 const CURATORS_SETTINGS: CuratorsSettingsConfig =
   SETUP_VAULT_CONFIG.curators_settings || {};
@@ -173,16 +182,16 @@ async function main() {
     const YOU_ARE_OWNER =
       userAddress.toLowerCase() === INTENDED_OWNER.toLowerCase();
     const YOUR_ARE_CURATOR =
-      SETUP_VAULT_CONFIG.curator &&
-      userAddress.toLowerCase() === SETUP_VAULT_CONFIG.curator.toLowerCase();
+      OWNER_SETTINGS.curator &&
+      userAddress.toLowerCase() === OWNER_SETTINGS.curator.toLowerCase();
     const YOUR_ARE_ALLOCATOR =
-      SETUP_VAULT_CONFIG.allocator &&
-      SETUP_VAULT_CONFIG.allocator.some(
+      CURATORS_SETTINGS.allocators &&
+      CURATORS_SETTINGS.allocators.some(
         (addr) => addr.toLowerCase() === userAddress.toLowerCase()
       );
     const YOUR_ARE_SENTINEL =
-      SETUP_VAULT_CONFIG.sentinel &&
-      SETUP_VAULT_CONFIG.sentinel.some(
+      OWNER_SETTINGS.sentinels &&
+      OWNER_SETTINGS.sentinels.some(
         (addr) => addr.toLowerCase() === userAddress.toLowerCase()
       );
     const NEEDS_TO_ADD_UNDERLYING_VAULT = // Because only curator can add underlying vault
@@ -208,25 +217,34 @@ async function main() {
         CURATORS_SETTINGS.performance_fee ||
         CURATORS_SETTINGS.management_fee ||
         CURATORS_SETTINGS.performance_fee_recipient ||
-        CURATORS_SETTINGS.management_fee_recipient ||
-        CURATORS_SETTINGS.max_rate);
+        CURATORS_SETTINGS.management_fee_recipient);
 
     // Determine if a temporary owner role is needed (if the current user is not the owner but needs to perform owner actions)
     const NEEDS_TEMPORARY_OWNER_ROLE =
       !YOU_ARE_OWNER &&
       (NEEDS_TEMPORARY_CURATOR_ROLE ||
-        SETUP_VAULT_CONFIG.name ||
-        SETUP_VAULT_CONFIG.symbol);
+        OWNER_SETTINGS.shares_name ||
+        OWNER_SETTINGS.shares_symbol ||
+        OWNER_SETTINGS.curator ||
+        OWNER_SETTINGS.sentinels ||
+        OWNER_SETTINGS.new_owner);
     // ****************
     // Create the vault
     // ****************
+    console.log(
+      "Creating vault with owner",
+      YOU_ARE_OWNER ? INTENDED_OWNER : userAddress
+    );
+
     const txCreateVault = await client.createVault(
       YOU_ARE_OWNER ? INTENDED_OWNER : userAddress,
       SETUP_VAULT_CONFIG.asset,
       SETUP_VAULT_CONFIG.salt || ethers.hexlify(randomBytes(32))
     );
-    await waitHalfSecond();
     console.log("Vault creation transaction sent", txCreateVault.hash);
+
+    await txCreateVault.wait();
+    await waitDelay(4000); // Wait for the vault to be created
 
     const VAULT_ADDRESS = txCreateVault.vaultAddress;
 
@@ -246,64 +264,48 @@ async function main() {
     }
 
     // ****************
-    // Handle the name and symbol
-    // ****************
-    console.log("🔤 Setting name and symbol");
-    if (SETUP_VAULT_CONFIG.name && SETUP_VAULT_CONFIG.symbol) {
-      await client.setSharesNameAndSymbol(
-        VAULT_ADDRESS,
-        SETUP_VAULT_CONFIG.name,
-        SETUP_VAULT_CONFIG.symbol
-      );
-    } else if (SETUP_VAULT_CONFIG.name) {
-      await client.setSharesName(VAULT_ADDRESS, SETUP_VAULT_CONFIG.name);
-    } else if (SETUP_VAULT_CONFIG.symbol) {
-      await client.setSharesSymbol(VAULT_ADDRESS, SETUP_VAULT_CONFIG.symbol);
-    }
-    await waitHalfSecond();
-
-    // ****************
     // Handle the roles
     // ****************
 
     if (NEEDS_TEMPORARY_OWNER_ROLE) {
       console.log(
-        `👷‍ Setting${
+        `👷‍⏳ We will need to set${
           NEEDS_TEMPORARY_OWNER_ROLE ? " temporary" : ""
         } owner to the user`
       );
-      const tx = await client.setOwner(VAULT_ADDRESS, userAddress);
-      await tx.wait();
-      await waitHalfSecond();
+      OWNER_SETTINGS.new_owner = userAddress;
     }
 
     if (NEEDS_TEMPORARY_CURATOR_ROLE || YOUR_ARE_CURATOR) {
       console.log(
-        `👷‍ Setting${
+        `👷‍⏳ We will need to set${
           NEEDS_TEMPORARY_CURATOR_ROLE ? " temporary" : ""
         } curator to the user`
       );
-      const tx = await client.setCurator(VAULT_ADDRESS, userAddress);
-      await tx.wait();
-      await waitHalfSecond();
+      OWNER_SETTINGS.curator = userAddress;
     }
 
     if (NEEDS_TEMPORARY_ALLOCATOR_ROLE || YOUR_ARE_ALLOCATOR) {
       console.log(
-        `👷‍ Setting${
+        `👷‍⏳ We will need to set${
           NEEDS_TEMPORARY_ALLOCATOR_ROLE ? " temporary" : ""
         } allocator to the user`
       );
-      const tx = await client.instantSetIsAllocator(
-        VAULT_ADDRESS,
-        userAddress,
-        true
-      );
-      await tx.wait();
-      await waitHalfSecond();
+      CURATORS_SETTINGS.allocators = [userAddress];
     }
 
+    // ****************
+    // Handle the owner settings
+    // ****************
+    await setupOwnerSettings(
+      client,
+      VAULT_ADDRESS,
+      userAddress,
+      OWNER_SETTINGS
+    );
+
     if (SETUP_VAULT_CONFIG.deposit_amount) {
+      console.log("\n\n || 💰 Depositing assets ||");
       console.log(
         `💸 Depositing ${formatUnits(
           SETUP_VAULT_CONFIG.deposit_amount,
@@ -335,6 +337,7 @@ async function main() {
     // ****************
     // Handle the curators settings
     // ****************
+    console.log("\n\n|| Setting curators settings ||");
     await setupCuratorsSettings(
       client,
       VAULT_ADDRESS,
@@ -353,6 +356,7 @@ async function main() {
     // ****************
     // Go back to the original situation
     // ****************
+    console.log("\n\n || 👷‍ Setting back the roles ||");
     if (NEEDS_TEMPORARY_ALLOCATOR_ROLE) {
       console.log("👷‍❌ Setting back the allocator to the user");
       const tx = await client.instantSetIsAllocator(
@@ -376,8 +380,7 @@ async function main() {
       console.log("Current curator:", await client.getCurator(VAULT_ADDRESS));
       const tx = await client.setCurator(
         VAULT_ADDRESS,
-        SETUP_VAULT_CONFIG.curator ||
-          "0x0000000000000000000000000000000000000000"
+        OWNER_SETTINGS.curator || "0x0000000000000000000000000000000000000000"
       );
       await tx.wait();
       await waitHalfSecond();

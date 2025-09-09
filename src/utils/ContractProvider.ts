@@ -61,7 +61,7 @@ export class ContractProvider {
    */
   private async getFactoryAddress(): Promise<string> {
     const chainId = await this.getChainId();
-    return getNetworkConfig(chainId).byzantineFactoryAddress;
+    return getNetworkConfig(chainId).vaultV2Factory;
   }
 
   /**

@@ -1,39 +1,63 @@
 import { ethers } from "ethers";
 import { executeContractMethod, callContractMethod } from "../../utils";
 
-export async function submitIsAdapter(
+export async function submitAddAdapter(
   vaultContract: ethers.Contract,
-  adapter: string,
-  isAdapter: boolean
+  adapter: string
 ) {
-  const calldata = vaultContract.interface.encodeFunctionData("setIsAdapter", [
+  const calldata = vaultContract.interface.encodeFunctionData("addAdapter", [
     adapter,
-    isAdapter,
   ]);
   return await executeContractMethod(vaultContract, "submit", calldata);
 }
 
-export async function setIsAdapterAfterTimelock(
+export async function addAdapterAfterTimelock(
   vaultContract: ethers.Contract,
-  adapter: string,
-  isAdapter: boolean
+  adapter: string
 ) {
-  return await executeContractMethod(
-    vaultContract,
-    "setIsAdapter",
-    adapter,
-    isAdapter
-  );
+  return await executeContractMethod(vaultContract, "addAdapter", adapter);
 }
 
-export async function instantSetIsAdapter(
+export async function instantAddAdapter(
   vaultContract: ethers.Contract,
-  adapter: string,
-  isAdapter: boolean
+  adapter: string
+) {
+  const calldataSet = vaultContract.interface.encodeFunctionData("addAdapter", [
+    adapter,
+  ]);
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    calldataSet,
+  ]);
+  return await executeContractMethod(vaultContract, "multicall", [
+    calldataSubmit,
+    calldataSet,
+  ]);
+}
+
+export async function submitRemoveAdapter(
+  vaultContract: ethers.Contract,
+  adapter: string
+) {
+  const calldata = vaultContract.interface.encodeFunctionData("removeAdapter", [
+    adapter,
+  ]);
+  return await executeContractMethod(vaultContract, "submit", calldata);
+}
+
+export async function removeAdapterAfterTimelock(
+  vaultContract: ethers.Contract,
+  adapter: string
+) {
+  return await executeContractMethod(vaultContract, "removeAdapter", adapter);
+}
+
+export async function instantRemoveAdapter(
+  vaultContract: ethers.Contract,
+  adapter: string
 ) {
   const calldataSet = vaultContract.interface.encodeFunctionData(
-    "setIsAdapter",
-    [adapter, isAdapter]
+    "removeAdapter",
+    [adapter]
   );
   const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
     calldataSet,

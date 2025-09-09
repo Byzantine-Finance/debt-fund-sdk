@@ -89,19 +89,18 @@ export async function getAdapterType(
   adapterAddress: string
 ): Promise<AdapterType | undefined> {
   try {
-    const adapterFactoryAddress = await getAdapterFactoryAddress(
-      contractProvider,
-      adapterAddress
-    );
+    const adapterFactoryAddress = (
+      await getAdapterFactoryAddress(contractProvider, adapterAddress)
+    ).toLowerCase();
     const networkConfig = await contractProvider.getNetworkConfig();
     switch (adapterFactoryAddress) {
-      case networkConfig.adapters.erc4626AdapterFactory:
+      case networkConfig.adapters.erc4626AdapterFactory.toLowerCase():
         return "erc4626";
-      case networkConfig.adapters.erc4626MerklAdapterFactory:
+      case networkConfig.adapters.erc4626MerklAdapterFactory.toLowerCase():
         return "erc4626Merkl";
-      case networkConfig.adapters.compoundV3AdapterFactory:
+      case networkConfig.adapters.compoundV3AdapterFactory.toLowerCase():
         return "compoundV3";
-      case networkConfig.adapters.morphoMarketV1AdapterFactory:
+      case networkConfig.adapters.morphoMarketV1AdapterFactory.toLowerCase():
         return "morphoMarketV1";
       default:
         throw new Error(

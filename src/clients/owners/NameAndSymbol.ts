@@ -62,13 +62,13 @@ export async function setNameAndSymbol(
   ]);
 }
 
-export async function getVaultName(
+export async function getSharesName(
   vaultContract: ethers.Contract
 ): Promise<string> {
   return await vaultContract.name();
 }
 
-export async function getVaultSymbol(
+export async function getSharesSymbol(
   vaultContract: ethers.Contract
 ): Promise<string> {
   return await vaultContract.symbol();

@@ -80,28 +80,34 @@ export class VaultCurator {
   // ADAPTERS
   // ========================================
 
-  async submitIsAdapter(adapter: string, isAdapter: boolean) {
-    return AdaptersFunctions.submitIsAdapter(
+  async submitAddAdapter(adapter: string) {
+    return AdaptersFunctions.submitAddAdapter(this.vaultContract, adapter);
+  }
+
+  async addAdapterAfterTimelock(adapter: string) {
+    return AdaptersFunctions.addAdapterAfterTimelock(
       this.vaultContract,
-      adapter,
-      isAdapter
+      adapter
     );
   }
 
-  async setIsAdapterAfterTimelock(adapter: string, isAdapter: boolean) {
-    return AdaptersFunctions.setIsAdapterAfterTimelock(
+  async instantAddAdapter(adapter: string) {
+    return AdaptersFunctions.instantAddAdapter(this.vaultContract, adapter);
+  }
+
+  async submitRemoveAdapter(adapter: string) {
+    return AdaptersFunctions.submitRemoveAdapter(this.vaultContract, adapter);
+  }
+
+  async removeAdapterAfterTimelock(adapter: string) {
+    return AdaptersFunctions.removeAdapterAfterTimelock(
       this.vaultContract,
-      adapter,
-      isAdapter
+      adapter
     );
   }
 
-  async instantSetIsAdapter(adapter: string, isAdapter: boolean) {
-    return AdaptersFunctions.instantSetIsAdapter(
-      this.vaultContract,
-      adapter,
-      isAdapter
-    );
+  async instantRemoveAdapter(adapter: string) {
+    return AdaptersFunctions.instantRemoveAdapter(this.vaultContract, adapter);
   }
 
   async getIsAdapter(adapter: string) {
@@ -181,10 +187,6 @@ export class VaultCurator {
     params: any[]
   ) {
     return TimelockFunctions.revoke(this.vaultContract, functionName, params);
-  }
-
-  async abdicateSubmit(functionName: TimelockFunctions.TimelockFunction) {
-    return TimelockFunctions.abdicateSubmit(this.vaultContract, functionName);
   }
 
   // ========================================

@@ -17,7 +17,6 @@
  */
 
 const { ethers } = require("ethers");
-const { ByzantineClient, getNetworkConfig } = require("../../dist");
 const {
   logTitle,
   logResult,
@@ -32,7 +31,7 @@ require("dotenv").config();
 // 🎯 CONFIGURE YOUR TEST PARAMETERS HERE
 const TEST_CONFIG = {
   vaultAddress: "0x9c6dd63e5e30e6984a322d2a5cdaee49ebc46207", // Replace with actual Vault address
-  functionName: "setIsAdapter", // Function to test timelock on
+  functionName: "addAdapter", // Function to test timelock on
   newTimelock: 3600n, // 1 hour in seconds
   testTimelockExecution: false, // Set to true to test timelock execution (requires previous submit)
 };

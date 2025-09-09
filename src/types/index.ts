@@ -3,14 +3,14 @@
 export type ChainsOptions =
   // | 1 // Mainnet
   | 8453 // Base Mainnet
-  | 42161 // Base Testnet
-  // | 17000 // Holesky
-  | 11155111; // Sepolia
+  | 42161; // Base Testnet
+// | 17000 // Holesky
+// | 11155111; // Sepolia
 // | 560048; // Hoodi
 
 export interface NetworkConfig {
   name: string;
-  byzantineFactoryAddress: string;
+  vaultV2Factory: string;
   scanLink: string;
   USDCaddress: string;
   adapters: {

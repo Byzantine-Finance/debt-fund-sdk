@@ -154,7 +154,7 @@ async function vaultManagement() {
     await client.instantSetPerformanceFeeRecipient(vaultAddress, "0x...");
 
     // Adapter management
-    await client.instantSetIsAdapter(vaultAddress, "0x...", true);
+    await client.instantAddAdapter(vaultAddress, "0x...");
 
     // Deploy and manage Morpho adapters
     const morphoVaultAddress = "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A";
@@ -166,11 +166,7 @@ async function vaultManagement() {
     console.log("Deployed adapter:", adapterTx.adapterAddress);
 
     // Add the adapter to the vault
-    await client.instantSetIsAdapter(
-      vaultAddress,
-      adapterTx.adapterAddress,
-      true
-    );
+    await client.instantAddAdapter(vaultAddress, adapterTx.adapterAddress);
 
     // Get fee information
     const performanceFee = await client.getPerformanceFee(vaultAddress);
@@ -372,9 +368,12 @@ const isCompoundV3Adapter = await client.isAdapter("compoundV3", account);
 const isMarketAdapter = await client.isAdapter("morphoMarketV1", account);
 
 // Adapter configuration in vault
-await client.submitIsAdapter(vaultAddress, adapter, true);
-await client.setIsAdapterAfterTimelock(vaultAddress, adapter, true);
-await client.instantSetIsAdapter(vaultAddress, adapter, true); // Gas-efficient with multicall when 0 timelock
+await client.submitAddAdapter(vaultAddress, adapter);
+await client.addAdapterAfterTimelock(vaultAddress, adapter);
+await client.instantRemoveAdapter(vaultAddress, adapter); // Gas-efficient with multicall when 0 timelock
+await client.submitRemoveAdapter(vaultAddress, adapter);
+await client.removeAdapterAfterTimelock(vaultAddress, adapter);
+await client.instantRemoveAdapter(vaultAddress, adapter); // Gas-efficient with multicall when 0 timelock
 
 // Query adapter status
 await client.getIsAdapter(vaultAddress, adapter);
@@ -444,7 +443,6 @@ await client.instantDecreaseTimelock(vaultAddress, functionName, newDuration); /
 // Submit and revoke operations
 await client.submit(vaultAddress, data);
 await client.revoke(vaultAddress, functionName, params);
-await client.abdicateSubmit(vaultAddress, functionName);
 
 // Utility
 client.getTimelockFunctionSelector(functionName);
@@ -544,7 +542,7 @@ async function setupAdapters() {
       const isAdapter = await client.getIsAdapter(vaultAddress, adapterAddress);
       if (!isAdapter) {
         console.log("Adding adapter to vault...");
-        await client.instantSetIsAdapter(vaultAddress, adapterAddress, true);
+        await client.instantAddAdapter(vaultAddress, adapterAddress);
         console.log("✅ Adapter added to vault");
       } else {
         console.log("✅ Adapter already configured in vault");
