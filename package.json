@@ -2,6 +2,7 @@
   "name": "@byzantine/debt-fund-sdk",
   "version": "1.0.6",
   "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
+  "readme": "README.md",
   "license": "MIT",
   "author": "Byzantine Finance",
   "type": "commonjs",

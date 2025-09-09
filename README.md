@@ -156,11 +156,12 @@ async function vaultManagement() {
     // Adapter management
     await client.instantAddAdapter(vaultAddress, "0x...");
 
-    // Deploy and manage Morpho adapters
-    const morphoVaultAddress = "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A";
-    const adapterTx = await client.deployMorphoVaultV1Adapter(
+    // Deploy and manage adapters
+    const underlyingAddress = "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A";
+    const adapterTx = await client.deployAdapter(
+      "erc4626", // adapter type
       vaultAddress,
-      morphoVaultAddress
+      underlyingAddress
     );
     const adapterReceipt = await adapterTx.wait();
     console.log("Deployed adapter:", adapterTx.adapterAddress);
@@ -254,8 +255,8 @@ await client.setSharesNameAndSymbol(vaultAddress, newName, newSymbol); // Gas-ef
 await client.getOwner(vaultAddress);
 await client.getCurator(vaultAddress);
 await client.isSentinel(vaultAddress, account);
-await client.getVaultName(vaultAddress);
-await client.getVaultSymbol(vaultAddress);
+await client.getSharesName(vaultAddress);
+await client.getSharesSymbol(vaultAddress);
 await client.getAsset(vaultAddress);
 ```
 
@@ -356,9 +357,9 @@ const adapterAddress = adapterTx.adapterAddress;
 
 // Find existing adapters
 const existingAdapter = await client.findAdapter(
-  "erc4626", // or "erc4626Merkl", or "compoundV3", or "morphoMarketV1"
   vaultAddress,
-  underlyingAddress
+  underlyingAddress,
+  "erc4626" // or "erc4626Merkl", or "compoundV3", or "morphoMarketV1"
 );
 
 // Check adapter types
@@ -520,16 +521,18 @@ async function setupAdapters() {
       // Check if adapter already exists
       let adapterAddress;
       try {
-        adapterAddress = await client.findMorphoVaultV1Adapter(
+        adapterAddress = await client.findAdapter(
           vaultAddress,
-          underlyingVault
+          underlyingVault,
+          "erc4626" // adapter type
         );
         console.log(`Found existing adapter: ${adapterAddress}`);
       } catch (error) {
         console.log("No existing adapter found, creating new one...");
 
         // Deploy new adapter
-        const adapterTx = await client.deployMorphoVaultV1Adapter(
+        const adapterTx = await client.deployAdapter(
+          "erc4626", // adapter type
           vaultAddress,
           underlyingVault
         );
