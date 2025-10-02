@@ -111,13 +111,33 @@ export async function getExecutableAt(
 // ========================================
 
 /**
- * Increase the timelock duration for a function (immediate effect)
+ * Submit a request to increase timelock duration (requires timelock)
  * @param vaultContract The vault contract instance
  * @param functionName The function to modify timelock for
  * @param newDuration The new timelock duration in seconds
  * @returns Transaction response
  */
-export async function increaseTimelock(
+export async function submitIncreaseTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  const calldata = vaultContract.interface.encodeFunctionData(
+    "increaseTimelock",
+    [selector, newDuration]
+  );
+  return await executeContractMethod(vaultContract, "submit", calldata);
+}
+
+/**
+ * Execute timelock increase after timelock period expires
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function increaseTimelockAfterTimelock(
   vaultContract: ethers.Contract,
   functionName: TimelockFunction,
   newDuration: bigint
@@ -129,6 +149,39 @@ export async function increaseTimelock(
     selector,
     newDuration
   );
+}
+
+/**
+ * Instantly increase timelock if current timelock is 0 (multicall submit + execute)
+ * @param vaultContract The vault contract instance
+ * @param functionName The function to modify timelock for
+ * @param newDuration The new timelock duration in seconds
+ * @returns Transaction response
+ */
+export async function instantIncreaseTimelock(
+  vaultContract: ethers.Contract,
+  functionName: TimelockFunction,
+  newDuration: bigint
+) {
+  const selector = getTimelockFunctionSelector(functionName);
+  const timelock = await getTimelock(vaultContract, functionName);
+  if (timelock !== 0n) {
+    throw new Error(
+      `Cannot instantly increase timelock. Current timelock is ${timelock} seconds, must be 0.`
+    );
+  }
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    selector,
+    newDuration,
+  ]);
+  const calldataIncrease = vaultContract.interface.encodeFunctionData(
+    "increaseTimelock",
+    [selector, newDuration]
+  );
+  return await executeContractMethod(vaultContract, "multicall", [
+    calldataSubmit,
+    calldataIncrease,
+  ]);
 }
 
 /**

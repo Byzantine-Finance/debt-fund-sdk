@@ -76,7 +76,7 @@ async function testIncreaseTimelock(
   try {
     logTitle(`Increase timelock for ${functionName} to ${newDuration} seconds`);
 
-    const tx = await client.increaseTimelock(
+    const tx = await client.instantIncreaseTimelock(
       vaultAddress,
       functionName,
       newDuration

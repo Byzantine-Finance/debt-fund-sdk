@@ -781,14 +781,34 @@ export class ByzantineClient {
     return this.curatorsClient.getTimelockFunctionSelector(functionName as any);
   }
 
-  async increaseTimelock(
+  async submitIncreaseTimelock(
     vaultAddress: string,
     functionName: string,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .increaseTimelock(functionName as any, newDuration);
+      .submitIncreaseTimelock(functionName as any, newDuration);
+  }
+
+  async increaseTimelockAfterTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .increaseTimelockAfterTimelock(functionName as any, newDuration);
+  }
+
+  async instantIncreaseTimelock(
+    vaultAddress: string,
+    functionName: string,
+    newDuration: bigint
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantIncreaseTimelock(functionName as any, newDuration);
   }
 
   async submitDecreaseTimelock(

@@ -134,11 +134,33 @@ export class VaultCurator {
     return TimelockFunctions.getExecutableAt(this.vaultContract, data);
   }
 
-  async increaseTimelock(
+  async submitIncreaseTimelock(
     functionName: TimelockFunctions.TimelockFunction,
     newDuration: bigint
   ) {
-    return TimelockFunctions.increaseTimelock(
+    return TimelockFunctions.submitIncreaseTimelock(
+      this.vaultContract,
+      functionName,
+      newDuration
+    );
+  }
+
+  async increaseTimelockAfterTimelock(
+    functionName: TimelockFunctions.TimelockFunction,
+    newDuration: bigint
+  ) {
+    return TimelockFunctions.increaseTimelockAfterTimelock(
+      this.vaultContract,
+      functionName,
+      newDuration
+    );
+  }
+
+  async instantIncreaseTimelock(
+    functionName: TimelockFunctions.TimelockFunction,
+    newDuration: bigint
+  ) {
+    return TimelockFunctions.instantIncreaseTimelock(
       this.vaultContract,
       functionName,
       newDuration

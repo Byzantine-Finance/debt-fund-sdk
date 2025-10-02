@@ -384,7 +384,7 @@ async function runTests() {
       "addAdapter"
     );
     logResult("Current timelock", true, timelockBefore.toString());
-    await client.increaseTimelock(
+    await client.instantIncreaseTimelock(
       TEST_CONFIG.vaultAddress,
       "addAdapter",
       BigInt(5)

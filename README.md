@@ -432,7 +432,17 @@ await client.getRelativeCap(vaultAddress, id);
 // Timelock operations
 await client.getTimelock(vaultAddress, functionName);
 await client.getExecutableAt(vaultAddress, data);
-await client.increaseTimelock(vaultAddress, functionName, newDuration);
+
+// Increase timelock (requires timelock)
+await client.submitIncreaseTimelock(vaultAddress, functionName, newDuration);
+await client.increaseTimelockAfterTimelock(
+  vaultAddress,
+  functionName,
+  newDuration
+);
+await client.instantIncreaseTimelock(vaultAddress, functionName, newDuration); // Gas-efficient with multicall when 0 timelock
+
+// Decrease timelock
 await client.submitDecreaseTimelock(vaultAddress, functionName, newDuration);
 await client.setDecreaseTimelockAfterTimelock(
   vaultAddress,

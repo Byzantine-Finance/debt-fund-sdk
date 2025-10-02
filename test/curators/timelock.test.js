@@ -83,7 +83,7 @@ async function testIncreaseTimelock(
   try {
     logTitle(`Increase timelock for ${functionName} to ${newDuration} seconds`);
 
-    const tx = await client.curators.increaseTimelock(
+    const tx = await client.curators.instantIncreaseTimelock(
       vaultAddress,
       functionName,
       newDuration
