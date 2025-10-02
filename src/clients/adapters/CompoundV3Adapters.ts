@@ -64,13 +64,15 @@ export async function isCompoundV3Adapter(
 export async function findCompoundV3Adapter(
   contractProvider: ContractProvider,
   vaultAddress: string,
-  comet: string
+  comet: string,
+  cometRewards: string
 ): Promise<string> {
   const adapterFactoryContract =
     await contractProvider.getCompoundV3AdapterFactoryContract();
   return await callContractMethod(adapterFactoryContract, "compoundV3Adapter", [
     vaultAddress,
     comet,
+    cometRewards,
   ]);
 }
 

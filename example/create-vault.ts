@@ -53,8 +53,8 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
   deposit_amount: parseUnits("0.1", 6), // 0.1 USDC
 
   owner_settings: {
-    shares_name: "Byzantine Vault",
-    shares_symbol: "BYZ",
+    shares_name: "Byzantine Prime USD",
+    shares_symbol: "bpUSD",
     curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
     sentinels: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
   },
@@ -67,85 +67,85 @@ const SETUP_VAULT_CONFIG: SetupVaultConfig = {
     // performance_fee: parseUnits("0.05", 18), // 5%
     // management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
 
-    underlying_vaults: [
-      {
-        address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
-        type: "erc4626",
-        deallocate_penalty: parseEther("0.02"),
-        caps_per_id: [
-          {
-            relative_cap: parseUnits("0.5", 18), // 50%
-            absolute_cap: parseUnits("800", 6), // 800 USDC
-          },
-        ],
-      },
-      {
-        address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
-        type: "erc4626Merkl",
-        deallocate_penalty: parseEther("0.02"),
-        caps_per_id: [
-          {
-            relative_cap: parseUnits("0.3", 18), // 30%
-            absolute_cap: parseUnits("300", 6), // 300 USDC
-          },
-        ],
-      },
-      {
-        address: "0xC768c589647798a6EE01A91FdE98EF2ed046DBD6", // AAVE stata vault
-        type: "erc4626Merkl",
-        deallocate_penalty: parseEther("0.015"),
-        caps_per_id: [
-          {
-            relative_cap: parseUnits("0.2", 18), // 20%
-            absolute_cap: parseUnits("200", 6), // 200 USDC
-          },
-        ],
-      },
-      {
-        address: "0x3128a0F7f0ea68E7B7c9B00AFa7E41045828e858", // Spark base
-        type: "erc4626",
-        deallocate_penalty: parseEther("0.015"),
-        caps_per_id: [
-          {
-            relative_cap: parseUnits("0.2", 18), // 20%
-            absolute_cap: parseUnits("200", 6), // 200 USDC
-          },
-        ],
-      },
-      {
-        address: "0xb125E6687d4313864e53df431d5425969c15Eb2F", // Compound base
-        comet_rewards: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
-        type: "compoundV3",
-        deallocate_penalty: parseEther("0.01"),
-        caps_per_id: [
-          {
-            relative_cap: parseUnits("0.2", 18), // 20%
-            absolute_cap: parseUnits("200", 6), // 200 USDC
-          },
-        ],
-      },
-    ],
+    // underlying_vaults: [
+    //   {
+    //     address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // Spark Morpho vault
+    //     type: "erc4626",
+    //     deallocate_penalty: parseEther("0.02"),
+    //     caps_per_id: [
+    //       {
+    //         relative_cap: parseUnits("0.5", 18), // 50%
+    //         absolute_cap: parseUnits("800", 6), // 800 USDC
+    //       },
+    //     ],
+    //   },
+    //   {
+    //     address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
+    //     type: "erc4626Merkl",
+    //     deallocate_penalty: parseEther("0.02"),
+    //     caps_per_id: [
+    //       {
+    //         relative_cap: parseUnits("0.3", 18), // 30%
+    //         absolute_cap: parseUnits("300", 6), // 300 USDC
+    //       },
+    //     ],
+    //   },
+    //   {
+    //     address: "0xC768c589647798a6EE01A91FdE98EF2ed046DBD6", // AAVE stata vault
+    //     type: "erc4626Merkl",
+    //     deallocate_penalty: parseEther("0.015"),
+    //     caps_per_id: [
+    //       {
+    //         relative_cap: parseUnits("0.2", 18), // 20%
+    //         absolute_cap: parseUnits("200", 6), // 200 USDC
+    //       },
+    //     ],
+    //   },
+    //   {
+    //     address: "0x3128a0F7f0ea68E7B7c9B00AFa7E41045828e858", // Spark base
+    //     type: "erc4626",
+    //     deallocate_penalty: parseEther("0.015"),
+    //     caps_per_id: [
+    //       {
+    //         relative_cap: parseUnits("0.2", 18), // 20%
+    //         absolute_cap: parseUnits("200", 6), // 200 USDC
+    //       },
+    //     ],
+    //   },
+    //   {
+    //     address: "0xb125E6687d4313864e53df431d5425969c15Eb2F", // Compound base
+    //     comet_rewards: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
+    //     type: "compoundV3",
+    //     deallocate_penalty: parseEther("0.01"),
+    //     caps_per_id: [
+    //       {
+    //         relative_cap: parseUnits("0.2", 18), // 20%
+    //         absolute_cap: parseUnits("200", 6), // 200 USDC
+    //       },
+    //     ],
+    //   },
+    // ],
     // timelockFunctionsToIncrease: {},
   },
 
-  allocator_settings: {
-    // max_rate: parseUnits("200", 16) / 31536000n, // 200% / year
+  // allocator_settings: {
+  //   // max_rate: parseUnits("200", 16) / 31536000n, // 200% / year
 
-    setLiquidityAdapterFromUnderlyingVaultAndData: {
-      underlyingVault: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
-      liquidityData: "0x",
-    },
-    allocateConfigFromUnderlyingVault: [
-      {
-        underlyingVault: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
-        amountAsset: parseUnits("0.4", 6), // 0.4 USDC
-      },
-      {
-        underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
-        amountAsset: parseUnits("0.2", 6), // 0.2 USDC
-      },
-    ],
-  },
+  //   setLiquidityAdapterFromUnderlyingVaultAndData: {
+  //     underlyingVault: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
+  //     liquidityData: "0x",
+  //   },
+  //   allocateConfigFromUnderlyingVault: [
+  //     {
+  //       underlyingVault: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
+  //       amountAsset: parseUnits("0.4", 6), // 0.4 USDC
+  //     },
+  //     {
+  //       underlyingVault: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
+  //       amountAsset: parseUnits("0.2", 6), // 0.2 USDC
+  //     },
+  //   ],
+  // },
 };
 
 const OWNER_SETTINGS: OwnerSettingsConfig =

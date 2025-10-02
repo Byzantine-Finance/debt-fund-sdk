@@ -51,7 +51,7 @@ export async function setupCuratorsSettings(
 
     console.log("💰 Setting fees");
 
-    if (curatorsSettings.performance_fee_recipient) {
+    if (curatorsSettings.performance_fee_recipient !== undefined) {
       console.log(
         `  - Setting performance fee recipient to ${curatorsSettings.performance_fee_recipient}`
       );
@@ -62,7 +62,7 @@ export async function setupCuratorsSettings(
       await tx.wait();
       await waitHalfSecond();
     }
-    if (curatorsSettings.management_fee_recipient) {
+    if (curatorsSettings.management_fee_recipient !== undefined) {
       console.log(
         `  - Setting management fee recipient to ${curatorsSettings.management_fee_recipient}`
       );
@@ -73,7 +73,7 @@ export async function setupCuratorsSettings(
       await tx.wait();
       await waitHalfSecond();
     }
-    if (curatorsSettings.performance_fee) {
+    if (curatorsSettings.performance_fee !== undefined) {
       console.log(
         `  - Setting performance fee to ${curatorsSettings.performance_fee}`
       );
@@ -84,7 +84,7 @@ export async function setupCuratorsSettings(
       await tx.wait();
       await waitHalfSecond();
     }
-    if (curatorsSettings.management_fee) {
+    if (curatorsSettings.management_fee !== undefined) {
       console.log(
         `  - Setting management fee to ${curatorsSettings.management_fee}`
       );
@@ -126,14 +126,27 @@ export async function setupCuratorsSettings(
           adapterAddress = await client.findAdapter(
             vaultAddress,
             underlying.address,
-            underlying.type
+            {
+              type: underlying.type,
+              cometRewards: underlying.comet_rewards,
+            }
           );
           console.log(
-            `  - Found existing adapter: ${adapterAddress} for ${underlying.address}`
+            `  - Found existing adapter: ${adapterAddress} for parent ${vaultAddress} and underlying ${
+              underlying.address
+            } ${
+              underlying.comet_rewards &&
+              `and cometRewards ${underlying.comet_rewards}`
+            }`
           );
         } catch (error) {
           console.log(
-            `  - No existing adapter found for ${underlying.address}`
+            `  - No existing adapter found for parent ${vaultAddress} and underlying ${
+              underlying.address
+            } ${
+              underlying.comet_rewards &&
+              `and cometRewards ${underlying.comet_rewards}`
+            }`
           );
         }
 

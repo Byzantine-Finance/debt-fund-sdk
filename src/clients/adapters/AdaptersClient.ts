@@ -81,19 +81,39 @@ export class AdaptersFactoryClient {
    * If not, will try all known types and return the first found (not zero address).
    * @param parentAddress The parent vault address
    * @param underlyingAddress The underlying address
-   * @param type The type of adapter, if not provided, will try all types
+   * @param options Optional type of adapter, if not provided, will find it
+   * @param options.type Optional type of adapter, if not provided, will find it
+   * @param options.cometRewards The comet rewards address (only required for compoundV3 adapters)
    * @returns The adapter address (zero address if not found)
    */
   async findAdapter(
     parentAddress: string,
     underlyingAddress: string,
-    type?: AdapterType
+    options?: {
+      type?: AdapterType;
+      cometRewards?: string;
+    }
   ): Promise<string> {
+    const { type, cometRewards } = options || {};
+    if (type === "compoundV3") {
+      if (!cometRewards) {
+        throw new Error(
+          "Comet rewards are required to find compoundV3 adapter"
+        );
+      }
+      return await CompoundV3AdaptersFunctions.findCompoundV3Adapter(
+        this.contractProvider,
+        parentAddress,
+        underlyingAddress,
+        cometRewards
+      );
+    }
     // Fast path: if type is specified, use the corresponding function directly
-    if (type) {
+    else if (type) {
       // Use a mapping for optimal lookup instead of switch-case
+      // Only include non-compound adapter types in the mapping
       const adapterFinders: Record<
-        AdapterType,
+        Exclude<AdapterType, "compoundV3">,
         (
           provider: ContractProvider,
           parent: string,
@@ -102,7 +122,6 @@ export class AdaptersFactoryClient {
       > = {
         erc4626: ERC4626AdaptersFunctions.findERC4626Adapter,
         erc4626Merkl: ERC4626MerklAdaptersFunctions.findERC4626MerklAdapter,
-        compoundV3: CompoundV3AdaptersFunctions.findCompoundV3Adapter,
         morphoMarketV1:
           MorphoMarketV1AdaptersFunctions.findMorphoMarketV1Adapter,
       };
@@ -111,6 +130,7 @@ export class AdaptersFactoryClient {
       if (!finder) {
         throw new Error(`Invalid adapter type: ${type}`);
       }
+      console.log("finder", finder);
       return await finder(
         this.contractProvider,
         parentAddress,
@@ -146,10 +166,16 @@ export class AdaptersFactoryClient {
             );
             break;
           case "compoundV3":
+            if (!cometRewards) {
+              throw new Error(
+                "Comet rewards are required to find compoundV3 adapter"
+              );
+            }
             found = await CompoundV3AdaptersFunctions.findCompoundV3Adapter(
               this.contractProvider,
               parentAddress,
-              underlyingAddress
+              underlyingAddress,
+              cometRewards
             );
             break;
           case "morphoMarketV1":

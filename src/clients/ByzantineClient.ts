@@ -1162,18 +1162,23 @@ export class ByzantineClient {
    * Find an existing adapter address
    * @param parentAddress The parent vault address
    * @param underlyingAddress The underlying address
-   * @param type Optional type of adapter, if not provided, will find it
+   * @param options Optional type of adapter, if not provided, will find it
+   * @param options.type Optional type of adapter, if not provided, will find it
+   * @param options.cometRewards The comet rewards address (only required for compoundV3 adapters)
    * @returns The adapter address
    */
   async findAdapter(
     parentAddress: string,
     underlyingAddress: string,
-    type?: AdapterType
+    options?: {
+      type?: AdapterType;
+      cometRewards?: string;
+    }
   ): Promise<string> {
     return this.adaptersFactoryClient.findAdapter(
       parentAddress,
       underlyingAddress,
-      type
+      options
     );
   }
 

@@ -5,8 +5,14 @@
 // Export main clients
 export { ByzantineClient } from "./clients/ByzantineClient";
 
-// Export owner functions
-export { createVault } from "./clients/owners";
+// Export specialized clients
+export { OwnersClient, VaultOwner, createVault } from "./clients/owners";
+export { AllocatorsClient } from "./clients/allocators";
+export { CuratorsClient } from "./clients/curators";
+export { DepositorsClient } from "./clients/depositors";
+
+// Export adapters
+export { AdaptersClient } from "./clients/adapters";
 
 // Export types
 export * from "./types";

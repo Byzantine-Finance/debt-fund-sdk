@@ -17,12 +17,12 @@ export interface OwnerSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x623a8cd8cdb724edb8664a566ca54325fd284b60";
+const VAULT_ADDRESS = "0x0a9d1f8851810ca6e9bae0e0707ca8bd25bce303";
 
 const OWNER_SETTINGS_CONFIG: OwnerSettingsConfig = {
-  shares_name: "Byzantine Vault",
-  shares_symbol: "BYZ",
-  // curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
+  shares_name: "Byzantine Prime USD",
+  shares_symbol: "bpUSD",
+  curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
   // sentinels: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
   // new_owner: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // Uncomment if you want to set a new onwer at the end of the script
 };

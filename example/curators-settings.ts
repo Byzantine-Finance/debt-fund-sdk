@@ -1,13 +1,7 @@
 import { ByzantineClient } from "../src/clients/ByzantineClient";
-import { AbiCoder, ethers, parseEther, parseUnits } from "ethers";
-import {
-  fullReading,
-  RPC_URL,
-  MNEMONIC,
-  waitHalfSecond,
-} from "./utils/toolbox";
+import { ethers, parseEther, parseUnits } from "ethers";
+import { fullReading, RPC_URL, MNEMONIC } from "./utils/toolbox";
 import { TimelockFunction } from "../src/clients/curators";
-import { AdapterType } from "../src/clients/adapters";
 import { setupCuratorsSettings } from "./utils/curator";
 
 // Base vault configuration shared by all vault types
@@ -57,28 +51,51 @@ export interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0x7a7223270059f25d9d71fe96c2085f0ee1cde980";
+const VAULT_ADDRESS = "0xaaf859ffd12a4c18773d7b54529e1eeb22728c3e";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
-  // allocator: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+  // allocators: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
 
   // performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
   // management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-  // performance_fee: parseUnits("0.05", 18), // 5%
-  // management_fee: parseUnits("0.05", 18) / 31536000n, // 5% / year
+  // performance_fee: parseUnits("0.03", 18), // 5%
+  // management_fee: parseUnits("0", 18) / 31536000n, // 5% / year
 
   underlying_vaults: [
     {
-      address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
-      type: "erc4626",
-      // deallocate_penalty: parseEther("0.02"),
+      address: "0xb125E6687d4313864e53df431d5425969c15Eb2F", // Compound base
+      comet_rewards: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
+      type: "compoundV3",
+      deallocate_penalty: parseEther("0.01"),
       caps_per_id: [
         {
           relative_cap: parseUnits("1", 18), // 100%
-          // absolute_cap: parseUnits("550", 6), // 800 USDC
+          absolute_cap: parseUnits("200", 6), // 200 USDC
         },
       ],
     },
+    // {
+    //   address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A", // AAVE stata vault
+    //   type: "erc4626",
+    //   // deallocate_penalty: parseEther("0.015"),
+    //   caps_per_id: [
+    //     {
+    //       relative_cap: parseUnits("1", 18), // 100%
+    //       // absolute_cap: parseUnits("500", 6), // 200 USDC
+    //     },
+    //   ],
+    // },
+    // {
+    //   address: "0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A",
+    //   type: "erc4626",
+    //   // deallocate_penalty: parseEther("0.02"),
+    //   caps_per_id: [
+    //     {
+    //       relative_cap: parseUnits("1", 18), // 100%
+    //       // absolute_cap: parseUnits("550", 6), // 800 USDC
+    //     },
+    //   ],
+    // },
     // {
     //   address: "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", // Seamless Morpho vault
     //   type: "erc4626",
@@ -118,7 +135,7 @@ async function main() {
 
     const userAddress = await wallet.getAddress();
 
-    await fullReading(client, VAULT_ADDRESS, userAddress);
+    // await fullReading(client, VAULT_ADDRESS, userAddress);
 
     await setupCuratorsSettings(
       client,

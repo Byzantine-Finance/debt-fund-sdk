@@ -22,13 +22,13 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0xC725Ca60eCB33FD8326227Ce2A83F629a4Be41b7";
+const VAULT_ADDRESS = "0xc725ca60ecb33fd8326227ce2a83f629a4be41b7";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
   // depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
-  // withdrawAmount: 249989n, //parseUnits("0.3", 6), // 0.3 USDC (6 decimals)
+  // withdrawAmount: parseUnits("0.04", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: 1198496n, // parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
 };
 
@@ -67,7 +67,7 @@ async function main() {
     // ========================================
     // INITIAL STATE
     // ========================================
-    // await fullReading(client, VAULT_ADDRESS, userAddress);
+    await fullReading(client, VAULT_ADDRESS, userAddress);
 
     await displayBalances(client, VAULT_ADDRESS, userAddress, "Initial");
 

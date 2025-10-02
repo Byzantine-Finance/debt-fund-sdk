@@ -13,7 +13,11 @@ export async function setupAllocatorsSettings(
 
   try {
     if (allocatorsSettings.max_rate) {
-      console.log(`  - Setting max rate to ${allocatorsSettings.max_rate}`);
+      console.log(
+        `  - Setting max rate to ${allocatorsSettings.max_rate} -> ${Math.round(
+          (Number(allocatorsSettings.max_rate) / 1e16) * 31536000
+        )}% / year`
+      ); // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
       const tx = await client.instantSetMaxRate(
         vaultAddress,
         allocatorsSettings.max_rate
