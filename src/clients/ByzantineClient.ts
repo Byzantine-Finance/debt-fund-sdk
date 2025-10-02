@@ -44,9 +44,9 @@ export class ByzantineClient {
     this.adaptersClient = new AdaptersClient(provider, signer);
   }
 
-  //*******************************************
-  //* DEPOSITORS CLIENT - Vault Depositor Operations
-  //*******************************************
+  // ========================================
+  // DEPOSITORS CLIENT - Vault Depositor Operations
+  // ========================================
 
   /**
    * Get a depositors client for a specific vault
@@ -61,9 +61,9 @@ export class ByzantineClient {
     );
   }
 
-  //*******************************************
-  //* ALLOCATORS CLIENT - Vault Allocator Operations
-  //*******************************************
+  // ========================================
+  // ALLOCATORS CLIENT - Vault Allocator Operations
+  // ========================================
   getAllocatorsClient(vaultAddress: string): AllocatorsClient {
     return new AllocatorsClient(
       this.contractProvider,
@@ -82,12 +82,23 @@ export class ByzantineClient {
    * @param amountAssets The amount of assets to deposit
    * @param receiver The address to receive the shares
    * @returns Transaction response
+   *
+   * @example
+   * // Deposit 1000 USDC into a vault
+   * const amount = ethers.parseUnits("1000", 6); // 1000 USDC (6 decimals)
+   * const tx = await client.deposit(vaultAddress, amount, userAddress);
+   * await tx.wait();
+   * console.log("Deposit successful!");
+   *
    */
   async deposit(
     vaultAddress: string,
     amountAssets: bigint,
     receiver: string
   ): Promise<ethers.TransactionResponse> {
+    if (!this.signer) {
+      throw new Error("Signer is required for deposit operation");
+    }
     return await this.depositors(vaultAddress).deposit(amountAssets, receiver);
   }
 
@@ -97,12 +108,22 @@ export class ByzantineClient {
    * @param amountShares The amount of shares to mint
    * @param receiver The address to receive the shares
    * @returns Transaction response
+   *
+   * @example
+   * // Mint 1000 vault shares
+   * const shares = ethers.parseUnits("1000", 18); // 1000 shares (18 decimals)
+   * const tx = await client.mint(vaultAddress, shares, userAddress);
+   * await tx.wait();
+   * console.log("Mint successful!");
    */
   async mint(
     vaultAddress: string,
     amountShares: bigint,
     receiver: string
   ): Promise<ethers.TransactionResponse> {
+    if (!this.signer) {
+      throw new Error("Signer is required for mint operation");
+    }
     return await this.depositors(vaultAddress).mint(amountShares, receiver);
   }
 
@@ -124,6 +145,9 @@ export class ByzantineClient {
     receiver: string,
     onBehalf: string
   ): Promise<ethers.TransactionResponse> {
+    if (!this.signer) {
+      throw new Error("Signer is required for withdraw operation");
+    }
     return await this.depositors(vaultAddress).withdraw(
       amountAssets,
       receiver,
@@ -145,6 +169,9 @@ export class ByzantineClient {
     receiver: string,
     onBehalf: string
   ): Promise<ethers.TransactionResponse> {
+    if (!this.signer) {
+      throw new Error("Signer is required for redeem operation");
+    }
     return await this.depositors(vaultAddress).redeem(
       amountShares,
       receiver,
@@ -234,9 +261,9 @@ export class ByzantineClient {
     return await this.depositors(vaultAddress).getAllowance(userAddress);
   }
 
-  //*******************************************
-  //* BALANCES READ OPERATIONS
-  //*******************************************
+  // ========================================
+  // BALANCES READ OPERATIONS
+  // ========================================
 
   /**
    * Get the total assets in the vault
@@ -265,9 +292,9 @@ export class ByzantineClient {
     return await this.depositors(vaultAddress).getVirtualShares();
   }
 
-  //*******************************************
-  //* OWNERS CLIENT - Vault Owner Operations
-  //*******************************************
+  // ========================================
+  // OWNERS CLIENT - Vault Owner Operations
+  // ========================================
 
   /**
    * Create a new vault using the factory
@@ -275,18 +302,31 @@ export class ByzantineClient {
    * @param asset The address of the underlying asset
    * @param salt Unique salt for deterministic vault address
    * @returns Transaction response with vault address
+   *
+   * @example
+   * // Create a new vault for USDC
+   * const ownerAddress = "0x123...";
+   * const usdcAddress = "0xA0b86a33E6441b8c4C8C0C4C0C4C0C4C0C4C0C4C";
+   * const salt = "my-unique-vault-salt";
+   *
+   * const result = await client.createVault(ownerAddress, usdcAddress, salt);
+   * console.log("Vault created at:", result.vaultAddress);
+   * await result.tx.wait();
    */
   async createVault(
     owner: string,
     asset: string,
     salt: string
   ): Promise<import("./owners/CreateVault").CreateVaultResult> {
+    if (!this.signer) {
+      throw new Error("Signer is required for createVault operation");
+    }
     return await this.ownersClient.createVault(owner, asset, salt);
   }
 
-  //*******************************************
-  //* General data retrieval
-  //*******************************************
+  // ========================================
+  // GENERAL DATA RETRIEVAL
+  // ========================================
 
   async getAsset(vaultAddress: string): Promise<string> {
     const contract = this.contractProvider.getVaultContract(vaultAddress);
@@ -425,10 +465,6 @@ export class ByzantineClient {
   // ========================================
   // SMART APPROVAL AND OPERATION METHODS
   // ========================================
-
-  //*******************************************
-  //* OWNERS CLIENT - Vault Owner Operations
-  //*******************************************
 
   /**
    * Set a new owner for the vault
@@ -636,9 +672,9 @@ export class ByzantineClient {
     return await this.ownersClient.vault(vaultAddress).getSymbol();
   }
 
-  //*******************************************
-  //* UTILITY METHODS - General Helpers
-  //*******************************************
+  // ========================================
+  // UTILITY METHODS - General Helpers
+  // ========================================
 
   /**
    * Get the current network configuration
@@ -673,9 +709,9 @@ export class ByzantineClient {
     return this.contractProvider.getVaultFactoryContract();
   }
 
-  //*******************************************
-  //* CURATORS CLIENT - Vault Curator Operations
-  //*******************************************
+  // ========================================
+  // CURATORS CLIENT - Vault Curator Operations
+  // ========================================
 
   async submitAddAdapter(vaultAddress: string, adapter: string) {
     return await this.curatorsClient
