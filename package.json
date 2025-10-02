@@ -1,6 +1,6 @@
 {
   "name": "@byzantine/debt-fund-sdk",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
