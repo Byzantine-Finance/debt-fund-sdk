@@ -2,27 +2,14 @@
   "name": "@byzantine/debt-fund-sdk",
   "version": "1.0.8",
   "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
-  "readme": "README.md",
-  "license": "MIT",
-  "author": "Byzantine Finance",
-  "type": "commonjs",
-  "main": "dist/src/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/src/index.js",
-      "require": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
-    },
-    "./dist/src": {
-      "import": "./dist/src/index.js",
-      "require": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
-    }
-  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md"
   ],
+  "license": "MIT",
+  "author": "Byzantine Finance",
   "keywords": [
     "byzantine",
     "vault",
@@ -37,17 +24,6 @@
     "ethereum",
     "base"
   ],
-  "homepage": "https://byzantine.fi",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/byzantine-finance/debt-fund-sdk.git"
-  },
-  "bugs": {
-    "url": "https://github.com/byzantine-finance/debt-fund-sdk/issues"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "tsc",
     "test": "npm run test:all",
@@ -63,5 +39,16 @@
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
     "viem": "^2.33.1"
+  },
+  "homepage": "https://byzantine.fi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byzantine-finance/debt-fund-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/byzantine-finance/debt-fund-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

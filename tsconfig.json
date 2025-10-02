@@ -4,12 +4,13 @@
     "module": "commonjs",
     "declaration": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "test", "example"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

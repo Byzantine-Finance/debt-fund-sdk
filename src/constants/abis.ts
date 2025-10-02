@@ -1,14 +1,14 @@
-// Import ABIs using require to avoid TypeScript import issues
-const VAULT_FACTORY_ABI = require("./VaultFactory.json");
-const VAULT_ABI = require("./Vault.json");
-const MorphoVaultV1AdapterFactoryABI = require("./MorphoVaultV1AdapterFactory.json");
-const MorphoVaultV1AdapterABI = require("./MorphoVaultV1Adapter.json");
-const MorphoMarketV1AdapterFactoryABI = require("./MorphoMarketV1AdapterFactory.json");
-const MorphoMarketV1AdapterABI = require("./MorphoMarketV1Adapter.json");
-const ERC4626MerklAdapterFactoryABI = require("./ERC4626MerklAdapterFactory.json");
-const ERC4626MerklAdapterABI = require("./ERC4626MerklAdapter.json");
-const CompoundV3AdapterFactoryABI = require("./CompoundV3AdapterFactory.json");
-const CompoundV3AdapterABI = require("./CompoundV3Adapter.json");
+// Import ABIs using TypeScript imports (cleaner approach)
+import VAULT_FACTORY_ABI from "./VaultFactory.json";
+import VAULT_ABI from "./Vault.json";
+import MorphoVaultV1AdapterFactoryABI from "./MorphoVaultV1AdapterFactory.json";
+import MorphoVaultV1AdapterABI from "./MorphoVaultV1Adapter.json";
+import MorphoMarketV1AdapterFactoryABI from "./MorphoMarketV1AdapterFactory.json";
+import MorphoMarketV1AdapterABI from "./MorphoMarketV1Adapter.json";
+import ERC4626MerklAdapterFactoryABI from "./ERC4626MerklAdapterFactory.json";
+import ERC4626MerklAdapterABI from "./ERC4626MerklAdapter.json";
+import CompoundV3AdapterFactoryABI from "./CompoundV3AdapterFactory.json";
+import CompoundV3AdapterABI from "./CompoundV3Adapter.json";
 
 export {
   VAULT_FACTORY_ABI,
