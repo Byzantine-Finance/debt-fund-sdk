@@ -51,15 +51,15 @@ export interface CuratorsSettingsConfig {
 //*  And the code below will adapt based on your configuration      *
 //*******************************************************************
 
-const VAULT_ADDRESS = "0xaaf859ffd12a4c18773d7b54529e1eeb22728c3e";
+const VAULT_ADDRESS = "0x7CEC59FFde9434bD1e68F3527da2Ed6aA840FA73";
 
 const CURATORS_SETTINGS_CONFIG: CuratorsSettingsConfig = {
-  // allocators: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+  allocators: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
 
-  // performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-  // management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
-  // performance_fee: parseUnits("0.03", 18), // 5%
-  // management_fee: parseUnits("0", 18) / 31536000n, // 5% / year
+  performance_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+  management_fee_recipient: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // You need to set the address of the recipient before setting the fee
+  performance_fee: parseUnits("0.03", 18), // 5%
+  management_fee: parseUnits("0", 18) / 31536000n, // 5% / year
 
   underlying_vaults: [
     {

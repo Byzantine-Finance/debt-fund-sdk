@@ -16,7 +16,7 @@ Debt Fund is a decentralized protocol that allows users to create and manage vau
 This SDK provides a comprehensive interface for developers to integrate with Debt Fund on:
 
 - **Base Mainnet (Chain ID: 8453)** - It is on mainnet, but please only use it as a testnet with small amounts
-- **Arbitrum One (Chain ID: 42161)** - It is on mainnet, but please only use it as a testnet with small amounts
+<!-- - **Arbitrum One (Chain ID: 42161)** - It is on mainnet, but please only use it as a testnet with small amounts -->
 - _Additional networks coming soon_
 
 ## Installation
@@ -707,15 +707,17 @@ This example shows the full lifecycle of vault creation and configuration.
 
 - **Base Mainnet (Chain ID: 8453)**
 
-  - Byzantine Factory: `0x9615550EA8Fa52bdAC83de3FC9A280dBa3D981eE`
-  - Morpho Vault V1 Adapter Factory: `0xbA98A4d436e79639A1598aFc988eFB7A828d7F08`
-  - Morpho Market V1 Adapter Factory: `0xf21189365131551Ba4c3613252B1bcCdA60BD1e6`
+  - Byzantine Factory: `0x4501125508079A99ebBebCE205DeC9593C2b5857`
+  - Morpho Vault V1 Adapter Factory: `0x0f52A6D95d1C29806696FfaC4EB9F563e90faB9B`
+  - Morpho Market V1 Adapter Factory: `0x96E2F9E6077C9B8FcA5Bb0F31F7A977ffC047F6E`
+  - Erc4626Merkl Adapter Factory: `0xdF311B93f922867A686abA9b233Fd7C65d66f83d`
+  - CompoundV3 Adapter Factory: `0xA4dF9668EE53A896BdF40A7AeAC1364129F3c168`
 
-- **Arbitrum One (Chain ID: 42161)**
+<!-- - **Arbitrum One (Chain ID: 42161)**
 
   - Byzantine Factory: `0x4D4A1eF022410b1a5c04049E5c3b1651FDd9EcBA`
   - Morpho Vault V1 Adapter Factory: `0x53DB20783687cea8A2dF0dd6b47e977B90f85E2F`
-  - Morpho Market V1 Adapter Factory: `0xA8b523fcf34F2f63d26e709a16c9bC41801f1fC9`
+  - Morpho Market V1 Adapter Factory: `0xA8b523fcf34F2f63d26e709a16c9bC41801f1fC9` -->
 
 - _Additional networks coming soon_
 

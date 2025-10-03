@@ -15,7 +15,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
   // Base mainnet
   8453: {
     name: "Base Mainnet",
-    vaultV2Factory: "0x7661DEA044427A2610FFF11C3212e879F5aa54d4",
+    vaultV2Factory: "0x4501125508079A99ebBebCE205DeC9593C2b5857",
     scanLink: "https://basescan.org",
     USDCaddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
     adapters: {
@@ -26,19 +26,19 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
         "0x91CA535e5d8de79C9d1379158ef599D4Df2805E3",
     },
   },
-  42161: {
-    name: "Arbitrum One",
-    vaultV2Factory: "0xaD48d29015E1554b9dcbdF804a025f915DC9D1b1",
-    scanLink: "https://arbiscan.io",
-    USDCaddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
-    adapters: {
-      compoundV3AdapterFactory: "0x54273EFafB9A7eF82682CC046c78780d43d28F9b",
-      erc4626AdapterFactory: "0x4f10e7A1511ba07B077E3a87698a5bE37fD76983",
-      erc4626MerklAdapterFactory: "0xD793545A38b303ca5FfA423Cf8e24671527a18Cb",
-      morphoMarketV1AdapterFactory:
-        "0x645c7cFA5400e179163DBbb083a246BF344B3c72",
-    },
-  },
+  // 42161: {
+  //   name: "Arbitrum One",
+  //   vaultV2Factory: "0xaD48d29015E1554b9dcbdF804a025f915DC9D1b1",
+  //   scanLink: "https://arbiscan.io",
+  //   USDCaddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+  //   adapters: {
+  //     compoundV3AdapterFactory: "0x54273EFafB9A7eF82682CC046c78780d43d28F9b",
+  //     erc4626AdapterFactory: "0x4f10e7A1511ba07B077E3a87698a5bE37fD76983",
+  //     erc4626MerklAdapterFactory: "0xD793545A38b303ca5FfA423Cf8e24671527a18Cb",
+  //     morphoMarketV1AdapterFactory:
+  //       "0x645c7cFA5400e179163DBbb083a246BF344B3c72",
+  //   },
+  // },
   // Holesky Testnet
   // 17000: {
   //   name: "Holesky",

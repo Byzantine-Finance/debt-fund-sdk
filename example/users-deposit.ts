@@ -45,12 +45,12 @@ async function main() {
     console.log(`👤 User address: ${userAddress}`);
     console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
 
-    await client.instantIncreaseTimelock(
-      VAULT_ADDRESS,
-      "setPerformanceFee",
-      10n
-    );
-    await waitSecond();
+    // await client.instantIncreaseTimelock(
+    //   VAULT_ADDRESS,
+    //   "setPerformanceFee",
+    //   10n
+    // );
+    // await waitSecond();
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");
