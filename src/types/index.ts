@@ -40,3 +40,10 @@ export interface Metadata {
   social_website?: string;
   social_github?: string;
 }
+
+// Re-export all types from client modules
+export * from "../clients/curators";
+export * from "../clients/owners";
+export * from "../clients/allocators";
+export * from "../clients/depositors";
+export * from "../clients/adapters";
