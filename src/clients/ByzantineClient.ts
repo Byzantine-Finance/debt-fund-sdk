@@ -777,78 +777,82 @@ export class ByzantineClient {
     return await this.curatorsClient.vault(vaultAddress).getExecutableAt(data);
   }
 
-  getTimelockFunctionSelector(functionName: string) {
-    return this.curatorsClient.getTimelockFunctionSelector(functionName as any);
+  getTimelockFunctionSelector(functionName: TimelockFunction) {
+    return this.curatorsClient.getTimelockFunctionSelector(functionName);
   }
 
   async submitIncreaseTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .submitIncreaseTimelock(functionName as any, newDuration);
+      .submitIncreaseTimelock(functionName, newDuration);
   }
 
   async increaseTimelockAfterTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .increaseTimelockAfterTimelock(functionName as any, newDuration);
+      .increaseTimelockAfterTimelock(functionName, newDuration);
   }
 
   async instantIncreaseTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .instantIncreaseTimelock(functionName as any, newDuration);
+      .instantIncreaseTimelock(functionName, newDuration);
   }
 
   async submitDecreaseTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .submitDecreaseTimelock(functionName as any, newDuration);
+      .submitDecreaseTimelock(functionName, newDuration);
   }
 
   async setDecreaseTimelockAfterTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .setDecreaseTimelockAfterTimelock(functionName as any, newDuration);
+      .setDecreaseTimelockAfterTimelock(functionName, newDuration);
   }
 
   async instantDecreaseTimelock(
     vaultAddress: string,
-    functionName: string,
+    functionName: TimelockFunction,
     newDuration: bigint
   ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .instantDecreaseTimelock(functionName as any, newDuration);
+      .instantDecreaseTimelock(functionName, newDuration);
   }
 
   async submit(vaultAddress: string, data: string) {
     return await this.curatorsClient.vault(vaultAddress).submit(data);
   }
 
-  async revoke(vaultAddress: string, functionName: string, params: any[]) {
+  async revoke(
+    vaultAddress: string,
+    functionName: TimelockFunction,
+    params: any[]
+  ) {
     return await this.curatorsClient
       .vault(vaultAddress)
-      .revoke(functionName as any, params);
+      .revoke(functionName, params);
   }
 
   // ========================================

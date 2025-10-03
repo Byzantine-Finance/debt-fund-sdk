@@ -170,14 +170,13 @@ export async function instantIncreaseTimelock(
       `Cannot instantly increase timelock. Current timelock is ${timelock} seconds, must be 0.`
     );
   }
-  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
-    selector,
-    newDuration,
-  ]);
   const calldataIncrease = vaultContract.interface.encodeFunctionData(
     "increaseTimelock",
     [selector, newDuration]
   );
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    calldataIncrease,
+  ]);
   return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataIncrease,
@@ -244,14 +243,13 @@ export async function instantDecreaseTimelock(
       `Cannot instantly decrease timelock. Current timelock is ${timelock} seconds, must be 0.`
     );
   }
-  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
-    selector,
-    newDuration,
-  ]);
   const calldataDecrease = vaultContract.interface.encodeFunctionData(
     "decreaseTimelock",
     [selector, newDuration]
   );
+  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+    calldataDecrease,
+  ]);
   return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataDecrease,
