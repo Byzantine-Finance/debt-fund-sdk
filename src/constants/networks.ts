@@ -19,11 +19,11 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
     scanLink: "https://basescan.org",
     USDCaddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
     adapters: {
-      compoundV3AdapterFactory: "0x318934C80f2B84073798239A2f1E5143BC2446BF",
-      erc4626AdapterFactory: "0x175F0e9FCB2E4a1cE82c636F884A07B2941D3d56",
-      erc4626MerklAdapterFactory: "0x8Ff5B5f692215E6d6aED0Ec45d5720cCa137a16B",
+      compoundV3AdapterFactory: "0xa4fBA822Ec57bbf8b3f441Cd29255cE3F9483b34",
+      erc4626AdapterFactory: "0x0f52A6D95d1C29806696FfaC4EB9F563e90faB9B",
+      erc4626MerklAdapterFactory: "0xdF311B93f922867A686abA9b233Fd7C65d66f83d",
       morphoMarketV1AdapterFactory:
-        "0x91CA535e5d8de79C9d1379158ef599D4Df2805E3",
+        "0xdF311B93f922867A686abA9b233Fd7C65d66f83d",
     },
   },
   // 42161: {
