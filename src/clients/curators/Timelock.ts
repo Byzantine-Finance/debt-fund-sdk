@@ -16,6 +16,7 @@ export type TimelockFunction =
   //
   | "setIsAllocator" // 0xb192a84a
   //
+  | "setReceiveSharesGate" // 0x2cb19f98
   | "setSharesGate" // 0x8d3b31d3
   | "setReceiveAssetsGate" // 0x04dbf0ce
   | "setSendAssetsGate" // 0x871c979c
@@ -56,6 +57,8 @@ export function getTimelockFunctionSelector(
       return "0x2438525b";
     case "setIsAllocator":
       return "0xb192a84a";
+    case "setReceiveSharesGate":
+      return "0x2cb19f98";
     case "setSharesGate":
       return "0x8d3b31d3";
     case "setReceiveAssetsGate":
@@ -164,12 +167,6 @@ export async function instantIncreaseTimelock(
   newDuration: bigint
 ) {
   const selector = getTimelockFunctionSelector(functionName);
-  const timelock = await getTimelock(vaultContract, functionName);
-  if (timelock !== 0n) {
-    throw new Error(
-      `Cannot instantly increase timelock. Current timelock is ${timelock} seconds, must be 0.`
-    );
-  }
   const calldataIncrease = vaultContract.interface.encodeFunctionData(
     "increaseTimelock",
     [selector, newDuration]
@@ -177,6 +174,7 @@ export async function instantIncreaseTimelock(
   const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
     calldataIncrease,
   ]);
+
   return await executeContractMethod(vaultContract, "multicall", [
     calldataSubmit,
     calldataIncrease,
@@ -231,30 +229,27 @@ export async function setDecreaseTimelockAfterTimelock(
  * @param newDuration The new timelock duration in seconds
  * @returns Transaction response
  */
-export async function instantDecreaseTimelock(
-  vaultContract: ethers.Contract,
-  functionName: TimelockFunction,
-  newDuration: bigint
-) {
-  const selector = getTimelockFunctionSelector(functionName);
-  const timelock = await getTimelock(vaultContract, functionName);
-  if (timelock !== 0n) {
-    throw new Error(
-      `Cannot instantly decrease timelock. Current timelock is ${timelock} seconds, must be 0.`
-    );
-  }
-  const calldataDecrease = vaultContract.interface.encodeFunctionData(
-    "decreaseTimelock",
-    [selector, newDuration]
-  );
-  const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
-    calldataDecrease,
-  ]);
-  return await executeContractMethod(vaultContract, "multicall", [
-    calldataSubmit,
-    calldataDecrease,
-  ]);
-}
+// export async function instantDecreaseTimelock(
+//   vaultContract: ethers.Contract,
+//   functionName: TimelockFunction,
+//   newDuration: bigint
+// ) {
+//   const selector = getTimelockFunctionSelector(functionName);
+
+//   // Use multicall to submit and execute in one transaction
+//   const calldataSet = vaultContract.interface.encodeFunctionData(
+//     "decreaseTimelock",
+//     [selector, newDuration]
+//   );
+//   const calldataSubmit = vaultContract.interface.encodeFunctionData("submit", [
+//     calldataSet,
+//   ]);
+
+//   return await executeContractMethod(vaultContract, "multicall", [
+//     calldataSubmit,
+//     calldataSet,
+//   ]);
+// }
 
 // ========================================
 // GENERAL TIMELOCK FUNCTIONS

@@ -189,16 +189,16 @@ export class VaultCurator {
     );
   }
 
-  async instantDecreaseTimelock(
-    functionName: TimelockFunctions.TimelockFunction,
-    newDuration: bigint
-  ) {
-    return TimelockFunctions.instantDecreaseTimelock(
-      this.vaultContract,
-      functionName,
-      newDuration
-    );
-  }
+  // async instantDecreaseTimelock(
+  //   functionName: TimelockFunctions.TimelockFunction,
+  //   newDuration: bigint
+  // ) {
+  //   return TimelockFunctions.instantDecreaseTimelock(
+  //     this.vaultContract,
+  //     functionName,
+  //     newDuration
+  //   );
+  // }
 
   async submit(data: string) {
     return TimelockFunctions.submit(this.vaultContract, data);

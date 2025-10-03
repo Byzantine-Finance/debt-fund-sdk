@@ -22,7 +22,7 @@ interface VaultOperations {
   redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0xe1921bfb4c58b0f358f05613d05414df6cc5dc1f";
+const VAULT_ADDRESS = "0x08077ad8ddca0aa4f91922d9397d48877257fdd7";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
@@ -45,12 +45,12 @@ async function main() {
     console.log(`👤 User address: ${userAddress}`);
     console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
 
-    // await client.instantIncreaseTimelock(
-    //   VAULT_ADDRESS,
-    //   "setPerformanceFee",
-    //   10n
-    // );
-    // await waitSecond();
+    await client.setDecreaseTimelockAfterTimelock(
+      VAULT_ADDRESS,
+      "increaseTimelock",
+      0n
+    );
+    await waitSecond();
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");

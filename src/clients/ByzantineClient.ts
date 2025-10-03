@@ -831,15 +831,15 @@ export class ByzantineClient {
       .setDecreaseTimelockAfterTimelock(functionName, newDuration);
   }
 
-  async instantDecreaseTimelock(
-    vaultAddress: string,
-    functionName: TimelockFunction,
-    newDuration: bigint
-  ) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .instantDecreaseTimelock(functionName, newDuration);
-  }
+  // async instantDecreaseTimelock(
+  //   vaultAddress: string,
+  //   functionName: TimelockFunction,
+  //   newDuration: bigint
+  // ) {
+  //   return await this.curatorsClient
+  //     .vault(vaultAddress)
+  //     .instantDecreaseTimelock(functionName, newDuration);
+  // }
 
   async submit(vaultAddress: string, data: string) {
     return await this.curatorsClient.vault(vaultAddress).submit(data);

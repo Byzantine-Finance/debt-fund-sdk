@@ -449,7 +449,7 @@ await client.setDecreaseTimelockAfterTimelock(
   functionName,
   newDuration
 );
-await client.instantDecreaseTimelock(vaultAddress, functionName, newDuration); // Gas-efficient with multicall when 0 timelock
+// await client.instantDecreaseTimelock(vaultAddress, functionName, newDuration); // Removed because technically impossible
 
 // Submit and revoke operations
 await client.submit(vaultAddress, data);

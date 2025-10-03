@@ -16,6 +16,7 @@ export const timelocks: TimelockFunction[] = [
   "increaseAbsoluteCap",
   "increaseRelativeCap",
   "setIsAllocator",
+  "setReceiveSharesGate",
   "setSharesGate",
   "setReceiveAssetsGate",
   "setSendAssetsGate",
