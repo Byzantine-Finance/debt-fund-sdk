@@ -107,4 +107,6 @@ export const ErrorCodeMapping: Record<string, string> = {
   "0x39ddccf0": "ExcessiveFees()",
   "0x7ac83bf4": "OnlyFactoryAdmin()",
   "0x8f4eb604": "InvalidByzantineRecipient()",
+  // New
+  "0x83c1010a": "AssetMismatch()",
 };
