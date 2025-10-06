@@ -23,7 +23,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
       erc4626AdapterFactory: "0x0f52A6D95d1C29806696FfaC4EB9F563e90faB9B",
       erc4626MerklAdapterFactory: "0xdF311B93f922867A686abA9b233Fd7C65d66f83d",
       morphoMarketV1AdapterFactory:
-        "0xdF311B93f922867A686abA9b233Fd7C65d66f83d",
+        "0x96E2F9E6077C9B8FcA5Bb0F31F7A977ffC047F6E",
     },
   },
   // 42161: {

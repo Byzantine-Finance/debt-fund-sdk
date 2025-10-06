@@ -711,7 +711,7 @@ This example shows the full lifecycle of vault creation and configuration.
   - Morpho Vault V1 Adapter Factory: `0x0f52A6D95d1C29806696FfaC4EB9F563e90faB9B`
   - Morpho Market V1 Adapter Factory: `0x96E2F9E6077C9B8FcA5Bb0F31F7A977ffC047F6E`
   - Erc4626Merkl Adapter Factory: `0xdF311B93f922867A686abA9b233Fd7C65d66f83d`
-  - CompoundV3 Adapter Factory: `0xA4dF9668EE53A896BdF40A7AeAC1364129F3c168`
+  - CompoundV3 Adapter Factory: `0xa4fBA822Ec57bbf8b3f441Cd29255cE3F9483b34`
 
 <!-- - **Arbitrum One (Chain ID: 42161)**
 

@@ -26,7 +26,7 @@ const VAULT_ADDRESS = "0x08077ad8ddca0aa4f91922d9397d48877257fdd7";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  // depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
+  depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
   // withdrawAmount: parseUnits("0.04", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: 1198496n, // parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
@@ -45,12 +45,12 @@ async function main() {
     console.log(`👤 User address: ${userAddress}`);
     console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
 
-    await client.setDecreaseTimelockAfterTimelock(
-      VAULT_ADDRESS,
-      "increaseTimelock",
-      0n
-    );
-    await waitSecond();
+    // await client.instantIncreaseAbsoluteCap(
+    //   VAULT_ADDRESS,
+    //   "increaseTimelock",
+    //   0n
+    // );
+    // await waitSecond();
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");
