@@ -101,7 +101,7 @@ export async function getIds(
 export async function getUnderlying(
   contract: ethers.Contract
 ): Promise<string> {
-  return await callContractMethod(contract, "morphoMarketV1", []);
+  return await callContractMethod(contract, "morpho", []);
 }
 
 // function marketParamsListLength() external view returns (uint256);

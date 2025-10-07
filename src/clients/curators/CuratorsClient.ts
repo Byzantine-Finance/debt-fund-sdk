@@ -8,6 +8,7 @@ import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
+import * as GateFunctions from "./Gate";
 /**
  * Main client for vault curators operations
  * Provides:
@@ -463,6 +464,91 @@ export class VaultCurator {
 
   async getMaxRate() {
     return MaxRateFunctions.getMaxRate(this.vaultContract);
+  }
+
+  // ========================================
+  // GATE MANAGEMENT
+  // ========================================
+
+  // Receive Shares Gate
+  async submitReceiveSharesGate(gate: string) {
+    return GateFunctions.submitReceiveSharesGate(this.vaultContract, gate);
+  }
+
+  async setReceiveSharesGateAfterTimelock(gate: string) {
+    return GateFunctions.setReceiveSharesGateAfterTimelock(
+      this.vaultContract,
+      gate
+    );
+  }
+
+  async instantSetReceiveSharesGate(gate: string) {
+    return GateFunctions.instantSetReceiveSharesGate(this.vaultContract, gate);
+  }
+
+  // Send Shares Gate
+  async submitSendSharesGate(gate: string) {
+    return GateFunctions.submitSendSharesGate(this.vaultContract, gate);
+  }
+
+  async setSendSharesGateAfterTimelock(gate: string) {
+    return GateFunctions.setSendSharesGateAfterTimelock(
+      this.vaultContract,
+      gate
+    );
+  }
+
+  async instantSetSendSharesGate(gate: string) {
+    return GateFunctions.instantSetSendSharesGate(this.vaultContract, gate);
+  }
+
+  // Receive Assets Gate
+  async submitReceiveAssetsGate(gate: string) {
+    return GateFunctions.submitReceiveAssetsGate(this.vaultContract, gate);
+  }
+
+  async setReceiveAssetsGateAfterTimelock(gate: string) {
+    return GateFunctions.setReceiveAssetsGateAfterTimelock(
+      this.vaultContract,
+      gate
+    );
+  }
+
+  async instantSetReceiveAssetsGate(gate: string) {
+    return GateFunctions.instantSetReceiveAssetsGate(this.vaultContract, gate);
+  }
+
+  // Send Assets Gate
+  async submitSendAssetsGate(gate: string) {
+    return GateFunctions.submitSendAssetsGate(this.vaultContract, gate);
+  }
+
+  async setSendAssetsGateAfterTimelock(gate: string) {
+    return GateFunctions.setSendAssetsGateAfterTimelock(
+      this.vaultContract,
+      gate
+    );
+  }
+
+  async instantSetSendAssetsGate(gate: string) {
+    return GateFunctions.instantSetSendAssetsGate(this.vaultContract, gate);
+  }
+
+  // Read Gate Functions
+  async getReceiveSharesGate() {
+    return GateFunctions.getReceiveSharesGate(this.vaultContract);
+  }
+
+  async getSendSharesGate() {
+    return GateFunctions.getSendSharesGate(this.vaultContract);
+  }
+
+  async getReceiveAssetsGate() {
+    return GateFunctions.getReceiveAssetsGate(this.vaultContract);
+  }
+
+  async getSendAssetsGate() {
+    return GateFunctions.getSendAssetsGate(this.vaultContract);
   }
 
   // ========================================

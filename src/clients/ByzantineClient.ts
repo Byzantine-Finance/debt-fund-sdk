@@ -1083,6 +1083,102 @@ export class ByzantineClient {
   }
 
   // ========================================
+  // GATE MANAGEMENT
+  // ========================================
+
+  // Receive Shares Gate
+  async submitReceiveSharesGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitReceiveSharesGate(gate);
+  }
+
+  async setReceiveSharesGateAfterTimelock(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setReceiveSharesGateAfterTimelock(gate);
+  }
+
+  async instantSetReceiveSharesGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetReceiveSharesGate(gate);
+  }
+
+  async getReceiveSharesGate(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getReceiveSharesGate();
+  }
+
+  // Send Shares Gate
+  async submitSendSharesGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitSendSharesGate(gate);
+  }
+
+  async setSendSharesGateAfterTimelock(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setSendSharesGateAfterTimelock(gate);
+  }
+
+  async instantSetSendSharesGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetSendSharesGate(gate);
+  }
+
+  async getSendSharesGate(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getSendSharesGate();
+  }
+
+  // Receive Assets Gate
+  async submitReceiveAssetsGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitReceiveAssetsGate(gate);
+  }
+
+  async setReceiveAssetsGateAfterTimelock(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setReceiveAssetsGateAfterTimelock(gate);
+  }
+
+  async instantSetReceiveAssetsGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetReceiveAssetsGate(gate);
+  }
+
+  async getReceiveAssetsGate(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getReceiveAssetsGate();
+  }
+
+  // Send Assets Gate
+  async submitSendAssetsGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitSendAssetsGate(gate);
+  }
+
+  async setSendAssetsGateAfterTimelock(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setSendAssetsGateAfterTimelock(gate);
+  }
+
+  async instantSetSendAssetsGate(vaultAddress: string, gate: string) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetSendAssetsGate(gate);
+  }
+
+  async getSendAssetsGate(vaultAddress: string) {
+    return await this.curatorsClient.vault(vaultAddress).getSendAssetsGate();
+  }
+
+  // ========================================
   // CAP MANAGEMENT
   // ========================================
 

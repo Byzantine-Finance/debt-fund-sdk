@@ -309,6 +309,36 @@ await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with mul
 await client.getMaxRate(vaultAddress);
 ```
 
+#### Gate Management
+
+Gates control access to vault operations based on custom smart contract logic. Each gate is a contract address that implements specific validation logic.
+
+```js
+// Receive Shares Gate - Controls who can receive shares (e.g., mints, transfers)
+await client.submitReceiveSharesGate(vaultAddress, gateAddress);
+await client.setReceiveSharesGateAfterTimelock(vaultAddress, gateAddress);
+await client.instantSetReceiveSharesGate(vaultAddress, gateAddress); // Gas-efficient when timelock = 0
+await client.getReceiveSharesGate(vaultAddress);
+
+// Send Shares Gate - Controls who can send shares (e.g., transfers)
+await client.submitSendSharesGate(vaultAddress, gateAddress);
+await client.setSendSharesGateAfterTimelock(vaultAddress, gateAddress);
+await client.instantSetSendSharesGate(vaultAddress, gateAddress); // Gas-efficient when timelock = 0
+await client.getSendSharesGate(vaultAddress);
+
+// Receive Assets Gate - Controls who can receive assets (e.g., withdrawals)
+await client.submitReceiveAssetsGate(vaultAddress, gateAddress);
+await client.setReceiveAssetsGateAfterTimelock(vaultAddress, gateAddress);
+await client.instantSetReceiveAssetsGate(vaultAddress, gateAddress); // Gas-efficient when timelock = 0
+await client.getReceiveAssetsGate(vaultAddress);
+
+// Send Assets Gate - Controls who can send assets (e.g., deposits)
+await client.submitSendAssetsGate(vaultAddress, gateAddress);
+await client.setSendAssetsGateAfterTimelock(vaultAddress, gateAddress);
+await client.instantSetSendAssetsGate(vaultAddress, gateAddress); // Gas-efficient when timelock = 0
+await client.getSendAssetsGate(vaultAddress);
+```
+
 #### Allocator Management
 
 ```js
@@ -711,7 +741,7 @@ This example shows the full lifecycle of vault creation and configuration.
   - Morpho Vault V1 Adapter Factory: `0x0f52A6D95d1C29806696FfaC4EB9F563e90faB9B`
   - Morpho Market V1 Adapter Factory: `0x96E2F9E6077C9B8FcA5Bb0F31F7A977ffC047F6E`
   - Erc4626Merkl Adapter Factory: `0xdF311B93f922867A686abA9b233Fd7C65d66f83d`
-  - CompoundV3 Adapter Factory: `0xa4fBA822Ec57bbf8b3f441Cd29255cE3F9483b34`
+  - CompoundV3 Adapter Factory: `0xA4dF9668EE53A896BdF40A7AeAC1364129F3c168`
 
 <!-- - **Arbitrum One (Chain ID: 42161)**
 

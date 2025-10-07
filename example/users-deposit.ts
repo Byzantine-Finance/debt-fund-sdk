@@ -26,7 +26,7 @@ const VAULT_ADDRESS = "0x08077ad8ddca0aa4f91922d9397d48877257fdd7";
 
 // Example configuration for deposit operations
 const DEPOSIT_CONFIG: VaultOperations = {
-  depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
+  // depositAmount: parseUnits("0.1", 6), // 1.0 USDC (6 decimals)
   // mintAmount: parseUnits("0.5", 18), // 0.5 byzUSDC (18 decimals) - will use ~0.5 USDC
   // withdrawAmount: parseUnits("0.04", 6), // 0.3 USDC (6 decimals)
   // redeemAmount: 1198496n, // parseUnits("0.2", 18), // 0.2 byzUSDC (18 decimals) - will give ~0.2 USDC
@@ -45,12 +45,15 @@ async function main() {
     console.log(`👤 User address: ${userAddress}`);
     console.log(`🏦 Vault address: ${VAULT_ADDRESS}`);
 
-    // await client.instantIncreaseAbsoluteCap(
-    //   VAULT_ADDRESS,
-    //   "increaseTimelock",
-    //   0n
+    // const adapterTx = await client.deployAdapter(
+    //   "compoundV3",
+    //   "0x08077ad8ddca0aa4f91922d9397d48877257fdd7",
+    //   "0xb125E6687d4313864e53df431d5425969c15Eb2F",
+    //   "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1"
     // );
-    // await waitSecond();
+    // await adapterTx.wait();
+    // const adapterAddress = adapterTx.adapterAddress;
+    // console.log(`🔍 Adapter address: ${adapterAddress}`);
 
     // Verify the vault exists by getting its asset
     console.log("\n🔍 Verifying vault exists...");

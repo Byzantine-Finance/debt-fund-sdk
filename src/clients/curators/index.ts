@@ -18,5 +18,8 @@ export * as FeesFunctions from "./Fees";
 // Export cap functions
 export * as CapFunctions from "./Cap";
 
+// Export gate functions
+export * as GateFunctions from "./Gate";
+
 // Export types
 export type { TimelockFunction } from "./Timelock";

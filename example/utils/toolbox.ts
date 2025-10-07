@@ -17,7 +17,7 @@ export const timelocks: TimelockFunction[] = [
   "increaseRelativeCap",
   "setIsAllocator",
   "setReceiveSharesGate",
-  "setSharesGate",
+  "setSendSharesGate",
   "setReceiveAssetsGate",
   "setSendAssetsGate",
   "setPerformanceFee",
@@ -56,6 +56,11 @@ interface FullReadingVault {
   performanceFeeRecipient: string;
   managementFeeRecipient: string;
   maxRate: number;
+
+  receiveSharesGate: string;
+  sendSharesGate: string;
+  receiveAssetsGate: string;
+  sendAssetsGate: string;
 
   adapters: {
     index: number;
@@ -115,6 +120,10 @@ export async function fullReading(
       vaultAddress
     ),
     maxRate: Number(await client.getMaxRate(vaultAddress)) / 1e16,
+    receiveSharesGate: await client.getReceiveSharesGate(vaultAddress),
+    sendSharesGate: await client.getSendSharesGate(vaultAddress),
+    receiveAssetsGate: await client.getReceiveAssetsGate(vaultAddress),
+    sendAssetsGate: await client.getSendAssetsGate(vaultAddress),
     adapters: [], // Will be updated later
     idleBalance: await client.getIdleBalance(vaultAddress),
     liquidityAdapter: await client.getLiquidityAdapter(vaultAddress),
@@ -140,6 +149,7 @@ export async function fullReading(
 
       try {
         adapterType = await client.getAdapterType(address);
+        console.log("Adapter type:", adapterType);
         switch (adapterType) {
           case "erc4626":
             const erc4626Id = await client.getIdsAdapterERC4626(address);
@@ -187,8 +197,7 @@ export async function fullReading(
       } else if (adapterType === "compoundV3") {
         underlying = await client.getUnderlyingAdapterCompoundV3(address);
       } else if (adapterType === "morphoMarketV1") {
-        underlying = await client.getUnderlyingAdapterMarketV1(address);
-      } else if (adapterType === "morphoMarketV1") {
+        // No underlying for morphoMarketV1
         underlying = await client.getUnderlyingAdapterMarketV1(address);
       }
 
@@ -330,6 +339,11 @@ export async function fullReading(
     (Number(fullReadingVault.maxRate) / 1e16) * 31536000,
     "%/year"
   );
+  console.log("*");
+  console.log("* Receive Shares Gate:", fullReadingVault.receiveSharesGate);
+  console.log("* Send Shares Gate:", fullReadingVault.sendSharesGate);
+  console.log("* Receive Assets Gate:", fullReadingVault.receiveAssetsGate);
+  console.log("* Send Assets Gate:", fullReadingVault.sendAssetsGate);
   console.log("*");
   console.log("* Adapters length:", fullReadingVault.adapters.length);
   allAdapters.forEach((adapter) => {
