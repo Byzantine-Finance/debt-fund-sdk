@@ -1452,6 +1452,64 @@ export class ByzantineClient {
   }
 
   // ========================================
+  // ADAPTER REGISTRY MANAGEMENT
+  // ========================================
+
+  /**
+   * Submit the registry address for the vault
+   * @param vaultAddress The vault contract address
+   * @param newAdapterRegistry The new registry address
+   * @returns Transaction response
+   */
+  async submitAdapterRegistry(
+    vaultAddress: string,
+    newAdapterRegistry: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .submitAdapterRegistry(newAdapterRegistry);
+  }
+
+  /**
+   * Set the registry address after timelock
+   * @param vaultAddress The vault contract address
+   * @param newAdapterRegistry The new registry address
+   * @returns Transaction response
+   */
+  async setAdapterRegistryAfterTimelock(
+    vaultAddress: string,
+    newAdapterRegistry: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .setAdapterRegistryAfterTimelock(newAdapterRegistry);
+  }
+
+  /**
+   * Instantly set the registry address (when timelock = 0)
+   * @param vaultAddress The vault contract address
+   * @param newAdapterRegistry The new registry address
+   * @returns Transaction response
+   */
+  async instantSetAdapterRegistry(
+    vaultAddress: string,
+    newAdapterRegistry: string
+  ) {
+    return await this.curatorsClient
+      .vault(vaultAddress)
+      .instantSetAdapterRegistry(newAdapterRegistry);
+  }
+
+  /**
+   * Get the adapter registry address of the vault
+   * @param vaultAddress The vault contract address
+   * @returns The registry address
+   */
+  async getAdapterRegistry(vaultAddress: string): Promise<string> {
+    return await this.curatorsClient.vault(vaultAddress).getAdapterRegistry();
+  }
+
+  // ========================================
   // ALLOCATORS METHODS
   // ========================================
 

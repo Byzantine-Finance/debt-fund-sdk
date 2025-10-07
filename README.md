@@ -309,6 +309,18 @@ await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with mul
 await client.getMaxRate(vaultAddress);
 ```
 
+#### Adapter Registry Management
+
+The adapter registry is a smart contract that validates which adapters are allowed to be added to the vault.
+
+```js
+// Submit adapter registry change
+await client.submitAdapterRegistry(vaultAddress, registryAddress);
+await client.setAdapterRegistryAfterTimelock(vaultAddress, registryAddress);
+await client.instantSetAdapterRegistry(vaultAddress, registryAddress); // Gas-efficient when timelock = 0
+await client.getAdapterRegistry(vaultAddress);
+```
+
 #### Gate Management
 
 Gates control access to vault operations based on custom smart contract logic. Each gate is a contract address that implements specific validation logic.

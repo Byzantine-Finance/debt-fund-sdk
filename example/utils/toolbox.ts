@@ -16,6 +16,7 @@ export const timelocks: TimelockFunction[] = [
   "increaseAbsoluteCap",
   "increaseRelativeCap",
   "setIsAllocator",
+  "setAdapterRegistry",
   "setReceiveSharesGate",
   "setSendSharesGate",
   "setReceiveAssetsGate",
@@ -56,6 +57,7 @@ interface FullReadingVault {
   performanceFeeRecipient: string;
   managementFeeRecipient: string;
   maxRate: number;
+  adapterRegistry: string;
 
   receiveSharesGate: string;
   sendSharesGate: string;
@@ -120,6 +122,7 @@ export async function fullReading(
       vaultAddress
     ),
     maxRate: Number(await client.getMaxRate(vaultAddress)) / 1e16,
+    adapterRegistry: await client.getAdapterRegistry(vaultAddress),
     receiveSharesGate: await client.getReceiveSharesGate(vaultAddress),
     sendSharesGate: await client.getSendSharesGate(vaultAddress),
     receiveAssetsGate: await client.getReceiveAssetsGate(vaultAddress),
@@ -339,6 +342,7 @@ export async function fullReading(
     (Number(fullReadingVault.maxRate) / 1e16) * 31536000,
     "%/year"
   );
+  console.log("* Adapter Registry:", fullReadingVault.adapterRegistry);
   console.log("*");
   console.log("* Receive Shares Gate:", fullReadingVault.receiveSharesGate);
   console.log("* Send Shares Gate:", fullReadingVault.sendSharesGate);

@@ -9,6 +9,7 @@ import * as TimelockFunctions from "./Timelock";
 import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
 import * as GateFunctions from "./Gate";
+import * as AdapterRegistryFunctions from "./AdapterRegistry";
 /**
  * Main client for vault curators operations
  * Provides:
@@ -549,6 +550,35 @@ export class VaultCurator {
 
   async getSendAssetsGate() {
     return GateFunctions.getSendAssetsGate(this.vaultContract);
+  }
+
+  // ========================================
+  // ADAPTER REGISTRY MANAGEMENT
+  // ========================================
+
+  async submitAdapterRegistry(newAdapterRegistry: string) {
+    return AdapterRegistryFunctions.submitAdapterRegistry(
+      this.vaultContract,
+      newAdapterRegistry
+    );
+  }
+
+  async setAdapterRegistryAfterTimelock(newAdapterRegistry: string) {
+    return AdapterRegistryFunctions.setAdapterRegistryAfterTimelock(
+      this.vaultContract,
+      newAdapterRegistry
+    );
+  }
+
+  async instantSetAdapterRegistry(newAdapterRegistry: string) {
+    return AdapterRegistryFunctions.instantSetAdapterRegistry(
+      this.vaultContract,
+      newAdapterRegistry
+    );
+  }
+
+  async getAdapterRegistry() {
+    return AdapterRegistryFunctions.getAdapterRegistry(this.vaultContract);
   }
 
   // ========================================

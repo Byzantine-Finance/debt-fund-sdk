@@ -16,6 +16,8 @@ export type TimelockFunction =
   //
   | "setIsAllocator" // 0xb192a84a
   //
+  | "setAdapterRegistry" // 0x5b34b823
+  //
   | "setReceiveSharesGate" // 0x2cb19f98
   | "setSendSharesGate" // 0xc21ad028
   | "setReceiveAssetsGate" // 0x04dbf0ce
@@ -57,6 +59,8 @@ export function getTimelockFunctionSelector(
       return "0x2438525b";
     case "setIsAllocator":
       return "0xb192a84a";
+    case "setAdapterRegistry":
+      return "0x5b34b823";
     case "setReceiveSharesGate":
       return "0x2cb19f98";
     case "setSendSharesGate":

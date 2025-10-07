@@ -142,5 +142,3 @@ export async function getIsAdapter(
       throw new Error(`Invalid adapter type: ${adapterType}`);
   }
 }
-
-// Read Functions

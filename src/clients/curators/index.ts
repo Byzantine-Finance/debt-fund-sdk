@@ -21,5 +21,8 @@ export * as CapFunctions from "./Cap";
 // Export gate functions
 export * as GateFunctions from "./Gate";
 
+// Export adapter registry functions
+export * as AdapterRegistryFunctions from "./AdapterRegistry";
+
 // Export types
 export type { TimelockFunction } from "./Timelock";
