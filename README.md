@@ -15,6 +15,7 @@ Debt Fund is a decentralized protocol that allows users to create and manage vau
 
 This SDK provides a comprehensive interface for developers to integrate with Debt Fund on:
 
+- **Ethereum Mainnet (Chain ID: 1)**
 - **Base Mainnet (Chain ID: 8453)** - It is on mainnet, but please only use it as a testnet with small amounts
 <!-- - **Arbitrum One (Chain ID: 42161)** - It is on mainnet, but please only use it as a testnet with small amounts -->
 - _Additional networks coming soon_
@@ -746,6 +747,14 @@ The `example/create-vault.ts` file demonstrates a complete vault setup including
 This example shows the full lifecycle of vault creation and configuration.
 
 ## Supported Networks
+
+- **Ethereum Mainnet (Chain ID: 1)**
+
+  - Byzantine Factory: `0xA1D94F746dEfa1928926b84fB2596c06926C0405`
+  - Morpho Vault V1 Adapter Factory: `0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394`
+  - Morpho Market V1 Adapter Factory: ``
+  - Erc4626Merkl Adapter Factory: `0x576136011496367C7FEF780445349060646C7cC1`
+  - CompoundV3 Adapter Factory: `0x60a91D7F17046FB1B1C9360E1C5D68b7E94E5959`
 
 - **Base Mainnet (Chain ID: 8453)**
 

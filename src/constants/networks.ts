@@ -6,12 +6,18 @@ import { NetworkConfig, ChainsOptions } from "../types";
 
 export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
   // Ethereum Mainnet
-  // 1: {
-  //   name: "Ethereum",
-  //   vaultV2Factory: "",
-  //   scanLink: "https://etherscan.io",
-  // USDCaddress: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-  // },
+  1: {
+    name: "Ethereum",
+    vaultV2Factory: "",
+    scanLink: "https://etherscan.io",
+    USDCaddress: "0xA1D94F746dEfa1928926b84fB2596c06926C0405",
+    adapters: {
+      compoundV3AdapterFactory: "0x60a91D7F17046FB1B1C9360E1C5D68b7E94E5959",
+      erc4626AdapterFactory: "0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394",
+      erc4626MerklAdapterFactory: "0x576136011496367C7FEF780445349060646C7cC1",
+      morphoMarketV1AdapterFactory: "",
+    },
+  },
   // Base mainnet
   8453: {
     name: "Base Mainnet",

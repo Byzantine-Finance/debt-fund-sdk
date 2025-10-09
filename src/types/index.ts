@@ -1,8 +1,7 @@
 // @ts-check
 
-export type ChainsOptions =
-  // | 1 // Mainnet
-  8453; // Base Mainnet
+export type ChainsOptions = 1 | 8453; // Mainnet
+// 8453; // Base Mainnet
 // | 42161; // Arbitrum Testnet
 // | 17000 // Holesky
 // | 11155111; // Sepolia
