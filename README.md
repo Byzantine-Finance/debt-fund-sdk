@@ -300,16 +300,6 @@ await client.instantSetForceDeallocatePenalty(vaultAddress, adapter, penalty); /
 await client.getForceDeallocatePenalty(vaultAddress, adapter);
 ```
 
-#### Max Rate Management
-
-```js
-// Max rate
-await client.submitMaxRate(vaultAddress, maxRate);
-await client.setMaxRateAfterTimelock(vaultAddress, maxRate);
-await client.instantSetMaxRate(vaultAddress, maxRate); // Gas-efficient with multicall when 0 timelock
-await client.getMaxRate(vaultAddress);
-```
-
 #### Adapter Registry Management
 
 The adapter registry is a smart contract that validates which adapters are allowed to be added to the vault.
@@ -378,6 +368,10 @@ await client.setLiquidityAdapterAndData(
 // Asset allocation and deallocation
 await client.allocate(vaultAddress, adapter, data, assets);
 await client.deallocate(vaultAddress, adapter, data, assets);
+
+// Max rate management
+await client.setMaxRate(vaultAddress, maxRate);
+await client.getMaxRate(vaultAddress);
 
 // Read allocation information
 await client.getLiquidityAdapter(vaultAddress);

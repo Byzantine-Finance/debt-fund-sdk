@@ -25,7 +25,6 @@ export const timelocks: TimelockFunction[] = [
   "setPerformanceFeeRecipient",
   "setManagementFee",
   "setManagementFeeRecipient",
-  "setMaxRate",
   "setForceDeallocatePenalty",
 ];
 

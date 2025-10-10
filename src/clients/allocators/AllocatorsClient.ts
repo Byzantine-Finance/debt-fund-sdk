@@ -2,6 +2,7 @@ import { Contract, ethers } from "ethers";
 import { ContractProvider } from "../../utils/ContractProvider";
 import * as AllocateFunctions from "./Allocate";
 import * as LiquidityAdapterFunctions from "./LiquidityAdapter";
+import * as MaxRateFunctions from "./MaxRate";
 
 /**
  * Client for interacting with vault allocation functions
@@ -121,5 +122,26 @@ export class AllocatorsClient {
       this.provider,
       this.vaultContract
     );
+  }
+
+  // ========================================
+  // MAX RATE MANAGEMENT
+  // ========================================
+
+  /**
+   * Set the max rate for the vault
+   * @param newMaxRate - The new max rate value
+   * @returns Contract transaction
+   */
+  async setMaxRate(newMaxRate: bigint): Promise<ethers.TransactionResponse> {
+    return await MaxRateFunctions.setMaxRate(this.vaultContract, newMaxRate);
+  }
+
+  /**
+   * Get the current max rate of the vault
+   * @returns Max rate as BigNumber
+   */
+  async getMaxRate(): Promise<bigint> {
+    return await MaxRateFunctions.getMaxRate(this.vaultContract);
   }
 }

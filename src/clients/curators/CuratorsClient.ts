@@ -6,7 +6,6 @@ import * as AdaptersFunctions from "./Adapters";
 import * as CapFunctions from "./Cap";
 import * as FeesFunctions from "./Fees";
 import * as TimelockFunctions from "./Timelock";
-import * as MaxRateFunctions from "./MaxRate";
 import * as ManageRoleFunctions from "./ManageRole";
 import * as GateFunctions from "./Gate";
 import * as AdapterRegistryFunctions from "./AdapterRegistry";
@@ -442,29 +441,6 @@ export class VaultCurator {
 
   async getRelativeCap(id: string) {
     return CapFunctions.getRelativeCap(this.vaultContract, id);
-  }
-
-  // ========================================
-  // MAX RATE MANAGEMENT
-  // ========================================
-
-  async submitMaxRate(newMaxRate: bigint) {
-    return MaxRateFunctions.submitMaxRate(this.vaultContract, newMaxRate);
-  }
-
-  async setMaxRateAfterTimelock(newMaxRate: bigint) {
-    return MaxRateFunctions.setMaxRateAfterTimelock(
-      this.vaultContract,
-      newMaxRate
-    );
-  }
-
-  async instantSetMaxRate(newMaxRate: bigint) {
-    return MaxRateFunctions.instantSetMaxRate(this.vaultContract, newMaxRate);
-  }
-
-  async getMaxRate() {
-    return MaxRateFunctions.getMaxRate(this.vaultContract);
   }
 
   // ========================================

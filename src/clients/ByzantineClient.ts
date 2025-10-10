@@ -1056,33 +1056,6 @@ export class ByzantineClient {
   }
 
   // ========================================
-  // MAX RATE MANAGEMENT
-  // ========================================
-
-  // Max Rate
-  async submitMaxRate(vaultAddress: string, newMaxRate: bigint) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .submitMaxRate(newMaxRate);
-  }
-
-  async setMaxRateAfterTimelock(vaultAddress: string, newMaxRate: bigint) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .setMaxRateAfterTimelock(newMaxRate);
-  }
-
-  async instantSetMaxRate(vaultAddress: string, newMaxRate: bigint) {
-    return await this.curatorsClient
-      .vault(vaultAddress)
-      .instantSetMaxRate(newMaxRate);
-  }
-
-  async getMaxRate(vaultAddress: string) {
-    return await this.curatorsClient.vault(vaultAddress).getMaxRate();
-  }
-
-  // ========================================
   // GATE MANAGEMENT
   // ========================================
 
@@ -1565,6 +1538,25 @@ export class ByzantineClient {
 
   async getIdleBalance(vaultAddress: string) {
     return await this.getAllocatorsClient(vaultAddress).getIdleBalance();
+  }
+
+  /**
+   * Set the max rate for the vault
+   * @param vaultAddress The vault contract address
+   * @param newMaxRate The new max rate value
+   * @returns Transaction response
+   */
+  async setMaxRate(vaultAddress: string, newMaxRate: bigint) {
+    return await this.getAllocatorsClient(vaultAddress).setMaxRate(newMaxRate);
+  }
+
+  /**
+   * Get the current max rate of the vault
+   * @param vaultAddress The vault contract address
+   * @returns Max rate as BigNumber
+   */
+  async getMaxRate(vaultAddress: string) {
+    return await this.getAllocatorsClient(vaultAddress).getMaxRate();
   }
 
   // ========================================

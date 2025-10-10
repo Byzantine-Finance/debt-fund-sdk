@@ -18,7 +18,7 @@ export async function setupAllocatorsSettings(
           (Number(allocatorsSettings.max_rate) / 1e16) * 31536000
         )}% / year`
       ); // 100% = 1e18, max 200%/year -> 200e16/31_536_000 = 6.3493150684931506e12
-      const tx = await client.instantSetMaxRate(
+      const tx = await client.setMaxRate(
         vaultAddress,
         allocatorsSettings.max_rate
       );

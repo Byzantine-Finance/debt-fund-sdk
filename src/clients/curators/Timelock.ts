@@ -28,8 +28,6 @@ export type TimelockFunction =
   | "setManagementFee" // 0xfe56e232
   | "setManagementFeeRecipient" // 0x9faae464
   //
-  | "setMaxRate" // 0xaa4abe7f
-  //
   | "setForceDeallocatePenalty"; // 0x3e9d2ac7
 
 // ========================================
@@ -77,8 +75,6 @@ export function getTimelockFunctionSelector(
       return "0xfe56e232";
     case "setManagementFeeRecipient":
       return "0x9faae464";
-    case "setMaxRate":
-      return "0xaa4abe7f";
     case "setForceDeallocatePenalty":
       return "0x3e9d2ac7";
     default:
