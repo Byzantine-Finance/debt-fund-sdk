@@ -494,7 +494,7 @@ npm run test:watch               # vitest in watch mode
 `integration-read` uses `TEST_VAULT_ADDRESS` if set to inspect a specific vault; otherwise vault-state tests are skipped. A live Vault V2 you can point it at:
 
 ```shell
-TEST_VAULT_ADDRESS=0x30cacd22f178c9e57b0b010e1f9432881aa530c4   # Base Mainnet — READ-ONLY
+TEST_VAULT_ADDRESS=0x30cacd22f178c9e57b0b010e1f9432881aa530c4   # Ethereum Mainnet — READ-ONLY
 ```
 
 > ⚠️ The address above is **read-only**. Write-side integration tests always
