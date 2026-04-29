@@ -46,7 +46,7 @@ export type {
 export * from "./types";
 export * from "./constants";
 
-// ----- Utilities (provider helpers, error formatting) -----
+// ----- Utilities (provider helpers, error formatting, conversions) -----
 export {
 	ContractProvider,
 	executeContractMethod,
@@ -54,5 +54,14 @@ export {
 	formatContractError,
 	getWalletFromMnemonic,
 	isValidAddress,
+	// Conversion helpers (bigint <-> human strings)
 	formatAmount,
+	parseAmount,
+	formatPercent,
+	parsePercent,
+	formatAnnualRate,
+	parseAnnualRate,
+	ONE_WAD,
+	ONE_PERCENT_WAD,
+	SECONDS_IN_YEAR,
 } from "./utils";
