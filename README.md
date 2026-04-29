@@ -1,6 +1,12 @@
 # Debt Fund SDK
 
+[![npm version](https://img.shields.io/npm/v/@byzantine/debt-fund-sdk.svg?logo=npm)](https://www.npmjs.com/package/@byzantine/debt-fund-sdk)
+[![npm downloads](https://img.shields.io/npm/dm/@byzantine/debt-fund-sdk.svg)](https://www.npmjs.com/package/@byzantine/debt-fund-sdk)
+[![GitHub](https://img.shields.io/github/stars/byzantine-finance/debt-fund-sdk.svg?style=social)](https://github.com/byzantine-finance/debt-fund-sdk)
+
 TypeScript SDK for interacting with the **Byzantine Debt Fund** ecosystem — a wrapper around the [Morpho Vault V2](https://docs.morpho.org/get-started/resources/addresses/) protocol. Create vaults, configure them, deposit/withdraw, and bundle dozens of admin operations into a single transaction via the on-chain `multicall`.
+
+📦 **[npm package](https://www.npmjs.com/package/@byzantine/debt-fund-sdk)** · 🐙 **[GitHub repo](https://github.com/byzantine-finance/debt-fund-sdk)** · 🐛 **[Issues](https://github.com/byzantine-finance/debt-fund-sdk/issues)**
 
 ## What's new in v2
 
