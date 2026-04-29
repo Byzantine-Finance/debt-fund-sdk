@@ -1,95 +1,111 @@
-import { ethers } from "ethers";
+import type { ethers } from "ethers";
 import {
-  callContractMethod,
-  executeContractMethod,
-  formatContractError,
-} from "../../utils/contractErrorHandler";
-import { ContractProvider } from "../../utils";
-import { DeployAdapterResult } from "./GlobalAdapters";
+	type ContractProvider,
+	callContractMethod,
+	executeContractMethod,
+	formatContractError,
+} from "../../utils";
+import { getAdapterFactoryContract } from "./_contracts";
+import type { DeployAdapterResult } from "./GlobalAdapters";
 
-// ========================================
-// Factory Functions
-// ========================================
+// ============================================================================
+// Factory functions
+// ============================================================================
 
 export async function deployERC4626MerklAdapter(
-  contractProvider: ContractProvider,
-  vaultAddress: string,
-  morphoVaultV1: string
+	cp: ContractProvider,
+	vaultAddress: string,
+	erc4626Vault: string,
 ): Promise<DeployAdapterResult> {
-  const adapterFactoryContract =
-    await contractProvider.getERC4626MerklAdapterFactoryContract();
-
-  try {
-    // First simulate the call to get the adapter address that will be created
-    const adapterAddress =
-      await adapterFactoryContract.createERC4626MerklAdapter.staticCall(
-        vaultAddress,
-        morphoVaultV1
-      );
-
-    // Then execute the actual transaction
-    const tx = await executeContractMethod(
-      adapterFactoryContract,
-      "createERC4626MerklAdapter",
-      vaultAddress,
-      morphoVaultV1
-    );
-
-    // Add the adapter address property to the transaction object
-    (tx as DeployAdapterResult).adapterAddress = adapterAddress;
-    return tx as DeployAdapterResult;
-  } catch (error) {
-    throw formatContractError("createERC4626MerklAdapter", error);
-  }
+	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
+	try {
+		const adapterAddress: string = await factory.createERC4626MerklAdapter.staticCall(
+			vaultAddress,
+			erc4626Vault,
+		);
+		const tx = await executeContractMethod(
+			factory,
+			"createERC4626MerklAdapter",
+			vaultAddress,
+			erc4626Vault,
+		);
+		(tx as DeployAdapterResult).adapterAddress = adapterAddress;
+		return tx as DeployAdapterResult;
+	} catch (error) {
+		throw formatContractError("createERC4626MerklAdapter", error);
+	}
 }
 
-// Read Functions
-
 export async function isERC4626MerklAdapter(
-  contractProvider: ContractProvider,
-  account: string
+	cp: ContractProvider,
+	account: string,
 ): Promise<boolean> {
-  const adapterFactoryContract =
-    await contractProvider.getERC4626MerklAdapterFactoryContract();
-  return await callContractMethod(
-    adapterFactoryContract,
-    "isERC4626MerklAdapter",
-    [account]
-  );
+	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
+	return callContractMethod(factory, "isERC4626MerklAdapter", account);
 }
 
 export async function findERC4626MerklAdapter(
-  contractProvider: ContractProvider,
-  vaultAddress: string,
-  morphoVaultV1: string
+	cp: ContractProvider,
+	vaultAddress: string,
+	erc4626Vault: string,
 ): Promise<string> {
-  const adapterFactoryContract =
-    await contractProvider.getERC4626MerklAdapterFactoryContract();
-  return await callContractMethod(
-    adapterFactoryContract,
-    "erc4626MerklAdapter",
-    [vaultAddress, morphoVaultV1]
-  );
+	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
+	return callContractMethod(factory, "erc4626MerklAdapter", vaultAddress, erc4626Vault);
 }
 
-// ========================================
-// Adapters
-// ========================================
+// ============================================================================
+// Adapter reads
+// ============================================================================
 
-/**
- * Get the ids of the markets of a Morpho Vault V1 Adapter
- * @param contractProvider The contract provider
- * @param adapterAddress The address of the Morpho Vault V1 Adapter
- * @returns The ids of the markets
- */
-export async function getIds(contract: ethers.Contract): Promise<string> {
-  return await callContractMethod(contract, "ids", []);
+export async function getIds(contract: ethers.Contract): Promise<string[]> {
+	return callContractMethod(contract, "ids");
 }
 
-export async function getUnderlying(
-  contract: ethers.Contract
-): Promise<string> {
-  return await callContractMethod(contract, "erc4626Vault", []);
+export async function getUnderlying(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "erc4626Vault");
 }
 
-// Read Functions
+export async function getMerklDistributor(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "MERKL_DISTRIBUTOR");
+}
+
+export async function getClaimer(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "claimer");
+}
+
+export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "skimRecipient");
+}
+
+// ============================================================================
+// Adapter writes — administrative surface (target: the adapter, NOT the vault)
+// ============================================================================
+
+/** Pull rewards from the Merkl distributor; `data` is the abi-encoded claim parameters. */
+export async function claim(
+	contract: ethers.Contract,
+	data: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "claim", data);
+}
+
+export async function setClaimer(
+	contract: ethers.Contract,
+	newClaimer: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setClaimer", newClaimer);
+}
+
+export async function setSkimRecipient(
+	contract: ethers.Contract,
+	newSkimRecipient: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setSkimRecipient", newSkimRecipient);
+}
+
+export async function skim(
+	contract: ethers.Contract,
+	token: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "skim", token);
+}

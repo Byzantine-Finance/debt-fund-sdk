@@ -1,420 +1,323 @@
-import { ByzantineClient } from "../../src/clients/ByzantineClient";
-import { ethers, formatUnits } from "ethers";
+import type { ethers } from "ethers";
 import * as dotenv from "dotenv";
-import { TimelockFunction } from "../../src/clients/curators";
-import { AdapterType } from "../../src/clients/adapters";
+import type {
+	Action,
+	AdapterType,
+	ByzantineClient,
+	TimelockFunction,
+	Vault,
+} from "../../src";
+import {
+	formatAmount,
+	formatAnnualRate,
+	formatPercent,
+} from "../../src";
 
 dotenv.config();
 
 export const RPC_URL = process.env.RPC_URL || "";
 export const MNEMONIC = process.env.MNEMONIC || "";
 
+/** All timelocked functions on the vault — used by `fullReading` to print durations. */
 export const timelocks: TimelockFunction[] = [
-  "addAdapter",
-  "removeAdapter",
-  "decreaseTimelock",
-  "increaseAbsoluteCap",
-  "increaseRelativeCap",
-  "setIsAllocator",
-  "setAdapterRegistry",
-  "setReceiveSharesGate",
-  "setSendSharesGate",
-  "setReceiveAssetsGate",
-  "setSendAssetsGate",
-  "setPerformanceFee",
-  "setPerformanceFeeRecipient",
-  "setManagementFee",
-  "setManagementFeeRecipient",
-  "setForceDeallocatePenalty",
+	"addAdapter",
+	"removeAdapter",
+	"decreaseTimelock",
+	"increaseAbsoluteCap",
+	"increaseRelativeCap",
+	"setIsAllocator",
+	"setAdapterRegistry",
+	"setReceiveSharesGate",
+	"setSendSharesGate",
+	"setReceiveAssetsGate",
+	"setSendAssetsGate",
+	"setPerformanceFee",
+	"setPerformanceFeeRecipient",
+	"setManagementFee",
+	"setManagementFeeRecipient",
+	"setForceDeallocatePenalty",
 ];
 
-export const waitDelay = (delay: number) =>
-  new Promise((resolve) => setTimeout(resolve, delay));
+export const waitDelay = (ms: number) =>
+	new Promise((resolve) => setTimeout(resolve, ms));
+export const waitSecond = () => waitDelay(1000);
+export const waitHalfSecond = () => waitDelay(500);
 
-export const waitSecond = () =>
-  new Promise((resolve) => setTimeout(resolve, 1000));
+/**
+ * Pretty-print each action in a multicall before sending it. Decodes
+ * calldata via the vault's `Interface`. For an `instantX` action (a
+ * `[submit, execute]` pair) only the execute leg is printed and prefixed
+ * with `instant` so the timelock pattern is obvious without doubling the
+ * line count.
+ */
+export function describeActions(
+	vault: { contract: ethers.Contract },
+	actions: readonly Action[],
+): void {
+	const iface = vault.contract.interface;
+	const fmt = (data: string): string => {
+		try {
+			const parsed = iface.parseTransaction({ data });
+			if (!parsed) return data;
+			return `${parsed.name}(${parsed.args.map(String).join(", ")})`;
+		} catch {
+			return data;
+		}
+	};
 
-export const waitHalfSecond = () =>
-  new Promise((resolve) => setTimeout(resolve, 500));
-
-interface FullReadingVault {
-  sharesName: string;
-  sharesSymbol: string;
-
-  asset: string;
-  totalAssets: bigint;
-  totalSupply: bigint;
-  virtualShares: bigint;
-
-  owner: string;
-  curator: string;
-  isSentinel: boolean;
-  isAllocator: boolean;
-
-  performanceFee: number;
-  managementFee: number;
-  performanceFeeRecipient: string;
-  managementFeeRecipient: string;
-  maxRate: number;
-  adapterRegistry: string;
-
-  receiveSharesGate: string;
-  sendSharesGate: string;
-  receiveAssetsGate: string;
-  sendAssetsGate: string;
-
-  adapters: {
-    index: number;
-    address: string;
-    adapterType: AdapterType | undefined;
-    underlying: string;
-    forceDeallocatePenalty: string;
-    idsWithCaps: {
-      id: string;
-      absoluteCap: bigint;
-      relativeCap: bigint;
-      allocation: bigint;
-    }[];
-  }[];
-
-  idleBalance: bigint;
-  liquidityAdapter: string;
-  liquidityData: any;
-  timelocks: {
-    name: string;
-    timelock: bigint;
-  }[];
+	let i = 1;
+	for (const a of actions) {
+		if (typeof a === "string") {
+			console.log(`   ${i++}. ${fmt(a)}`);
+		} else {
+			// [submitCalldata, executeCalldata] — log only the execute leg.
+			const execute = a[a.length - 1];
+			console.log(`   ${i++}. instant ${fmt(execute)}`);
+		}
+	}
 }
 
+interface AdapterSnapshot {
+	index: number;
+	address: string;
+	adapterType: AdapterType | undefined;
+	underlying: string;
+	forceDeallocatePenalty: bigint;
+	idsWithCaps: {
+		id: string;
+		absoluteCap: bigint;
+		relativeCap: bigint;
+		allocation: bigint;
+	}[];
+}
+
+export interface FullReadingVault {
+	sharesName: string;
+	sharesSymbol: string;
+	asset: string;
+	totalAssets: bigint;
+	totalSupply: bigint;
+	virtualShares: bigint;
+	owner: string;
+	curator: string;
+	isSentinel: boolean;
+	isAllocator: boolean;
+	performanceFee: bigint;
+	managementFee: bigint;
+	performanceFeeRecipient: string;
+	managementFeeRecipient: string;
+	maxRate: bigint;
+	adapterRegistry: string;
+	receiveSharesGate: string;
+	sendSharesGate: string;
+	receiveAssetsGate: string;
+	sendAssetsGate: string;
+	adapters: AdapterSnapshot[];
+	idleBalance: bigint;
+	liquidityAdapter: string;
+	liquidityData: string;
+	timelocks: { name: TimelockFunction; timelock: bigint }[];
+}
+
+/** Pull the per-adapter ids list — branches on the adapter type. */
+async function readAdapterIds(
+	client: ByzantineClient,
+	address: string,
+	type: AdapterType | undefined,
+): Promise<string[]> {
+	switch (type) {
+		case "erc4626":
+			return client.getIdsERC4626(address);
+		case "erc4626Merkl":
+			return client.getIdsERC4626Merkl(address);
+		case "compoundV3":
+			return client.getIdsCompoundV3(address);
+		case "morphoMarketV1": {
+			const out: string[] = [];
+			const len = await client.getMarketIdsLength(address);
+			for (let i = 0; i < len; i++) {
+				out.push(await client.getMarketId(address, i));
+			}
+			return out;
+		}
+		default:
+			return [];
+	}
+}
+
+/** Pull the underlying market/vault address for the given adapter. */
+async function readAdapterUnderlying(
+	client: ByzantineClient,
+	address: string,
+	type: AdapterType | undefined,
+): Promise<string> {
+	switch (type) {
+		case "erc4626":
+			return client.getUnderlyingERC4626(address);
+		case "erc4626Merkl":
+			return client.getUnderlyingERC4626Merkl(address);
+		case "compoundV3":
+			return client.getUnderlyingCompoundV3(address);
+		case "morphoMarketV1":
+			return client.getUnderlyingMarketV1(address);
+		default:
+			return "unknown";
+	}
+}
+
+/**
+ * Print the full state of a vault to the console and return it as a struct.
+ * Useful in examples / debugging — not meant for production code paths.
+ */
 export async function fullReading(
-  client: ByzantineClient,
-  vaultAddress: string,
-  userAddress: string
+	client: ByzantineClient,
+	vault: Vault,
+	userAddress: string,
 ): Promise<FullReadingVault> {
-  await waitHalfSecond();
-  console.log("\n*********************************************************");
-  console.log("*                                                       *");
-  console.log(`*   Vault: ${vaultAddress}   *`);
-  console.log("*                                                       *");
-  console.log("*********************************************************");
-  console.log("*                                                       *");
+	await waitHalfSecond();
+	console.log("\n*********************************************************");
+	console.log(`*   Vault: ${vault.address}`);
+	console.log("*********************************************************");
 
-  const fullReadingVault: FullReadingVault = {
-    sharesName: await client.getSharesName(vaultAddress),
-    sharesSymbol: await client.getSharesSymbol(vaultAddress),
+	const snapshot: FullReadingVault = {
+		sharesName: await vault.name(),
+		sharesSymbol: await vault.symbol(),
+		asset: await vault.asset(),
+		totalAssets: await vault.totalAssets(),
+		totalSupply: await vault.totalSupply(),
+		virtualShares: await vault.virtualShares(),
+		owner: await vault.owner(),
+		curator: await vault.curator(),
+		isSentinel: await vault.isSentinel(userAddress),
+		isAllocator: await vault.isAllocator(userAddress),
+		performanceFee: await vault.performanceFee(),
+		managementFee: await vault.managementFee(),
+		performanceFeeRecipient: await vault.performanceFeeRecipient(),
+		managementFeeRecipient: await vault.managementFeeRecipient(),
+		maxRate: await vault.maxRate(),
+		adapterRegistry: await vault.adapterRegistry(),
+		receiveSharesGate: await vault.receiveSharesGate(),
+		sendSharesGate: await vault.sendSharesGate(),
+		receiveAssetsGate: await vault.receiveAssetsGate(),
+		sendAssetsGate: await vault.sendAssetsGate(),
+		idleBalance: await vault.idleBalance(),
+		liquidityAdapter: await vault.liquidityAdapter(),
+		liquidityData: await vault.liquidityData(),
+		adapters: [],
+		timelocks: [],
+	};
 
-    asset: await client.getAsset(vaultAddress),
-    totalAssets: await client.getTotalAssets(vaultAddress),
-    totalSupply: await client.getTotalSupply(vaultAddress),
-    virtualShares: await client.getVirtualShares(vaultAddress),
+	const adaptersLength = Number(await vault.adaptersLength());
+	snapshot.adapters = await Promise.all(
+		Array.from({ length: adaptersLength }, async (_, index) => {
+			const address = await vault.adapter(index);
+			const forceDeallocatePenalty = await vault.forceDeallocatePenalty(address);
 
-    owner: await client.getOwner(vaultAddress),
-    curator: await client.getCurator(vaultAddress),
-    isSentinel: await client.isSentinel(vaultAddress, userAddress),
-    isAllocator: await client.getIsAllocator(vaultAddress, userAddress),
-    performanceFee: Number(await client.getPerformanceFee(vaultAddress)),
-    managementFee: Number(await client.getManagementFee(vaultAddress)),
-    performanceFeeRecipient: await client.getPerformanceFeeRecipient(
-      vaultAddress
-    ),
-    managementFeeRecipient: await client.getManagementFeeRecipient(
-      vaultAddress
-    ),
-    maxRate: Number(await client.getMaxRate(vaultAddress)) / 1e16,
-    adapterRegistry: await client.getAdapterRegistry(vaultAddress),
-    receiveSharesGate: await client.getReceiveSharesGate(vaultAddress),
-    sendSharesGate: await client.getSendSharesGate(vaultAddress),
-    receiveAssetsGate: await client.getReceiveAssetsGate(vaultAddress),
-    sendAssetsGate: await client.getSendAssetsGate(vaultAddress),
-    adapters: [], // Will be updated later
-    idleBalance: await client.getIdleBalance(vaultAddress),
-    liquidityAdapter: await client.getLiquidityAdapter(vaultAddress),
-    liquidityData: await client.getLiquidityData(vaultAddress),
-    timelocks: [], // Will be updated later
-  };
+			let adapterType: AdapterType | undefined;
+			try {
+				adapterType = await client.getAdapterType(address);
+			} catch (err) {
+				console.log(`  ! Could not detect type for ${address}: ${err}`);
+			}
 
-  const adaptersLength = await client.getAdaptersLength(vaultAddress);
-  const allAdapters = await Promise.all(
-    Array.from({ length: Number(adaptersLength) }, async (_, index) => {
-      const address = await client.getAdapterByIndex(vaultAddress, index);
+			const ids = await readAdapterIds(client, address, adapterType);
+			const underlying = await readAdapterUnderlying(client, address, adapterType);
 
-      // Get force deallocate penalty for the adapter
-      const forceDeallocatePenalty = await client.getForceDeallocatePenalty(
-        vaultAddress,
-        address
-      );
+			const idsWithCaps = await Promise.all(
+				ids.map(async (id) => ({
+					id,
+					absoluteCap: await vault.absoluteCap(id).catch(() => 0n),
+					relativeCap: await vault.relativeCap(id).catch(() => 0n),
+					allocation: await vault.allocation(id).catch(() => 0n),
+				})),
+			);
 
-      // Try to determine adapter type and get IDs
-      let ids: string[] = [];
-      let adapterType: AdapterType | undefined = undefined;
-      let underlying: string = "unknown";
+			return {
+				index,
+				address,
+				adapterType,
+				underlying,
+				forceDeallocatePenalty,
+				idsWithCaps,
+			};
+		}),
+	);
 
-      try {
-        adapterType = await client.getAdapterType(address);
-        console.log("Adapter type:", adapterType);
-        switch (adapterType) {
-          case "erc4626":
-            const erc4626Id = await client.getIdsAdapterERC4626(address);
-            ids = [erc4626Id]; // ERC4626 returns a single ID
-            break;
-          case "erc4626Merkl":
-            const erc4626MerklId = await client.getIdsAdapterERC4626Merkl(
-              address
-            );
-            ids = [erc4626MerklId]; // ERC4626 Merkl returns a single ID
-            break;
-          case "compoundV3":
-            const compoundV3Id = await client.getIdsAdapterCompoundV3(address);
-            ids = [compoundV3Id]; // Compound V3 returns a single ID
-            break;
-          case "morphoMarketV1":
-            const marketParamsListLength =
-              await client.getAdapterMarketParamsListLength(address);
-            for (let i = 0; i < marketParamsListLength; i++) {
-              const marketParams = await client.getAdapterMarketParamsList(
-                address,
-                i
-              );
-              const idsForMarket = await client.getIdsAdapterMarketV1(
-                address,
-                marketParams
-              );
-              ids.push(...idsForMarket);
-            }
-            break;
-          default:
-            ids = [];
-            break;
-        }
-      } catch (error) {
-        console.log(
-          `Could not determine adapter type for ${address}: ${error}`
-        );
-      }
+	snapshot.timelocks = await Promise.all(
+		timelocks.map(async (name) => ({
+			name,
+			timelock: await vault.timelock(name),
+		})),
+	);
 
-      if (adapterType === "erc4626") {
-        underlying = await client.getUnderlyingAdapterERC4626(address);
-      } else if (adapterType === "erc4626Merkl") {
-        underlying = await client.getUnderlyingAdapterERC4626Merkl(address);
-      } else if (adapterType === "compoundV3") {
-        underlying = await client.getUnderlyingAdapterCompoundV3(address);
-      } else if (adapterType === "morphoMarketV1") {
-        // No underlying for morphoMarketV1
-        underlying = await client.getUnderlyingAdapterMarketV1(address);
-      }
+	// ----- pretty-print -----
+	console.log(`* Asset:           ${snapshot.asset}`);
+	console.log(`* Name:            ${snapshot.sharesName}`);
+	console.log(`* Symbol:          ${snapshot.sharesSymbol}`);
+	console.log(
+		`* Total Assets:    ${snapshot.totalAssets} (${formatAmount(snapshot.totalAssets, 6, 4)} USDC)`,
+	);
+	console.log(
+		`* Total Supply:    ${snapshot.totalSupply} (${formatAmount(snapshot.totalSupply, 18, 4)} shares)`,
+	);
+	console.log(`* Virtual Shares:  ${snapshot.virtualShares}`);
+	console.log(`*`);
+	console.log(`* User:            ${userAddress} ✅`);
+	console.log(
+		`* Owner:           ${snapshot.owner} ${snapshot.owner === userAddress ? "✅" : "❌"}`,
+	);
+	console.log(
+		`* Curator:         ${snapshot.curator} ${snapshot.curator === userAddress ? "✅" : "❌"}`,
+	);
+	console.log(`* Is Sentinel:     ${snapshot.isSentinel}`);
+	console.log(`* Is Allocator:    ${snapshot.isAllocator}`);
+	console.log(`*`);
+	console.log(`* Performance Fee: ${formatPercent(snapshot.performanceFee)} %`);
+	console.log(
+		`* Management Fee:  ${formatAnnualRate(snapshot.managementFee)} %/year (raw ${snapshot.managementFee})`,
+	);
+	console.log(`* Perf. Recipient: ${snapshot.performanceFeeRecipient}`);
+	console.log(`* Mgmt. Recipient: ${snapshot.managementFeeRecipient}`);
+	console.log(`* Max Rate:        ${formatAnnualRate(snapshot.maxRate)} %/year`);
+	console.log(`* Adapter Registry: ${snapshot.adapterRegistry}`);
+	console.log(`*`);
+	console.log(`* Receive Shares Gate: ${snapshot.receiveSharesGate}`);
+	console.log(`* Send Shares Gate:    ${snapshot.sendSharesGate}`);
+	console.log(`* Receive Assets Gate: ${snapshot.receiveAssetsGate}`);
+	console.log(`* Send Assets Gate:    ${snapshot.sendAssetsGate}`);
+	console.log(`*`);
+	console.log(`* Adapters (${snapshot.adapters.length}):`);
+	for (const a of snapshot.adapters) {
+		const penalty =
+			a.forceDeallocatePenalty === 0n
+				? "0%"
+				: `${formatPercent(a.forceDeallocatePenalty)}%`;
+		const isLiquidity = a.address === snapshot.liquidityAdapter;
+		console.log(
+			`*   [${a.index}] ${a.address} (${a.adapterType} → ${a.underlying}) | penalty: ${penalty}${
+				isLiquidity ? "  💦 (liquidity adapter)" : ""
+			}`,
+		);
+		if (a.idsWithCaps.length === 0) {
+			console.log(`*       no IDs found`);
+		}
+		for (const c of a.idsWithCaps) {
+			console.log(
+				`*       ID ${c.id}: relCap ${formatPercent(c.relativeCap)}% | absCap ${formatAmount(c.absoluteCap, 6, 4)} USDC | alloc ${formatAmount(c.allocation, 6, 4)}`,
+			);
+		}
+	}
+	console.log(`*`);
+	console.log(`* Liquidity Adapter: ${snapshot.liquidityAdapter}`);
+	console.log(`* Liquidity Data:    ${snapshot.liquidityData}`);
+	console.log(
+		`* Idle Balance:      ${snapshot.idleBalance} (${formatAmount(snapshot.idleBalance, 6, 4)} USDC)`,
+	);
+	console.log(`*`);
+	for (const t of snapshot.timelocks) {
+		if (t.timelock > 0n) console.log(`* Timelock ${t.name}: ${t.timelock}s`);
+	}
+	console.log("*********************************************************\n");
 
-      // Get caps for each ID (caps are per ID, not per adapter)
-      const idsWithCaps = await Promise.all(
-        ids.map(async (id) => {
-          try {
-            // Use the ID directly to get caps from the vault
-            // The vault's absoluteCap and relativeCap functions take bytes32 directly
-
-            const absoluteCapResult = await client.getAbsoluteCap(
-              vaultAddress,
-              id
-            );
-            const relativeCapResult = await client.getRelativeCap(
-              vaultAddress,
-              id
-            );
-
-            const allocation = await client.getAllocation(vaultAddress, id);
-
-            return {
-              id,
-              absoluteCap: absoluteCapResult,
-              relativeCap: relativeCapResult,
-              allocation: allocation,
-            };
-          } catch (error) {
-            console.log(`Error getting caps for ID ${id}: ${error}`);
-            // Still include the ID even if we can't get caps
-            return {
-              id,
-              absoluteCap: BigInt(0),
-              relativeCap: BigInt(0),
-              allocation: BigInt(0),
-            };
-          }
-        })
-      );
-
-      return {
-        index,
-        address,
-        adapterType,
-        underlying,
-        forceDeallocatePenalty: forceDeallocatePenalty.toString(),
-        idsWithCaps,
-      };
-    })
-  );
-
-  const idleBalance = await client.getIdleBalance(vaultAddress);
-
-  const liquidityAdapter = await client.getLiquidityAdapter(vaultAddress);
-  const liquidityData = await client.getLiquidityData(vaultAddress);
-
-  const allTimelocks = await Promise.all(
-    timelocks.map(async (timelock) => {
-      return {
-        name: timelock,
-        timelock: await client.getTimelock(vaultAddress, timelock),
-      };
-    })
-  );
-
-  // Update fullReadingVault with all additional data
-  fullReadingVault.adapters = allAdapters;
-  fullReadingVault.idleBalance = idleBalance;
-  fullReadingVault.liquidityAdapter = liquidityAdapter;
-  fullReadingVault.liquidityData = liquidityData;
-  fullReadingVault.timelocks = allTimelocks;
-
-  console.log("* Asset:", fullReadingVault.asset);
-  console.log("* Name:", fullReadingVault.sharesName);
-  console.log("* Symbol:", fullReadingVault.sharesSymbol);
-  console.log("*");
-  console.log(
-    `* Total Assets: ${fullReadingVault.totalAssets} (${formatUnits(
-      fullReadingVault.totalAssets,
-      6
-    )} USDC)`
-  );
-  console.log(
-    `* Total Supply: ${fullReadingVault.totalSupply} (${formatUnits(
-      fullReadingVault.totalSupply,
-      18
-    )} byzUSDC)`
-  );
-  console.log("* Virtual Shares:", fullReadingVault.virtualShares);
-  console.log("*");
-  console.log("* Your address:", userAddress, "✅");
-  console.log(
-    "* Owner:",
-    fullReadingVault.owner,
-    fullReadingVault.owner === userAddress ? "✅" : "❌"
-  );
-  console.log(
-    "* Curator:",
-    fullReadingVault.curator,
-    fullReadingVault.curator === userAddress ? "✅" : "❌"
-  );
-  console.log(
-    "* Is Sentinel:",
-    fullReadingVault.isSentinel,
-    fullReadingVault.isSentinel ? "✅" : "❌"
-  );
-  console.log(
-    "* Is allocator:",
-    fullReadingVault.isAllocator,
-    fullReadingVault.isAllocator ? "✅" : "❌"
-  );
-  console.log("*");
-  console.log(
-    "* Performance Fee:",
-    (Number(fullReadingVault.performanceFee) / 1e18) * 100,
-    "%"
-  );
-  console.log(
-    "* Management Fee:",
-    fullReadingVault.managementFee,
-    " -> ",
-    Math.round(
-      (Number(fullReadingVault.managementFee) / 1e18) * 31536000 * 1e5
-    ) / 1e5,
-    "%/year"
-  );
-  console.log(
-    "* Performance Fee Recipient:",
-    fullReadingVault.performanceFeeRecipient
-  );
-  console.log(
-    "* Management Fee Recipient:",
-    fullReadingVault.managementFeeRecipient
-  );
-  console.log(
-    "* Max Rate:",
-    fullReadingVault.maxRate,
-    " -> ",
-    (Number(fullReadingVault.maxRate) / 1e16) * 31536000,
-    "%/year"
-  );
-  console.log("* Adapter Registry:", fullReadingVault.adapterRegistry);
-  console.log("*");
-  console.log("* Receive Shares Gate:", fullReadingVault.receiveSharesGate);
-  console.log("* Send Shares Gate:", fullReadingVault.sendSharesGate);
-  console.log("* Receive Assets Gate:", fullReadingVault.receiveAssetsGate);
-  console.log("* Send Assets Gate:", fullReadingVault.sendAssetsGate);
-  console.log("*");
-  console.log("* Adapters length:", fullReadingVault.adapters.length);
-  allAdapters.forEach((adapter) => {
-    const forceDeallocatePenaltyPercent =
-      adapter.forceDeallocatePenalty !== "0"
-        ? (Number(adapter.forceDeallocatePenalty) / 1e16).toFixed(2) + "%"
-        : "0%";
-
-    const isLiquidityAdapter = adapter.address === liquidityAdapter;
-
-    console.log(
-      `* Adapter ${adapter.index}: ${adapter.address} (${
-        adapter.adapterType
-      } with underlying ${
-        adapter.underlying
-      }) | ForceDeallocatePenalty: ${forceDeallocatePenaltyPercent} ${
-        isLiquidityAdapter ? " | (Liquidity Adapter 💦)" : ""
-      }`
-    );
-
-    if (adapter.idsWithCaps.length > 0) {
-      adapter.idsWithCaps.forEach((idWithCap) => {
-        if (
-          idWithCap.absoluteCap !== BigInt(0) &&
-          idWithCap.relativeCap !== BigInt(0)
-        ) {
-          const relativeCapPercent =
-            idWithCap.relativeCap !== BigInt(0)
-              ? ((Number(idWithCap.relativeCap) / 1e18) * 100).toFixed(2) + "%"
-              : "0%";
-          const absoluteCapFormatted =
-            idWithCap.absoluteCap !== BigInt(0)
-              ? (Number(idWithCap.absoluteCap) / 1e6).toFixed(2)
-              : "0";
-          const allocationFormatted =
-            idWithCap.allocation !== BigInt(0)
-              ? (Number(idWithCap.allocation) / 1e6).toFixed(2)
-              : "0";
-
-          console.log(
-            `*    |-> ID ${idWithCap.id}: RelativeCap: ${relativeCapPercent} | AbsoluteCap: ${absoluteCapFormatted} USDC  | Allocation: ${allocationFormatted}`
-          );
-        } else {
-          // Show ID even if we can't get caps
-          console.log(
-            `*    |-> ID ${idWithCap.id}: RelativeCap: N/A | AbsoluteCap: N/A (caps not available)`
-          );
-        }
-      });
-    } else {
-      console.log(
-        `*    |-> No IDs found for this adapter (${adapter.adapterType})`
-      );
-    }
-  });
-  console.log("*");
-  console.log("* Liquidity Adapter:", liquidityAdapter);
-  console.log("* Liquidity Data:", liquidityData);
-  console.log("*");
-  console.log(
-    `* Idle Balance: ${idleBalance} (${formatUnits(idleBalance, 6)} USDC)`
-  );
-  console.log("*");
-  allTimelocks.forEach((timelock) => {
-    console.log(`* Timelock of ${timelock.name}:`, timelock.timelock);
-  });
-  console.log("*                                                       *");
-  console.log("*********************************************************");
-
-  return fullReadingVault;
+	return snapshot;
 }

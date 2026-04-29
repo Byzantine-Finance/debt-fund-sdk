@@ -1,86 +1,76 @@
-import { ByzantineClient } from "../../src";
-import { waitHalfSecond } from "./toolbox";
-import { OwnerSettingsConfig } from "../owners-settings";
-import { getIdData } from "../../src/clients/curators/Cap";
+import { Actions, type Action, type Vault } from "../../src";
+import type { OwnerSettingsConfig } from "../owners-settings";
 
+/**
+ * Build the list of owner-only Actions implied by `config`. Pure: doesn't
+ * send any transaction. The caller bundles them into a multicall (alone or
+ * combined with curator/allocator actions).
+ *
+ * Notes:
+ * - `setOwner` is intentionally placed LAST in the action list so any
+ *   subsequent actions in the same multicall still execute as the
+ *   original owner.
+ * - Only emits actions for fields that actually differ from current state
+ *   (avoids no-op txs).
+ */
+export async function buildOwnerActions(
+	vault: Vault,
+	config: OwnerSettingsConfig,
+): Promise<Action[]> {
+	const actions: Action[] = [];
+
+	if (config.shares_name) {
+		const current = await vault.name();
+		if (current !== config.shares_name) {
+			actions.push(Actions.owner.setName(config.shares_name));
+		}
+	}
+	if (config.shares_symbol) {
+		const current = await vault.symbol();
+		if (current !== config.shares_symbol) {
+			actions.push(Actions.owner.setSymbol(config.shares_symbol));
+		}
+	}
+
+	if (config.curator) {
+		actions.push(Actions.owner.setCurator(config.curator));
+	}
+
+	if (config.sentinels?.length) {
+		for (const sentinel of config.sentinels) {
+			actions.push(Actions.owner.setIsSentinel(sentinel, true));
+		}
+	}
+
+	// `setOwner` LAST — anything after this would run as the new owner.
+	if (config.new_owner) {
+		actions.push(Actions.owner.setOwner(config.new_owner));
+	}
+
+	return actions;
+}
+
+/**
+ * Convenience wrapper: build + send the owner actions as a single
+ * multicall. Returns the tx response (or `null` if there was nothing
+ * to do).
+ */
 export async function setupOwnerSettings(
-  client: ByzantineClient,
-  vaultAddress: string,
-  userAddress: string,
-  ownerSettings: OwnerSettingsConfig
+	vault: Vault,
+	me: string,
+	config: OwnerSettingsConfig,
 ) {
-  console.log("\n\n || 👮‍ Setting owner settings ||");
+	console.log("\n || 👮 Owner settings ||");
 
-  try {
-    const owner = await client.getOwner(vaultAddress);
-    if (owner !== userAddress) {
-      console.log("Access denied: only the owner can proceed here.");
-      throw new Error("Access denied: only the owner can proceed here.");
-    }
+	if ((await vault.owner()) !== me) {
+		throw new Error(`Access denied: only the owner can run this. Got ${me}.`);
+	}
 
-    const newName = ownerSettings.shares_name;
-    const newSymbol = ownerSettings.shares_symbol;
-    const newCurator = ownerSettings.curator;
-    const newSentinels = ownerSettings.sentinels;
-    const newOwner = ownerSettings.new_owner;
-
-    // First, read the current name and symbol from the vault
-    const currentName = await client.getSharesName(vaultAddress);
-    const currentSymbol = await client.getSharesSymbol(vaultAddress);
-
-    // Only update if the new values are different from the current ones
-    if (newName && newSymbol) {
-      if (newName !== currentName || newSymbol !== currentSymbol) {
-        await client.setSharesNameAndSymbol(vaultAddress, newName, newSymbol);
-        console.log(`📇 Name ${newName} and symbol ${newSymbol} set`);
-        await waitHalfSecond();
-      } else {
-        console.log(
-          `📇❌ Name and symbol are already set to ${newName} and ${newSymbol}, no update needed`
-        );
-      }
-    } else if (newName) {
-      if (newName !== currentName) {
-        await client.setSharesName(vaultAddress, newName);
-        console.log(`📇 Name ${newName} set`);
-        await waitHalfSecond();
-      } else {
-        console.log(`📇❌ Name is already set to ${newName}, no update needed`);
-      }
-    } else if (newSymbol) {
-      if (newSymbol !== currentSymbol) {
-        await client.setSharesSymbol(vaultAddress, newSymbol);
-        console.log(`📇 Symbol ${newSymbol} set`);
-        await waitHalfSecond();
-      } else {
-        console.log(
-          `📇❌ Symbol is already set to ${newSymbol}, no update needed`
-        );
-      }
-    }
-
-    if (newCurator) {
-      const tx = await client.setCurator(vaultAddress, newCurator);
-      await tx.wait();
-      await waitHalfSecond();
-      console.log(`👷‍ Curator ${newCurator} set`);
-    }
-
-    if (newSentinels && newSentinels.length > 0) {
-      for (const sentinel of newSentinels) {
-        const tx = await client.setIsSentinel(vaultAddress, sentinel, true);
-        await tx.wait();
-        await waitHalfSecond();
-        console.log(`👷‍ Sentinel ${sentinel} set to true`);
-      }
-    }
-
-    if (newOwner) {
-      const tx = await client.setOwner(vaultAddress, newOwner);
-      await tx.wait();
-      console.log(`👷‍ Owner ${newOwner} set`);
-    }
-  } catch (error) {
-    console.error("Error setting owner settings of a vault:", error);
-  }
+	const actions = await buildOwnerActions(vault, config);
+	if (actions.length === 0) {
+		console.log("  → nothing to update");
+		return null;
+	}
+	console.log(`  → bundling ${actions.length} action(s) into one multicall`);
+	return vault.multicall(actions);
 }

@@ -1,57 +1,46 @@
-import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers } from "ethers";
-import { fullReading, RPC_URL, MNEMONIC } from "./utils/toolbox";
+import { ByzantineClient } from "../src";
+import { fullReading, MNEMONIC, RPC_URL } from "./utils/toolbox";
 import { setupOwnerSettings } from "./utils/owner";
 
 export interface OwnerSettingsConfig {
-  shares_name?: string;
-  shares_symbol?: string;
-  curator?: string;
-  sentinels?: string[]; // Might have multiple sentinels
-  new_owner?: string; // This will replace you (at the end of the script)
+	shares_name?: string;
+	shares_symbol?: string;
+	curator?: string;
+	sentinels?: string[];
+	/** Will replace you as the owner — runs *last* and as a separate tx. */
+	new_owner?: string;
 }
 
-//*******************************************************************
-//*  This is what you need to change to create a vault              *
-//*  Have a look to the interface above to see what you can change  *
-//*  And the code below will adapt based on your configuration      *
-//*******************************************************************
+// *******************************************************************
+// *  Edit OWNER_SETTINGS_CONFIG below to control which fields update *
+// *  All non-undefined fields are bundled into a single multicall.   *
+// *******************************************************************
 
 const VAULT_ADDRESS = "0x7CEC59FFde9434bD1e68F3527da2Ed6aA840FA73";
 
 const OWNER_SETTINGS_CONFIG: OwnerSettingsConfig = {
-  shares_name: "Byzantine Prime USD",
-  shares_symbol: "bpUSD",
-  curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
-  sentinels: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
-  // new_owner: "0xe5b709A14859EdF820347D78E587b1634B0ec771", // Uncomment if you want to set a new onwer at the end of the script
+	shares_name: "Byzantine Prime USD",
+	shares_symbol: "bpUSD",
+	curator: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
+	sentinels: ["0xe5b709A14859EdF820347D78E587b1634B0ec771"],
+	// new_owner: "0xe5b709A14859EdF820347D78E587b1634B0ec771",
 };
 
 async function main() {
-  console.log("Start example to set owner settings of a vault");
+	console.log("Start example: owner settings");
 
-  try {
-    // ****************
-    // Setup the test
-    // ****************
+	const provider = new ethers.JsonRpcProvider(RPC_URL);
+	const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
+	const client = new ByzantineClient(provider, wallet);
+	const vault = client.vault(VAULT_ADDRESS);
+	const userAddress = await wallet.getAddress();
 
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
-    const client = new ByzantineClient(provider, wallet);
-
-    const userAddress = await wallet.getAddress();
-
-    await setupOwnerSettings(
-      client,
-      VAULT_ADDRESS,
-      userAddress,
-      OWNER_SETTINGS_CONFIG
-    );
-
-    await fullReading(client, VAULT_ADDRESS, userAddress);
-  } catch (error) {
-    console.error("Error setting owner settings of a vault:", error);
-  }
+	await setupOwnerSettings(vault, userAddress, OWNER_SETTINGS_CONFIG);
+	await fullReading(client, vault, userAddress);
 }
 
-main();
+main().catch((err) => {
+	console.error("Error:", err);
+	process.exit(1);
+});

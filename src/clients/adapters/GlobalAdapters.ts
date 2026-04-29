@@ -1,144 +1,108 @@
-import { ethers } from "ethers";
+import type { ethers } from "ethers";
 import {
-  callContractMethod,
-  executeContractMethod,
-  formatContractError,
-} from "../../utils/contractErrorHandler";
-import { ContractProvider } from "../../utils";
-import { AdapterType } from "./AdaptersClient";
-import { MorphoVaultV1AdapterFactoryABI } from "../../constants/abis";
-import { getNetworkConfig } from "../../constants/networks";
-import * as ERC4626AdaptersFunctions from "./ERC4626Adapters";
-import * as ERC4626MerklAdaptersFunctions from "./ERC4626MerklAdapters";
-import * as CompoundV3AdaptersFunctions from "./CompoundV3Adapters";
-import * as MorphoMarketV1AdaptersFunctions from "./MorphoMarketV1Adapters";
-import * as GlobalAdaptersFunctions from "./GlobalAdapters";
+	type ContractProvider,
+	callContractMethod,
+	formatContractError,
+} from "../../utils";
+import * as CompoundV3 from "./CompoundV3Adapters";
+import * as ERC4626 from "./ERC4626Adapters";
+import * as ERC4626Merkl from "./ERC4626MerklAdapters";
+import * as MorphoMarketV1 from "./MorphoMarketV1Adapters";
+import { getAdapterContract } from "./_contracts";
+import type { AdapterType } from "./AdaptersClient";
 
-// ========================================
-// Global Adapters
-// ========================================
-//
-// This module provides functions to retrieve general information about any adapter,
-// including its type and the address of its factory.
-// These utilities are adapter-agnostic and work for all adapter types.
-
-export interface DeployAdapterResult
-  extends ethers.ContractTransactionResponse {
-  adapterAddress: string;
+export interface DeployAdapterResult extends ethers.ContractTransactionResponse {
+	adapterAddress: string;
 }
 
+/** Dispatch deployment to the per-type module. */
 export async function deployAdapter(
-  contractProvider: ContractProvider,
-  type: AdapterType,
-  parentAddress: string,
-  underlyingAddress: string,
-  cometRewards?: string
+	cp: ContractProvider,
+	type: AdapterType,
+	parentAddress: string,
+	underlyingAddress: string,
+	cometRewards?: string,
 ): Promise<DeployAdapterResult> {
-  switch (type) {
-    case "erc4626":
-      return await ERC4626AdaptersFunctions.deployERC4626Adapter(
-        contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    case "erc4626Merkl":
-      return await ERC4626MerklAdaptersFunctions.deployERC4626MerklAdapter(
-        contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-    case "compoundV3":
-      if (!cometRewards) {
-        throw new Error(
-          "Comet rewards are required to deploy compoundV3 adapter"
-        );
-      }
-      return await CompoundV3AdaptersFunctions.deployCompoundV3Adapter(
-        contractProvider,
-        parentAddress,
-        underlyingAddress,
-        cometRewards
-      );
-    case "morphoMarketV1":
-      return await MorphoMarketV1AdaptersFunctions.deployMorphoMarketV1Adapter(
-        contractProvider,
-        parentAddress,
-        underlyingAddress
-      );
-  }
+	switch (type) {
+		case "erc4626":
+			return ERC4626.deployERC4626Adapter(cp, parentAddress, underlyingAddress);
+		case "erc4626Merkl":
+			return ERC4626Merkl.deployERC4626MerklAdapter(cp, parentAddress, underlyingAddress);
+		case "compoundV3":
+			if (!cometRewards) {
+				throw new Error("cometRewards is required to deploy a compoundV3 adapter");
+			}
+			return CompoundV3.deployCompoundV3Adapter(
+				cp,
+				parentAddress,
+				underlyingAddress,
+				cometRewards,
+			);
+		case "morphoMarketV1":
+			// V2 factory: `underlyingAddress` is unused — the morpho address is
+			// fixed by the factory's constructor.
+			return MorphoMarketV1.deployMorphoMarketV1Adapter(cp, parentAddress);
+	}
 }
 
+/**
+ * Read the factory address that deployed an adapter.
+ * Every adapter exposes `factory()`; the ABI of any concrete adapter type
+ * works because the selector is identical, so we use the MarketV1 ABI here
+ * as a generic placeholder.
+ */
 export async function getAdapterFactoryAddress(
-  contractProvider: ContractProvider,
-  adapterAddress: string
+	cp: ContractProvider,
+	adapterAddress: string,
 ): Promise<string> {
-  try {
-    const adapterContract =
-      contractProvider.getMorphoMarketV1AdapterContract(adapterAddress);
-
-    return (
-      await callContractMethod(adapterContract, "factory", [])
-    ).toLowerCase();
-  } catch (error) {
-    throw formatContractError("getAdapterFactoryAddress", error);
-  }
+	try {
+		const adapter = getAdapterContract(cp, adapterAddress, "morphoMarketV1");
+		const addr: string = await callContractMethod(adapter, "factory");
+		return addr.toLowerCase();
+	} catch (error) {
+		throw formatContractError("getAdapterFactoryAddress", error);
+	}
 }
 
+/** Detect an adapter's type by matching its `factory()` against known factories. */
 export async function getAdapterType(
-  contractProvider: ContractProvider,
-  adapterAddress: string
+	cp: ContractProvider,
+	adapterAddress: string,
 ): Promise<AdapterType | undefined> {
-  try {
-    const adapterFactoryAddress = (
-      await getAdapterFactoryAddress(contractProvider, adapterAddress)
-    ).toLowerCase();
-    const networkConfig = await contractProvider.getNetworkConfig();
-    switch (adapterFactoryAddress) {
-      case networkConfig.adapters.erc4626AdapterFactory.toLowerCase():
-        return "erc4626";
-      case networkConfig.adapters.erc4626MerklAdapterFactory.toLowerCase():
-        return "erc4626Merkl";
-      case networkConfig.adapters.compoundV3AdapterFactory.toLowerCase():
-        return "compoundV3";
-      case networkConfig.adapters.morphoMarketV1AdapterFactory.toLowerCase():
-        return "morphoMarketV1";
-      default:
-        throw new Error(
-          `Invalid adapter factory address: ${adapterFactoryAddress}`
-        );
-    }
-  } catch (error) {
-    throw formatContractError("getAdapterType", error);
-  }
+	try {
+		const factoryAddress = await getAdapterFactoryAddress(cp, adapterAddress);
+		const cfg = await cp.getNetworkConfig();
+		switch (factoryAddress) {
+			case cfg.adapters.erc4626AdapterFactory.toLowerCase():
+				return "erc4626";
+			case cfg.adapters.erc4626MerklAdapterFactory.toLowerCase():
+				return "erc4626Merkl";
+			case cfg.adapters.compoundV3AdapterFactory.toLowerCase():
+				return "compoundV3";
+			case cfg.adapters.morphoMarketV1AdapterFactory.toLowerCase():
+				return "morphoMarketV1";
+			default:
+				throw new Error(`Unknown adapter factory: ${factoryAddress}`);
+		}
+	} catch (error) {
+		throw formatContractError("getAdapterType", error);
+	}
 }
 
+/** Dispatch the `is<Type>Adapter` check to the per-type module. */
 export async function getIsAdapter(
-  contractProvider: ContractProvider,
-  adapterType: AdapterType,
-  adapterAddress: string
+	cp: ContractProvider,
+	type: AdapterType,
+	adapterAddress: string,
 ): Promise<boolean> {
-  switch (adapterType) {
-    case "erc4626":
-      return await ERC4626AdaptersFunctions.isERC4626Adapter(
-        contractProvider,
-        adapterAddress
-      );
-    case "erc4626Merkl":
-      return await ERC4626MerklAdaptersFunctions.isERC4626MerklAdapter(
-        contractProvider,
-        adapterAddress
-      );
-    case "compoundV3":
-      return await CompoundV3AdaptersFunctions.isCompoundV3Adapter(
-        contractProvider,
-        adapterAddress
-      );
-    case "morphoMarketV1":
-      return await MorphoMarketV1AdaptersFunctions.isMorphoMarketV1Adapter(
-        contractProvider,
-        adapterAddress
-      );
-    default:
-      throw new Error(`Invalid adapter type: ${adapterType}`);
-  }
+	switch (type) {
+		case "erc4626":
+			return ERC4626.isERC4626Adapter(cp, adapterAddress);
+		case "erc4626Merkl":
+			return ERC4626Merkl.isERC4626MerklAdapter(cp, adapterAddress);
+		case "compoundV3":
+			return CompoundV3.isCompoundV3Adapter(cp, adapterAddress);
+		case "morphoMarketV1":
+			return MorphoMarketV1.isMorphoMarketV1Adapter(cp, adapterAddress);
+	}
 }

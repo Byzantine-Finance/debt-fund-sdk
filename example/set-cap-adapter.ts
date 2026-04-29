@@ -1,49 +1,49 @@
-import { ByzantineClient } from "../src/clients/ByzantineClient";
-import { AbiCoder, ethers, keccak256, parseUnits } from "ethers";
-import {
-  fullReading,
-  waitHalfSecond,
-  RPC_URL,
-  MNEMONIC,
-} from "./utils/toolbox";
-import { getIdData } from "../src/clients/curators/Cap";
+import { ethers, keccak256, parseUnits } from "ethers";
+import { Actions, ByzantineClient, idData } from "../src";
+import { MNEMONIC, RPC_URL } from "./utils/toolbox";
 
-// This is what you need to set in order to set cap for an adapter
+/**
+ * Set both the relative and absolute cap for a single adapter id, in
+ * one multicall transaction.
+ *
+ * `id` here is the adapter address — the helper builds the `idData` blob
+ * (the keccak256 of which is the per-id key inside the vault).
+ */
+
 const VAULT_ADDRESS = "0x9F940434cABB9d8c1b9C9a4A042a846c093A85e7";
 const CAPS_CONFIG = {
-  id: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b",
-  relativeCap: parseUnits("0.32", 18),
-  absoluteCap: parseUnits("300", 6),
+	adapter: "0x6feb657053c1e6004f89bb249621bde61a42536e87fdcdf6e5cc01e5f867ff8b",
+	relativeCap: parseUnits("0.32", 18), // 32 %
+	absoluteCap: parseUnits("300", 6), // 300 USDC
 };
 
 async function main() {
-  console.log("Start example to set cap for an adapter");
+	console.log("Start example: set adapter caps");
 
-  try {
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
-    const client = new ByzantineClient(provider, wallet);
+	const provider = new ethers.JsonRpcProvider(RPC_URL);
+	const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
+	const client = new ByzantineClient(provider, wallet);
+	const vault = client.vault(VAULT_ADDRESS);
 
-    const idData = getIdData("this", [CAPS_CONFIG.id]);
-    console.log("ID Data:", idData);
+	const idDataBlob = idData("this", CAPS_CONFIG.adapter);
+	const adapterId = keccak256(idDataBlob);
 
-    const adapterId = keccak256(idData);
-    console.log("Adapter ID:", adapterId);
+	console.log(`idData:    ${idDataBlob}`);
+	console.log(`adapterId: ${adapterId}`);
 
-    const tx = await client.instantIncreaseRelativeCap(
-      VAULT_ADDRESS,
-      idData,
-      CAPS_CONFIG.relativeCap
-    );
-    await tx.wait();
+	// Bundle both cap updates into a single tx.
+	const tx = await vault.multicall([
+		Actions.curator.instantIncreaseRelativeCap(idDataBlob, CAPS_CONFIG.relativeCap),
+		Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, CAPS_CONFIG.absoluteCap),
+	]);
+	console.log(`tx: ${tx.hash}`);
+	await tx.wait();
 
-    const txGet = await client.getRelativeCap(VAULT_ADDRESS, adapterId);
-    console.log("Relative cap:", txGet);
-
-    // await fullReading(client, VAULT_ADDRESS, userAddress);
-  } catch (error) {
-    console.error("Error setting cap for an adapter:", error);
-  }
+	console.log(`relativeCap: ${await vault.relativeCap(adapterId)}`);
+	console.log(`absoluteCap: ${await vault.absoluteCap(adapterId)}`);
 }
 
-main();
+main().catch((err) => {
+	console.error("Error:", err);
+	process.exit(1);
+});
