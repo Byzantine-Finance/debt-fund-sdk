@@ -64,3 +64,48 @@ export async function getIds(contract: ethers.Contract): Promise<string> {
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
 	return callContractMethod(contract, "erc4626Vault");
 }
+
+export async function getMerklDistributor(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "MERKL_DISTRIBUTOR");
+}
+
+export async function getClaimer(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "claimer");
+}
+
+export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "skimRecipient");
+}
+
+// ============================================================================
+// Adapter writes — administrative surface (target: the adapter, NOT the vault)
+// ============================================================================
+
+/** Pull rewards from the Merkl distributor; `data` is the abi-encoded claim parameters. */
+export async function claim(
+	contract: ethers.Contract,
+	data: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "claim", data);
+}
+
+export async function setClaimer(
+	contract: ethers.Contract,
+	newClaimer: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setClaimer", newClaimer);
+}
+
+export async function setSkimRecipient(
+	contract: ethers.Contract,
+	newSkimRecipient: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setSkimRecipient", newSkimRecipient);
+}
+
+export async function skim(
+	contract: ethers.Contract,
+	token: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "skim", token);
+}

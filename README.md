@@ -209,6 +209,9 @@ await client.getUnderlyingMarketV1(address);
 await client.getMarketIdsLength(address);
 await client.getMarketId(address, index);              // returns bytes32
 
+// Per-adapter admin surface — see `### Adapter admin writes` below.
+const adapter = client.adapter(address, type);
+
 // Network
 await client.getNetworkConfig();
 await client.getChainId();
@@ -405,6 +408,50 @@ await vault.allocate(adapter, data, assets);
 await vault.deallocate(adapter, data, assets);
 await vault.setLiquidityAdapterAndData(adapter, data);
 await vault.setMaxRate(rate);
+```
+
+### Adapter admin writes (`client.adapter(addr, type)`)
+
+These calls target the **adapter contract directly**, not the parent vault — so they cannot be bundled into `vault.multicall(...)`. Each is a standalone tx.
+
+```ts
+const adapter = client.adapter(adapterAddress, type);
+```
+
+**Common to every adapter type** (`erc4626`, `erc4626Merkl`, `compoundV3`, `morphoMarketV1`):
+
+```ts
+await adapter.getSkimRecipient();
+await adapter.setSkimRecipient(newRecipient);   // V2 morpho: timelocked — submit first
+await adapter.skim(token);                      // pull `token` to the skim recipient
+```
+
+**`compoundV3` and `erc4626Merkl`** — rewards surface:
+
+```ts
+await adapter.getClaimer();
+await adapter.setClaimer(newClaimer);
+await adapter.claim(swapData);                  // pulls rewards (COMP / Merkl-distributed)
+
+// compoundV3-only
+await adapter.getCometRewards();
+
+// erc4626Merkl-only
+await adapter.getMerklDistributor();
+```
+
+**`morphoMarketV1`** — per-adapter timelock + abdicate machinery (parallel to the vault's, on a different contract):
+
+```ts
+await adapter.getTimelock(selector);            // current delay (seconds) for `selector`
+await adapter.getAbdicated(selector);           // permanently disabled?
+await adapter.getExecutableAt(data);            // when a submitted `data` becomes executable
+
+await adapter.submit(data);                     // schedule any timelocked call
+await adapter.revoke(data);                     // cancel a pending submission
+await adapter.abdicate(selector);               // permanent, irreversible
+await adapter.increaseTimelock(selector, duration);  // not itself timelocked
+await adapter.decreaseTimelock(selector, duration);  // itself timelocked — submit first
 ```
 
 ### User writes

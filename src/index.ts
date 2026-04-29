@@ -30,6 +30,7 @@ export type {
 } from "./clients/adapters";
 // ----- Adapter clients (kept as-is, used through ByzantineClient) -----
 export {
+	AdapterInstance,
 	AdaptersClient,
 	AdaptersFactoryClient,
 } from "./clients/adapters";

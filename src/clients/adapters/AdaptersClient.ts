@@ -225,6 +225,117 @@ export class AdapterInstance {
 		return Global.getAdapterType(this.cp, this.address);
 	}
 
+	// ----- skim surface (every adapter type) -----
+	getSkimRecipient(): Promise<string> {
+		switch (this.type) {
+			case "erc4626":
+				return ERC4626.getSkimRecipient(this.contract);
+			case "erc4626Merkl":
+				return ERC4626Merkl.getSkimRecipient(this.contract);
+			case "compoundV3":
+				return CompoundV3.getSkimRecipient(this.contract);
+			case "morphoMarketV1":
+				return MorphoMarketV1.getSkimRecipient(this.contract);
+		}
+	}
+
+	setSkimRecipient(newSkimRecipient: string): Promise<ethers.TransactionResponse> {
+		switch (this.type) {
+			case "erc4626":
+				return ERC4626.setSkimRecipient(this.contract, newSkimRecipient);
+			case "erc4626Merkl":
+				return ERC4626Merkl.setSkimRecipient(this.contract, newSkimRecipient);
+			case "compoundV3":
+				return CompoundV3.setSkimRecipient(this.contract, newSkimRecipient);
+			case "morphoMarketV1":
+				return MorphoMarketV1.setSkimRecipient(this.contract, newSkimRecipient);
+		}
+	}
+
+	skim(token: string): Promise<ethers.TransactionResponse> {
+		switch (this.type) {
+			case "erc4626":
+				return ERC4626.skim(this.contract, token);
+			case "erc4626Merkl":
+				return ERC4626Merkl.skim(this.contract, token);
+			case "compoundV3":
+				return CompoundV3.skim(this.contract, token);
+			case "morphoMarketV1":
+				return MorphoMarketV1.skim(this.contract, token);
+		}
+	}
+
+	// ----- compoundV3 / erc4626Merkl: rewards surface -----
+	getClaimer(): Promise<string> {
+		if (this.type === "compoundV3") return CompoundV3.getClaimer(this.contract);
+		if (this.type === "erc4626Merkl") return ERC4626Merkl.getClaimer(this.contract);
+		throw new Error(`getClaimer not supported on ${this.type}`);
+	}
+	setClaimer(newClaimer: string): Promise<ethers.TransactionResponse> {
+		if (this.type === "compoundV3")
+			return CompoundV3.setClaimer(this.contract, newClaimer);
+		if (this.type === "erc4626Merkl")
+			return ERC4626Merkl.setClaimer(this.contract, newClaimer);
+		throw new Error(`setClaimer not supported on ${this.type}`);
+	}
+	claim(data: string): Promise<ethers.TransactionResponse> {
+		if (this.type === "compoundV3") return CompoundV3.claim(this.contract, data);
+		if (this.type === "erc4626Merkl") return ERC4626Merkl.claim(this.contract, data);
+		throw new Error(`claim not supported on ${this.type}`);
+	}
+
+	// ----- compoundV3-only -----
+	getCometRewards(): Promise<string> {
+		this.requireType("compoundV3");
+		return CompoundV3.getCometRewards(this.contract);
+	}
+
+	// ----- erc4626Merkl-only -----
+	getMerklDistributor(): Promise<string> {
+		this.requireType("erc4626Merkl");
+		return ERC4626Merkl.getMerklDistributor(this.contract);
+	}
+
+	// ----- morphoMarketV1 V2 timelock + abdicate surface -----
+	getTimelock(selector: string): Promise<bigint> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getTimelock(this.contract, selector);
+	}
+	getAbdicated(selector: string): Promise<boolean> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getAbdicated(this.contract, selector);
+	}
+	getExecutableAt(data: string): Promise<bigint> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getExecutableAt(this.contract, data);
+	}
+	submit(data: string): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.submit(this.contract, data);
+	}
+	revoke(data: string): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.revoke(this.contract, data);
+	}
+	abdicate(selector: string): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.abdicate(this.contract, selector);
+	}
+	increaseTimelock(
+		selector: string,
+		newDuration: bigint,
+	): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.increaseTimelock(this.contract, selector, newDuration);
+	}
+	decreaseTimelock(
+		selector: string,
+		newDuration: bigint,
+	): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.decreaseTimelock(this.contract, selector, newDuration);
+	}
+
 	private requireType(expected: AdapterType): void {
 		if (this.type !== expected) {
 			throw new Error(`This call requires a ${expected} adapter, got ${this.type}`);

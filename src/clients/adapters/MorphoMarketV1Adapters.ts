@@ -98,3 +98,93 @@ export async function getMarketId(
 ): Promise<string> {
 	return callContractMethod(contract, "marketIds", index);
 }
+
+export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "skimRecipient");
+}
+
+/** Timelock duration (seconds) for a given selector on this adapter. */
+export async function getTimelock(
+	contract: ethers.Contract,
+	selector: string,
+): Promise<bigint> {
+	return callContractMethod(contract, "timelock", selector);
+}
+
+/** Whether `selector` has been permanently abdicated (i.e. timelock-locked-forever). */
+export async function getAbdicated(
+	contract: ethers.Contract,
+	selector: string,
+): Promise<boolean> {
+	return callContractMethod(contract, "abdicated", selector);
+}
+
+/** When the previously-submitted call payload `data` becomes executable (unix sec). */
+export async function getExecutableAt(
+	contract: ethers.Contract,
+	data: string,
+): Promise<bigint> {
+	return callContractMethod(contract, "executableAt", data);
+}
+
+// ============================================================================
+// Adapter writes — administrative surface (target: the adapter, NOT the vault)
+// These cannot be bundled into the parent vault's multicall.
+// ============================================================================
+
+/** Schedule a timelocked call. `data` = the encoded function call to execute later. */
+export async function submit(
+	contract: ethers.Contract,
+	data: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "submit", data);
+}
+
+/** Cancel a previously submitted call before it executes. */
+export async function revoke(
+	contract: ethers.Contract,
+	data: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "revoke", data);
+}
+
+/** Permanently disable `selector` on this adapter. Irreversible. */
+export async function abdicate(
+	contract: ethers.Contract,
+	selector: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "abdicate", selector);
+}
+
+/** Increase the timelock for `selector`. Not itself timelocked. */
+export async function increaseTimelock(
+	contract: ethers.Contract,
+	selector: string,
+	newDuration: bigint,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "increaseTimelock", selector, newDuration);
+}
+
+/** Decrease the timelock for `selector`. Itself timelocked — must be `submit`'d first. */
+export async function decreaseTimelock(
+	contract: ethers.Contract,
+	selector: string,
+	newDuration: bigint,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "decreaseTimelock", selector, newDuration);
+}
+
+/** Timelocked — must be `submit`'d first. */
+export async function setSkimRecipient(
+	contract: ethers.Contract,
+	newSkimRecipient: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setSkimRecipient", newSkimRecipient);
+}
+
+export async function skim(
+	contract: ethers.Contract,
+	token: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "skim", token);
+}

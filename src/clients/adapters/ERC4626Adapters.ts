@@ -64,3 +64,25 @@ export async function getIds(contract: ethers.Contract): Promise<string> {
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
 	return callContractMethod(contract, "morphoVaultV1");
 }
+
+export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "skimRecipient");
+}
+
+// ============================================================================
+// Adapter writes — administrative surface (target: the adapter, NOT the vault)
+// ============================================================================
+
+export async function setSkimRecipient(
+	contract: ethers.Contract,
+	newSkimRecipient: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "setSkimRecipient", newSkimRecipient);
+}
+
+export async function skim(
+	contract: ethers.Contract,
+	token: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "skim", token);
+}

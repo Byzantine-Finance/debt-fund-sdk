@@ -18,6 +18,7 @@ import { Vault } from "../Vault";
 import { ContractProvider, executeContractMethod, formatContractError } from "../utils";
 import { AdaptersClient, AdaptersFactoryClient } from "./adapters";
 import type {
+	AdapterInstance,
 	AdapterType,
 	DeployAdapterResult,
 	MarketParams,
@@ -194,6 +195,22 @@ export class ByzantineClient {
 		return this.adaptersClient
 			.adapter(adapterAddress, "morphoMarketV1")
 			.getMarketId(index);
+	}
+
+	/**
+	 * Get an `AdapterInstance` for an existing adapter. Use this for
+	 * adapter-level admin writes (`setSkimRecipient`, `skim`, `claim`,
+	 * `submit`/`accept`/`abdicate`, …) that target the adapter contract
+	 * directly and therefore cannot be bundled into the parent vault's
+	 * multicall.
+	 *
+	 * @example
+	 * const adapter = client.adapter(addr, "compoundV3");
+	 * await adapter.claim(swapData);
+	 * await adapter.setClaimer(newClaimer);
+	 */
+	adapter(adapterAddress: string, type: AdapterType): AdapterInstance {
+		return this.adaptersClient.adapter(adapterAddress, type);
 	}
 
 	// ====================================================================
