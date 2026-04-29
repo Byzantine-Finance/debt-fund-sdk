@@ -24,11 +24,17 @@ interface RevertInfo {
 }
 
 function describeRevert(revert: RevertInfo): string {
-	const head = revert.name ?? revert.signature ?? "revert";
-	const args = revert.args && revert.args.length > 0
-		? `(${revert.args.map(String).join(", ")})`
-		: "()";
-	return `${head}${args}`;
+	// Prefer the parsed name + args ("AbsoluteCapExceeded(1, 2)").
+	if (revert.name) {
+		const args =
+			revert.args && revert.args.length > 0
+				? `(${revert.args.map(String).join(", ")})`
+				: "()";
+		return `${revert.name}${args}`;
+	}
+	// Fallback: ethers' `signature` already has parentheses baked in.
+	if (revert.signature) return revert.signature;
+	return "revert";
 }
 
 /**

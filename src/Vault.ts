@@ -16,14 +16,14 @@
  * built from the `Actions` namespace, and bundles everything into one tx.
  */
 
-import { Contract, ethers } from "ethers";
+import { Contract, type ethers } from "ethers";
+import type { Action, IdType, TimelockFunction } from "./actions";
 import {
 	Actions,
-	flattenActions,
 	idData as buildIdData,
+	flattenActions,
 	timelockSelector,
 } from "./actions";
-import type { Action, IdType, TimelockFunction } from "./actions";
 import { VAULT_ABI } from "./constants/abis";
 import { callContractMethod, executeContractMethod } from "./utils";
 
@@ -61,8 +61,14 @@ export class Vault {
 	 *   Actions.allocator.setMaxRate(rate),
 	 * ]);
 	 */
-	async multicall(actions: readonly Action[]): Promise<ethers.TransactionResponse> {
-		return executeContractMethod(this.contract, "multicall", flattenActions(actions));
+	async multicall(
+		actions: readonly Action[],
+	): Promise<ethers.TransactionResponse> {
+		return executeContractMethod(
+			this.contract,
+			"multicall",
+			flattenActions(actions),
+		);
 	}
 
 	// ====================================================================
@@ -72,7 +78,7 @@ export class Vault {
 	asset(): Promise<string> {
 		return callContractMethod(this.contract, "asset");
 	}
-	decimals(): Promise<number> {
+	decimals(): Promise<bigint> {
 		return callContractMethod(this.contract, "decimals");
 	}
 	name(): Promise<string> {
@@ -248,7 +254,10 @@ export class Vault {
 	setCurator(newCurator: string): Promise<ethers.TransactionResponse> {
 		return executeContractMethod(this.contract, "setCurator", newCurator);
 	}
-	setIsSentinel(account: string, is: boolean): Promise<ethers.TransactionResponse> {
+	setIsSentinel(
+		account: string,
+		is: boolean,
+	): Promise<ethers.TransactionResponse> {
 		return executeContractMethod(this.contract, "setIsSentinel", account, is);
 	}
 	setName(newName: string): Promise<ethers.TransactionResponse> {
@@ -310,28 +319,52 @@ export class Vault {
 		return this.submit(Actions.curator.increaseAbsoluteCap(idData, cap));
 	}
 	increaseAbsoluteCap(idData: string, cap: bigint) {
-		return executeContractMethod(this.contract, "increaseAbsoluteCap", idData, cap);
+		return executeContractMethod(
+			this.contract,
+			"increaseAbsoluteCap",
+			idData,
+			cap,
+		);
 	}
 	instantIncreaseAbsoluteCap(idData: string, cap: bigint) {
-		return this.multicall([Actions.curator.instantIncreaseAbsoluteCap(idData, cap)]);
+		return this.multicall([
+			Actions.curator.instantIncreaseAbsoluteCap(idData, cap),
+		]);
 	}
 	/** Decrease is callable by curator OR sentinel without timelock. */
 	decreaseAbsoluteCap(idData: string, cap: bigint) {
-		return executeContractMethod(this.contract, "decreaseAbsoluteCap", idData, cap);
+		return executeContractMethod(
+			this.contract,
+			"decreaseAbsoluteCap",
+			idData,
+			cap,
+		);
 	}
 
 	submitIncreaseRelativeCap(idData: string, cap: bigint) {
 		return this.submit(Actions.curator.increaseRelativeCap(idData, cap));
 	}
 	increaseRelativeCap(idData: string, cap: bigint) {
-		return executeContractMethod(this.contract, "increaseRelativeCap", idData, cap);
+		return executeContractMethod(
+			this.contract,
+			"increaseRelativeCap",
+			idData,
+			cap,
+		);
 	}
 	instantIncreaseRelativeCap(idData: string, cap: bigint) {
-		return this.multicall([Actions.curator.instantIncreaseRelativeCap(idData, cap)]);
+		return this.multicall([
+			Actions.curator.instantIncreaseRelativeCap(idData, cap),
+		]);
 	}
 	/** Decrease is callable by curator OR sentinel without timelock. */
 	decreaseRelativeCap(idData: string, cap: bigint) {
-		return executeContractMethod(this.contract, "decreaseRelativeCap", idData, cap);
+		return executeContractMethod(
+			this.contract,
+			"decreaseRelativeCap",
+			idData,
+			cap,
+		);
 	}
 
 	// ----- ALLOCATOR ROLE (set by curator) -----
@@ -394,7 +427,9 @@ export class Vault {
 		return executeContractMethod(this.contract, "setAdapterRegistry", registry);
 	}
 	instantSetAdapterRegistry(registry: string) {
-		return this.multicall([Actions.curator.instantSetAdapterRegistry(registry)]);
+		return this.multicall([
+			Actions.curator.instantSetAdapterRegistry(registry),
+		]);
 	}
 
 	// ----- FEES -----
@@ -422,10 +457,16 @@ export class Vault {
 		return this.submit(Actions.curator.setPerformanceFeeRecipient(r));
 	}
 	setPerformanceFeeRecipient(r: string) {
-		return executeContractMethod(this.contract, "setPerformanceFeeRecipient", r);
+		return executeContractMethod(
+			this.contract,
+			"setPerformanceFeeRecipient",
+			r,
+		);
 	}
 	instantSetPerformanceFeeRecipient(r: string) {
-		return this.multicall([Actions.curator.instantSetPerformanceFeeRecipient(r)]);
+		return this.multicall([
+			Actions.curator.instantSetPerformanceFeeRecipient(r),
+		]);
 	}
 
 	submitSetManagementFeeRecipient(r: string) {
@@ -435,14 +476,23 @@ export class Vault {
 		return executeContractMethod(this.contract, "setManagementFeeRecipient", r);
 	}
 	instantSetManagementFeeRecipient(r: string) {
-		return this.multicall([Actions.curator.instantSetManagementFeeRecipient(r)]);
+		return this.multicall([
+			Actions.curator.instantSetManagementFeeRecipient(r),
+		]);
 	}
 
 	submitSetForceDeallocatePenalty(adapter: string, penalty: bigint) {
-		return this.submit(Actions.curator.setForceDeallocatePenalty(adapter, penalty));
+		return this.submit(
+			Actions.curator.setForceDeallocatePenalty(adapter, penalty),
+		);
 	}
 	setForceDeallocatePenalty(adapter: string, penalty: bigint) {
-		return executeContractMethod(this.contract, "setForceDeallocatePenalty", adapter, penalty);
+		return executeContractMethod(
+			this.contract,
+			"setForceDeallocatePenalty",
+			adapter,
+			penalty,
+		);
 	}
 	instantSetForceDeallocatePenalty(adapter: string, penalty: bigint) {
 		return this.multicall([
@@ -463,7 +513,9 @@ export class Vault {
 		);
 	}
 	instantIncreaseTimelock(fn: TimelockFunction, duration: bigint) {
-		return this.multicall([Actions.curator.instantIncreaseTimelock(fn, duration)]);
+		return this.multicall([
+			Actions.curator.instantIncreaseTimelock(fn, duration),
+		]);
 	}
 
 	submitDecreaseTimelock(fn: TimelockFunction, duration: bigint) {
@@ -478,14 +530,20 @@ export class Vault {
 		);
 	}
 	instantDecreaseTimelock(fn: TimelockFunction, duration: bigint) {
-		return this.multicall([Actions.curator.instantDecreaseTimelock(fn, duration)]);
+		return this.multicall([
+			Actions.curator.instantDecreaseTimelock(fn, duration),
+		]);
 	}
 
 	submitAbdicate(fn: TimelockFunction) {
 		return this.submit(Actions.curator.abdicate(fn));
 	}
 	abdicate(fn: TimelockFunction) {
-		return executeContractMethod(this.contract, "abdicate", timelockSelector(fn));
+		return executeContractMethod(
+			this.contract,
+			"abdicate",
+			timelockSelector(fn),
+		);
 	}
 
 	// ====================================================================
@@ -493,13 +551,30 @@ export class Vault {
 	// ====================================================================
 
 	allocate(adapter: string, data: string, assets: bigint) {
-		return executeContractMethod(this.contract, "allocate", adapter, data, assets);
+		return executeContractMethod(
+			this.contract,
+			"allocate",
+			adapter,
+			data,
+			assets,
+		);
 	}
 	deallocate(adapter: string, data: string, assets: bigint) {
-		return executeContractMethod(this.contract, "deallocate", adapter, data, assets);
+		return executeContractMethod(
+			this.contract,
+			"deallocate",
+			adapter,
+			data,
+			assets,
+		);
 	}
 	setLiquidityAdapterAndData(adapter: string, data: string) {
-		return executeContractMethod(this.contract, "setLiquidityAdapterAndData", adapter, data);
+		return executeContractMethod(
+			this.contract,
+			"setLiquidityAdapterAndData",
+			adapter,
+			data,
+		);
 	}
 	setMaxRate(rate: bigint) {
 		return executeContractMethod(this.contract, "setMaxRate", rate);
@@ -516,16 +591,34 @@ export class Vault {
 		return executeContractMethod(this.contract, "mint", shares, onBehalf);
 	}
 	withdraw(assets: bigint, receiver: string, onBehalf: string) {
-		return executeContractMethod(this.contract, "withdraw", assets, receiver, onBehalf);
+		return executeContractMethod(
+			this.contract,
+			"withdraw",
+			assets,
+			receiver,
+			onBehalf,
+		);
 	}
 	redeem(shares: bigint, receiver: string, onBehalf: string) {
-		return executeContractMethod(this.contract, "redeem", shares, receiver, onBehalf);
+		return executeContractMethod(
+			this.contract,
+			"redeem",
+			shares,
+			receiver,
+			onBehalf,
+		);
 	}
 	transfer(to: string, shares: bigint) {
 		return executeContractMethod(this.contract, "transfer", to, shares);
 	}
 	transferFrom(from: string, to: string, shares: bigint) {
-		return executeContractMethod(this.contract, "transferFrom", from, to, shares);
+		return executeContractMethod(
+			this.contract,
+			"transferFrom",
+			from,
+			to,
+			shares,
+		);
 	}
 	approve(spender: string, shares: bigint) {
 		return executeContractMethod(this.contract, "approve", spender, shares);
@@ -551,7 +644,12 @@ export class Vault {
 			s,
 		);
 	}
-	forceDeallocate(adapter: string, data: string, assets: bigint, onBehalf: string) {
+	forceDeallocate(
+		adapter: string,
+		data: string,
+		assets: bigint,
+		onBehalf: string,
+	) {
 		return executeContractMethod(
 			this.contract,
 			"forceDeallocate",

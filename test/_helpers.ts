@@ -1,0 +1,34 @@
+/**
+ * Shared test helpers — env loading and skip predicates.
+ *
+ * Integration tests are gated by environment variables so the unit suite
+ * can run without RPC / signer / funds.
+ */
+
+import "dotenv/config";
+
+export const RPC_URL = process.env.RPC_URL ?? "";
+export const MNEMONIC = process.env.MNEMONIC ?? "";
+export const TEST_VAULT_ADDRESS = process.env.TEST_VAULT_ADDRESS ?? "";
+
+/** A read-only RPC URL is enough for integration-read tests. */
+export const hasRpc = () => RPC_URL.length > 0;
+
+/** Read-write integration tests need RPC + signer mnemonic. */
+export const hasRpcAndSigner = () => hasRpc() && MNEMONIC.length > 0;
+
+/** Some read tests want a known vault to inspect. */
+export const hasTestVault = () => hasRpc() && TEST_VAULT_ADDRESS.length > 0;
+
+/** Multicall bundle test needs a real ERC4626 vault to plug in as adapter target. */
+export const TEST_UNDERLYING_VAULT = process.env.TEST_UNDERLYING_VAULT ?? "";
+export const hasTestUnderlying = () =>
+	hasRpcAndSigner() && TEST_UNDERLYING_VAULT.length > 0;
+
+/**
+ * Vitest helper: returns a `describe.skipIf` predicate with a printed
+ * reason so the user knows *why* a suite was skipped.
+ */
+export function skipReason(condition: boolean, reason: string): string | false {
+	return condition ? false : reason;
+}

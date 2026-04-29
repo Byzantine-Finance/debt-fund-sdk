@@ -63,9 +63,10 @@ const client = new ByzantineClient(provider, wallet);
 const me = await wallet.getAddress();
 
 // 1. Deploy the vault (separate tx — factory is its own contract).
+const cfg = await client.getNetworkConfig();
 const create = await client.createVault(
   me,
-  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+  cfg.USDCaddress,                          // pre-resolved per the active chain
   ethers.hexlify(ethers.randomBytes(32)),
 );
 await create.wait();
@@ -296,46 +297,101 @@ await vault.setCurator(newCurator);
 await vault.setIsSentinel(account, true);
 ```
 
-### Curator writes (triplet: submit / execute / instant)
+### Curator writes — every timelocked setter is exposed as a triplet
+
+For each timelocked operation, the SDK provides three methods, in this order:
+
+- **`submitX(...)`** — schedule the call (starts the timelock)
+- **`X(...)`** — execute after the delay (name matches the contract)
+- **`instantX(...)`** — `submit` + `execute` in one multicall (only valid when `timelock(X) === 0`)
 
 ```ts
 // Adapters
-await vault.submitAddAdapter(addr);                     await vault.addAdapter(addr);                 await vault.instantAddAdapter(addr);
-await vault.submitRemoveAdapter(addr);                  await vault.removeAdapter(addr);              await vault.instantRemoveAdapter(addr);
+await vault.submitAddAdapter(addr);
+await vault.addAdapter(addr);
+await vault.instantAddAdapter(addr);
 
-// Absolute / relative caps
-await vault.submitIncreaseAbsoluteCap(idData, cap);     await vault.increaseAbsoluteCap(idData, cap); await vault.instantIncreaseAbsoluteCap(idData, cap);
-await vault.submitIncreaseRelativeCap(idData, cap);     await vault.increaseRelativeCap(idData, cap); await vault.instantIncreaseRelativeCap(idData, cap);
-await vault.decreaseAbsoluteCap(idData, cap);           // direct (curator OR sentinel, no timelock)
+await vault.submitRemoveAdapter(addr);
+await vault.removeAdapter(addr);
+await vault.instantRemoveAdapter(addr);
+
+// Caps — increases are timelocked
+await vault.submitIncreaseAbsoluteCap(idData, cap);
+await vault.increaseAbsoluteCap(idData, cap);
+await vault.instantIncreaseAbsoluteCap(idData, cap);
+
+await vault.submitIncreaseRelativeCap(idData, cap);
+await vault.increaseRelativeCap(idData, cap);
+await vault.instantIncreaseRelativeCap(idData, cap);
+
+// Cap decreases are direct (curator OR sentinel, no timelock)
+await vault.decreaseAbsoluteCap(idData, cap);
 await vault.decreaseRelativeCap(idData, cap);
 
 // Allocator role
-await vault.submitSetIsAllocator(addr, true);           await vault.setIsAllocator(addr, true);       await vault.instantSetIsAllocator(addr, true);
+await vault.submitSetIsAllocator(addr, true);
+await vault.setIsAllocator(addr, true);
+await vault.instantSetIsAllocator(addr, true);
 
-// Gates (4 gates × 3 verbs each)
-await vault.submitSetReceiveSharesGate(g);              await vault.setReceiveSharesGate(g);          await vault.instantSetReceiveSharesGate(g);
-await vault.submitSetSendSharesGate(g);                 await vault.setSendSharesGate(g);             await vault.instantSetSendSharesGate(g);
-await vault.submitSetReceiveAssetsGate(g);              await vault.setReceiveAssetsGate(g);          await vault.instantSetReceiveAssetsGate(g);
-await vault.submitSetSendAssetsGate(g);                 await vault.setSendAssetsGate(g);             await vault.instantSetSendAssetsGate(g);
+// Gates — 4 gates × 3 verbs each
+await vault.submitSetReceiveSharesGate(g);
+await vault.setReceiveSharesGate(g);
+await vault.instantSetReceiveSharesGate(g);
+
+await vault.submitSetSendSharesGate(g);
+await vault.setSendSharesGate(g);
+await vault.instantSetSendSharesGate(g);
+
+await vault.submitSetReceiveAssetsGate(g);
+await vault.setReceiveAssetsGate(g);
+await vault.instantSetReceiveAssetsGate(g);
+
+await vault.submitSetSendAssetsGate(g);
+await vault.setSendAssetsGate(g);
+await vault.instantSetSendAssetsGate(g);
 
 // Adapter registry
-await vault.submitSetAdapterRegistry(reg);              await vault.setAdapterRegistry(reg);          await vault.instantSetAdapterRegistry(reg);
+await vault.submitSetAdapterRegistry(reg);
+await vault.setAdapterRegistry(reg);
+await vault.instantSetAdapterRegistry(reg);
 
 // Fees
-await vault.submitSetPerformanceFee(f);                 await vault.setPerformanceFee(f);             await vault.instantSetPerformanceFee(f);
-await vault.submitSetManagementFee(f);                  await vault.setManagementFee(f);              await vault.instantSetManagementFee(f);
-await vault.submitSetPerformanceFeeRecipient(r);        await vault.setPerformanceFeeRecipient(r);    await vault.instantSetPerformanceFeeRecipient(r);
-await vault.submitSetManagementFeeRecipient(r);         await vault.setManagementFeeRecipient(r);     await vault.instantSetManagementFeeRecipient(r);
-await vault.submitSetForceDeallocatePenalty(a, p);      await vault.setForceDeallocatePenalty(a, p);  await vault.instantSetForceDeallocatePenalty(a, p);
+await vault.submitSetPerformanceFee(f);
+await vault.setPerformanceFee(f);
+await vault.instantSetPerformanceFee(f);
+
+await vault.submitSetManagementFee(f);
+await vault.setManagementFee(f);
+await vault.instantSetManagementFee(f);
+
+await vault.submitSetPerformanceFeeRecipient(r);
+await vault.setPerformanceFeeRecipient(r);
+await vault.instantSetPerformanceFeeRecipient(r);
+
+await vault.submitSetManagementFeeRecipient(r);
+await vault.setManagementFeeRecipient(r);
+await vault.instantSetManagementFeeRecipient(r);
+
+await vault.submitSetForceDeallocatePenalty(adapter, penalty);
+await vault.setForceDeallocatePenalty(adapter, penalty);
+await vault.instantSetForceDeallocatePenalty(adapter, penalty);
 
 // Timelock management
-await vault.submitIncreaseTimelock(fn, dur);            await vault.increaseTimelock(fn, dur);        await vault.instantIncreaseTimelock(fn, dur);
-await vault.submitDecreaseTimelock(fn, dur);            await vault.decreaseTimelock(fn, dur);        await vault.instantDecreaseTimelock(fn, dur);
-await vault.submitAbdicate(fn);                         await vault.abdicate(fn);
+await vault.submitIncreaseTimelock(fn, duration);
+await vault.increaseTimelock(fn, duration);
+await vault.instantIncreaseTimelock(fn, duration);
+
+await vault.submitDecreaseTimelock(fn, duration);
+await vault.decreaseTimelock(fn, duration);
+await vault.instantDecreaseTimelock(fn, duration);
+
+await vault.submitAbdicate(fn);
+await vault.abdicate(fn);
+// (no instant — abdication is permanent)
 
 // Generic timelock primitives
-await vault.submit(rawCalldata);
-await vault.revoke(rawCalldata);
+await vault.submit(rawCalldata);   // schedule any pre-encoded call
+await vault.revoke(rawCalldata);   // cancel a pending submission
 ```
 
 ### Allocator writes
@@ -370,31 +426,36 @@ await vault.approveAsset(amount);   // approves the vault to spend the underlyin
 | `erc4626` | Any ERC4626 vault (Morpho V1 vaults, Spark, Aave stata, …) | [Morpho Earn](https://app.morpho.org/base/earn), [Spark deployments](https://docs.spark.fi/dev/deployments/), [Aave stata](https://search.onaave.com/?q=stata%20USDC) |
 | `erc4626Merkl` | ERC4626 vault with automated Merkl rewards claiming | Same as `erc4626` if the protocol distributes rewards via Merkl |
 | `compoundV3` | Compound V3 markets (Comet) — requires `cometRewards` | [Compound markets](https://docs.compound.finance/#protocol-contracts) |
-| `morphoMarketV1` | Morpho V1 peer-to-peer lending markets | [Morpho Explore](https://app.morpho.org/ethereum/explore) |
+| `morphoMarketV1` | Morpho V1 peer-to-peer lending markets | [Morpho Markets](https://app.morpho.org/markets) |
 
 ## Network addresses
 
+`vaultV2Factory`, `morphoRegistry`, `erc4626AdapterFactory` (= `MorphoVaultV1AdapterFactory`)
+and `morphoMarketV1AdapterFactory` (= `MorphoMarketV1AdapterV2Factory`) come from the
+[official Morpho documentation](https://docs.morpho.org/get-started/resources/addresses/).
+`erc4626MerklAdapterFactory` and `compoundV3AdapterFactory` are Byzantine-deployed.
+
 ### Ethereum Mainnet (chain `1`)
 
-| Contract | Address | Source |
-|---|---|---|
-| `vaultV2Factory` | `0xA1D94F746dEfa1928926b84fB2596c06926C0405` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `morphoRegistry` | `0x3696c5eAe4a7Ffd04Ea163564571E9CD8Ed9364e` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `erc4626AdapterFactory` (= `MorphoVaultV1AdapterFactory`) | `0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `morphoMarketV1AdapterFactory` (= `MorphoMarketV1AdapterV2Factory`) | `0x32BB1c0D48D8b1B3363e86eeB9A0300BAd61ccc1` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `erc4626MerklAdapterFactory` | `0x576136011496367C7FEF780445349060646C7cC1` | Byzantine deployment |
-| `compoundV3AdapterFactory` | `0x60a91D7F17046FB1B1C9360E1C5D68b7E94E5959` | Byzantine deployment |
+| Contract | Address |
+|---|---|
+| `vaultV2Factory` | `0xA1D94F746dEfa1928926b84fB2596c06926C0405` |
+| `morphoRegistry` | `0x3696c5eAe4a7Ffd04Ea163564571E9CD8Ed9364e` |
+| `erc4626AdapterFactory` | `0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394` |
+| `morphoMarketV1AdapterFactory` | `0x32BB1c0D48D8b1B3363e86eeB9A0300BAd61ccc1` |
+| `erc4626MerklAdapterFactory` | `0x576136011496367C7FEF780445349060646C7cC1` |
+| `compoundV3AdapterFactory` | `0x60a91D7F17046FB1B1C9360E1C5D68b7E94E5959` |
 
 ### Base Mainnet (chain `8453`)
 
-| Contract | Address | Source |
-|---|---|---|
-| `vaultV2Factory` | `0x4501125508079A99ebBebCE205DeC9593C2b5857` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `morphoRegistry` | `0x5C2531Cbd2cf112Cf687da3Cd536708aDd7DB10a` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `erc4626AdapterFactory` (= `MorphoVaultV1AdapterFactory`) | `0xF42D9c36b34c9c2CF3Bc30eD2a52a90eEB604642` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `morphoMarketV1AdapterFactory` (= `MorphoMarketV1AdapterV2Factory`) | `0x9a1B378C43BA535cDB89934230F0D3890c51C0EB` | [Morpho docs](https://docs.morpho.org/get-started/resources/addresses/) |
-| `erc4626MerklAdapterFactory` | `0xdF311B93f922867A686abA9b233Fd7C65d66f83d` | Byzantine deployment |
-| `compoundV3AdapterFactory` | `0xA4dF9668EE53A896BdF40A7AeAC1364129F3c168` | Byzantine deployment |
+| Contract | Address |
+|---|---|
+| `vaultV2Factory` | `0x4501125508079A99ebBebCE205DeC9593C2b5857` |
+| `morphoRegistry` | `0x5C2531Cbd2cf112Cf687da3Cd536708aDd7DB10a` |
+| `erc4626AdapterFactory` | `0xF42D9c36b34c9c2CF3Bc30eD2a52a90eEB604642` |
+| `morphoMarketV1AdapterFactory` | `0x9a1B378C43BA535cDB89934230F0D3890c51C0EB` |
+| `erc4626MerklAdapterFactory` | `0xdF311B93f922867A686abA9b233Fd7C65d66f83d` |
+| `compoundV3AdapterFactory` | `0xA4dF9668EE53A896BdF40A7AeAC1364129F3c168` |
 
 ## Examples
 
@@ -416,6 +477,24 @@ Run any example with:
 
 ```bash
 npx tsx example/<filename>.ts
+```
+
+## Testing
+
+The SDK ships with three test tiers, all driven by [vitest](https://vitest.dev):
+
+```bash
+npm test                         # unit tests only — no RPC, ~1s
+npm run test:integration:read    # read-only RPC checks — needs RPC_URL
+npm run test:integration:write   # full e2e — needs RPC_URL + MNEMONIC + funds
+npm run test:all                 # everything
+npm run test:watch               # vitest in watch mode
+```
+
+`integration-read` uses `TEST_VAULT_ADDRESS` if set to inspect a specific vault; otherwise vault-state tests are skipped. A live Vault V2 you can point it at:
+
+```shell
+TEST_VAULT_ADDRESS=0x30cacd22f178c9e57b0b010e1f9432881aa530c4   # Base Mainnet
 ```
 
 ## License
