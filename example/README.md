@@ -1,91 +1,80 @@
-# Byzantine SDK Examples
+# Byzantine SDK examples
 
-This directory contains practical examples demonstrating how to use the Byzantine SDK for DeFi vault management. Each example showcases different aspects of vault creation, configuration, and management operations.
+Runnable examples covering every facet of the v2 SDK — from creating a vault
+to configuring it end-to-end in a single multicall.
 
-## How to Run Examples
-
-All examples can be executed using the following command format:
+## How to run
 
 ```bash
-npx tsx example/[filename].ts
+npx tsx example/<filename>.ts
 ```
 
-**Global prerequisites:**
+**Prerequisites:**
 
-- Set up your `.env` file with `RPC_URL` and `MNEMONIC`
-- Ensure you have the required permissions (owner, curator, allocator) for the specific vault operations
-- Have sufficient funds for gas fees
+- A `.env` at the repo root with `RPC_URL` and `MNEMONIC`
+- Enough gas on the target chain
+- The role required by the example (owner, curator, allocator) — examples
+  print a clear error if the running wallet doesn't hold it
 
-## Examples Overview
+## Examples
 
-### 🏗️ Create Simple Vault
+### 🚀 `multicall-showcase.ts` — flagship demo
 
-**Command:** `npx tsx example/create-vault-simple.ts`
+Configures a brand-new vault end-to-end (12+ operations: name, symbol,
+sentinel, allocator, fees, adapter, penalty, caps, liquidity adapter,
+maxRate) in **one** multicall transaction. Shows off the v2 superpower.
 
-**Requirements:** Global requirements above
+### 🏗️ `create-vault-simple.ts` — minimal create
 
-**Description:** Minimal vault creation example that demonstrates the simplest way to create a new vault. Creates a vault with default settings using your address as owner and a random salt for deterministic address generation. Perfect for beginners who want to understand the basic vault creation process.
+The simplest way to deploy a new vault. Uses the running wallet as the
+owner and a random salt. Good as a "hello world".
 
-### 🏛️ Create Advanced Vault
+### 🏛️ `create-vault.ts` — create + full config
 
-**Command:** `npx tsx example/create-vault.ts`
+Production-grade vault deployment with optional `SETUP_VAULT_CONFIG`
+fields. Handles temporary role swaps automatically when the running
+wallet doesn't already hold the target roles.
 
-**Requirements:** Global requirements above + define `SETUP_VAULT_CONFIG` following the `SetupVaultConfig` interface
+### 💰 `users-deposit.ts` — user lifecycle
 
-**Description:** Complex automation script that creates and fully configures vaults in a single execution. Automatically handles all necessary transactions to set up the vault according to your specifications. Most parameters are optional - the script adapts based on what you define. If you want underlying vaults but don't want to be the final curator, the script temporarily assigns you as curator to add vaults and configure everything, then transfers the role to your intended curator. Same logic applies to other roles. Perfect for production vault deployment with complex configurations.
+Deposit, mint, withdraw, redeem, with proper preview-then-approve flow.
+Demonstrates the full ERC4626 surface from the user side.
 
-### 💰 User Deposit Operations
+### 👑 `owners-settings.ts` — owner-side admin
 
-**Command:** `npx tsx example/users-deposit.ts`
+Bundles every requested owner-only change (name, symbol, curator,
+sentinels) into a single multicall. Setowner is run last as a separate
+tx (after that, the running wallet loses admin power).
 
-**Requirements:** Global requirements above + set `DEPOSIT_CONFIG` with vault address and operation amounts
+### ⚙️ `curators-settings.ts` — curator config
 
-**Description:** Comprehensive example demonstrating all user-facing vault operations including deposits, mints, withdrawals, and share redemptions. Shows how to properly manage asset approvals using the preview functions (`previewMint`, `previewDeposit`, etc.) and demonstrates the complete lifecycle of user interactions with a vault. Features intelligent approval management that automatically calculates required asset amounts for mint operations. Perfect for understanding how users interact with vaults and how to implement proper approval workflows in your applications.
+Drives `setupCuratorsSettings` from `example/utils/curator.ts`, which
+collects every curator-side change (allocators, fees, recipients,
+adapters, force-deallocate penalties, cap up/down) into a single
+multicall. Previously this was up to ~15 sequential transactions.
 
-### 👑 Manage Owner Settings
+### 💼 `allocators-settings.ts` — allocator ops
 
-**Command:** `npx tsx example/owners-settings.ts`
+Configures the liquidity adapter and `maxRate` in one multicall, then
+runs allocate/deallocate/force-deallocate operations as separate txs.
 
-**Requirements:** Global requirements above + owner role on the target vault, set `VAULT_ADDRESS` and `OWNER_SETTINGS_CONFIG`
+### 🔌 `morpho-adapters.ts` — adapter walkthrough
 
-**Description:** Demonstrates owner-specific operations like setting vault name/symbol, assigning curator and sentinel roles, and transferring ownership. Shows the administrative capabilities available to vault owners and how to manage access controls. Important for understanding vault governance and role management.
+Find an existing adapter for an underlying vault, deploy one if missing,
+and read back its ids + underlying.
 
-### ⚙️ Configure Curator Settings
+### 📊 `set-cap-adapter.ts` — cap update
 
-**Command:** `npx tsx example/curators-settings.ts`
+Sets both the absolute and relative cap for a single adapter id in one
+multicall transaction.
 
-**Requirements:** Global requirements above + curator role on the target vault, set `VAULT_ADDRESS` and `CURATORS_SETTINGS_CONFIG`
+## Shared helpers
 
-**Description:** Shows how curators can configure vault parameters including performance fees, management fees, max rates, and underlying vault caps. Demonstrates timelock management for sensitive operations and how to set relative/absolute caps for different vault strategies. Essential for understanding fee management and risk controls.
+`example/utils/` contains pieces reused across the examples:
 
-### 🔌 Deploy Morpho Adapters
-
-**Command:** `npx tsx example/morpho-adapters.ts`
-
-**Requirements:** Global requirements above + set `VAULT_ADDRESS`, `MORPHO_VAULT_V1`, and `MORPHO_CONTRACT` variables
-
-**Description:** Comprehensive example of working with Morpho Vault V1 adapters. Shows how to check existing adapters, deploy new ones, and retrieve adapter information including IDs and underlying vault details. Demonstrates the complete lifecycle of Morpho adapter management within a Byzantine vault.
-
-### 📊 Set Adapter Caps
-
-**Command:** `npx tsx example/set-cap-adapter.ts`
-
-**Requirements:** Global requirements above + set `VAULT_ADDRESS` and `CAPS_CONFIG` variables
-
-**Description:** Shows how to set caps (both relative and absolute) for specific adapters within a vault. Demonstrates the process of configuring allocation limits and how to use the instant cap increase functionality. Important for understanding risk management and allocation controls.
-
-### 💼 Configure Allocator Settings
-
-**Command:** `npx tsx example/allocators-settings.ts`
-
-**Requirements:** Global requirements above + allocator role on the target vault, set `VAULT_ADDRESS` and `ALLOCATOR_SETTINGS_CONFIG`
-
-**Description:** Comprehensive example demonstrating all allocator operations including liquidity adapter configuration, asset allocation/deallocation strategies, and emergency force deallocation. Shows how to allocate assets to underlying vaults through adapters, manage allocation data for different adapter types (Vault V1 vs Market V1), and configure liquidity strategies. Perfect for understanding how allocators manage vault capital deployment and risk allocation across different DeFi protocols.
-
-### 🛠️ Utility Functions
-
-**Command:** Not directly runnable - utility functions for other examples
-
-**Requirements:** N/A (utility file)
-
-**Description:** Contains shared utility functions used across all examples including environment configuration, helper functions for timelock operations, and comprehensive vault state reading functions. Provides common functionality for vault information display and configuration management.
+- `toolbox.ts` — env loading, wait helpers, and `fullReading()` which
+  prints a vault's full state.
+- `owner.ts`, `curator.ts`, `allocator.ts` — the per-role setup
+  functions; each bundles whatever it can into one multicall.
+- `depositor.ts` — `checkAndApproveIfNeeded()` for the deposit/mint
+  approve flow.
