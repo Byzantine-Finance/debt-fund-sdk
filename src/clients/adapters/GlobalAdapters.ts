@@ -59,7 +59,7 @@ export async function getAdapterFactoryAddress(
 ): Promise<string> {
 	try {
 		const adapter = getAdapterContract(cp, adapterAddress, "morphoMarketV1");
-		const addr: string = await callContractMethod(adapter, "factory", []);
+		const addr: string = await callContractMethod(adapter, "factory");
 		return addr.toLowerCase();
 	} catch (error) {
 		throw formatContractError("getAdapterFactoryAddress", error);

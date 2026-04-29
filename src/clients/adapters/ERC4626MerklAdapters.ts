@@ -41,7 +41,7 @@ export async function isERC4626MerklAdapter(
 	account: string,
 ): Promise<boolean> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
-	return callContractMethod(factory, "isERC4626MerklAdapter", [account]);
+	return callContractMethod(factory, "isERC4626MerklAdapter", account);
 }
 
 export async function findERC4626MerklAdapter(
@@ -50,10 +50,7 @@ export async function findERC4626MerklAdapter(
 	erc4626Vault: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
-	return callContractMethod(factory, "erc4626MerklAdapter", [
-		vaultAddress,
-		erc4626Vault,
-	]);
+	return callContractMethod(factory, "erc4626MerklAdapter", vaultAddress, erc4626Vault);
 }
 
 // ============================================================================
@@ -61,9 +58,9 @@ export async function findERC4626MerklAdapter(
 // ============================================================================
 
 export async function getIds(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "ids", []);
+	return callContractMethod(contract, "ids");
 }
 
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "erc4626Vault", []);
+	return callContractMethod(contract, "erc4626Vault");
 }

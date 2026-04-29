@@ -41,7 +41,7 @@ export async function isERC4626Adapter(
 	account: string,
 ): Promise<boolean> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626");
-	return callContractMethod(factory, "isMorphoVaultV1Adapter", [account]);
+	return callContractMethod(factory, "isMorphoVaultV1Adapter", account);
 }
 
 export async function findERC4626Adapter(
@@ -50,10 +50,7 @@ export async function findERC4626Adapter(
 	morphoVaultV1: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626");
-	return callContractMethod(factory, "morphoVaultV1Adapter", [
-		vaultAddress,
-		morphoVaultV1,
-	]);
+	return callContractMethod(factory, "morphoVaultV1Adapter", vaultAddress, morphoVaultV1);
 }
 
 // ============================================================================
@@ -61,9 +58,9 @@ export async function findERC4626Adapter(
 // ============================================================================
 
 export async function getIds(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "ids", []);
+	return callContractMethod(contract, "ids");
 }
 
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "morphoVaultV1", []);
+	return callContractMethod(contract, "morphoVaultV1");
 }

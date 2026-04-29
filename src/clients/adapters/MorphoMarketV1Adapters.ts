@@ -49,7 +49,7 @@ export async function isMorphoMarketV1Adapter(
 	account: string,
 ): Promise<boolean> {
 	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
-	return callContractMethod(factory, "isMorphoMarketV1Adapter", [account]);
+	return callContractMethod(factory, "isMorphoMarketV1Adapter", account);
 }
 
 export async function findMorphoMarketV1Adapter(
@@ -58,10 +58,7 @@ export async function findMorphoMarketV1Adapter(
 	morphoMarketV1: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
-	return callContractMethod(factory, "morphoMarketV1Adapter", [
-		vaultAddress,
-		morphoMarketV1,
-	]);
+	return callContractMethod(factory, "morphoMarketV1Adapter", vaultAddress, morphoMarketV1);
 }
 
 // ============================================================================
@@ -72,22 +69,22 @@ export async function getIds(
 	contract: ethers.Contract,
 	marketParams: MarketParams,
 ): Promise<string[]> {
-	return callContractMethod(contract, "ids", [marketParams]);
+	return callContractMethod(contract, "ids", marketParams);
 }
 
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "morpho", []);
+	return callContractMethod(contract, "morpho");
 }
 
 export async function getMarketParamsListLength(
 	contract: ethers.Contract,
 ): Promise<number> {
-	return callContractMethod(contract, "marketParamsListLength", []);
+	return callContractMethod(contract, "marketParamsListLength");
 }
 
 export async function getMarketParamsList(
 	contract: ethers.Contract,
 	index: number,
 ): Promise<MarketParams> {
-	return callContractMethod(contract, "marketParamsList", [index]);
+	return callContractMethod(contract, "marketParamsList", index);
 }

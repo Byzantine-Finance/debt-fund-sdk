@@ -44,7 +44,7 @@ export async function isCompoundV3Adapter(
 	account: string,
 ): Promise<boolean> {
 	const factory = await getAdapterFactoryContract(cp, "compoundV3");
-	return callContractMethod(factory, "isCompoundV3Adapter", [account]);
+	return callContractMethod(factory, "isCompoundV3Adapter", account);
 }
 
 export async function findCompoundV3Adapter(
@@ -54,11 +54,7 @@ export async function findCompoundV3Adapter(
 	cometRewards: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "compoundV3");
-	return callContractMethod(factory, "compoundV3Adapter", [
-		vaultAddress,
-		comet,
-		cometRewards,
-	]);
+	return callContractMethod(factory, "compoundV3Adapter", vaultAddress, comet, cometRewards);
 }
 
 // ============================================================================
@@ -66,9 +62,9 @@ export async function findCompoundV3Adapter(
 // ============================================================================
 
 export async function getIds(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "ids", []);
+	return callContractMethod(contract, "ids");
 }
 
 export async function getUnderlying(contract: ethers.Contract): Promise<string> {
-	return callContractMethod(contract, "comet", []);
+	return callContractMethod(contract, "comet");
 }
