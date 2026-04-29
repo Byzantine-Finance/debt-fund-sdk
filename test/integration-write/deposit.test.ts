@@ -3,62 +3,73 @@
  *
  * Approve → deposit → check balances → withdraw → check balances.
  *
- * Requires the running wallet to hold at least DEPOSIT_AMOUNT of USDC.
+ * Each test gets its own Anvil fork via the `freshVault` fixture, so the
+ * wallet starts with 10 000 ETH and has *no on-chain history* — no
+ * nonce drift, no shared state.
+ *
+ * The wallet still needs USDC on the forked chain to deposit. The fork
+ * mirrors the real chain's USDC balance for that address; if your real
+ * wallet has zero USDC, top up via `anvil_setStorageAt` on the USDC
+ * balance slot, or fund a different account first via a transfer.
  */
 
 import { parseUnits } from "ethers";
-import { beforeAll, describe, expect, it } from "vitest";
-import type { Vault } from "../../src";
+import { describe, expect } from "vitest";
 import { hasRpcAndSigner } from "../_helpers";
-import { type FreshVaultContext, setupWithFreshVault } from "../_setup";
+import { logTx, test } from "../_test";
 
 const DEPOSIT_AMOUNT = parseUnits("0.01", 6); // 0.01 USDC
 
 describe.skipIf(!hasRpcAndSigner())(
 	"integration-write · deposit / withdraw",
 	() => {
-		let ctx: FreshVaultContext;
-		let vault: Vault;
-
-		beforeAll(async () => {
-			ctx = await setupWithFreshVault();
-			vault = ctx.vault;
-		});
-
-		it("the running wallet has at least the deposit amount in USDC", async () => {
-			const bal = await vault.assetBalance(ctx.me);
+		test("the running wallet has at least the deposit amount in USDC", async ({
+			fundedVault: { vault, me },
+		}) => {
+			const bal = await vault.assetBalance(me);
 			expect(
 				bal >= DEPOSIT_AMOUNT,
-				`wallet ${ctx.me} needs at least ${DEPOSIT_AMOUNT} USDC (has ${bal})`,
+				`wallet ${me} needs at least ${DEPOSIT_AMOUNT} USDC (has ${bal})`,
 			).toBe(true);
 		});
 
-		it("approve + deposit flow", async () => {
-			if ((await vault.assetAllowance(ctx.me)) < DEPOSIT_AMOUNT) {
-				await (await vault.approveAsset(DEPOSIT_AMOUNT)).wait();
+		test("approve + deposit flow", async ({ fundedVault: { vault, me } }) => {
+			if ((await vault.assetAllowance(me)) < DEPOSIT_AMOUNT) {
+				await logTx(await vault.approveAsset(DEPOSIT_AMOUNT), "approveAsset");
 			}
-			expect((await vault.assetAllowance(ctx.me)) >= DEPOSIT_AMOUNT).toBe(true);
+			expect((await vault.assetAllowance(me)) >= DEPOSIT_AMOUNT).toBe(true);
 
-			const sharesBefore = await vault.balanceOf(ctx.me);
-			const tx = await vault.deposit(DEPOSIT_AMOUNT, ctx.me);
-			const receipt = await tx.wait();
+			const sharesBefore = await vault.balanceOf(me);
+			const receipt = await logTx(
+				await vault.deposit(DEPOSIT_AMOUNT, me),
+				"deposit",
+			);
 			expect(receipt?.status).toBe(1);
-
-			expect((await vault.balanceOf(ctx.me)) > sharesBefore).toBe(true);
+			expect((await vault.balanceOf(me)) > sharesBefore).toBe(true);
 		});
 
-		it("withdraw returns assets to the receiver", async () => {
-			const sharesBefore = await vault.balanceOf(ctx.me);
-			const usdcBefore = await vault.assetBalance(ctx.me);
+		test("withdraw returns assets to the receiver", async ({
+			fundedVault: { vault, me },
+		}) => {
+			// Need to deposit first inside this test (each test = own chain).
+			await logTx(await vault.approveAsset(DEPOSIT_AMOUNT), "approveAsset");
+			await logTx(await vault.deposit(DEPOSIT_AMOUNT, me), "deposit");
+
+			const sharesBefore = await vault.balanceOf(me);
+			const usdcBefore = await vault.assetBalance(me);
 
 			const halfAssets = DEPOSIT_AMOUNT / 2n;
-			await (await vault.withdraw(halfAssets, ctx.me, ctx.me)).wait();
+			await logTx(await vault.withdraw(halfAssets, me, me), "withdraw");
 
-			expect((await vault.balanceOf(ctx.me)) < sharesBefore).toBe(true);
-			expect((await vault.assetBalance(ctx.me)) >= usdcBefore + halfAssets - 1n).toBe(true);
+			expect((await vault.balanceOf(me)) < sharesBefore).toBe(true);
+			expect(
+				(await vault.assetBalance(me)) >= usdcBefore + halfAssets - 1n,
+			).toBe(true);
 		});
 
-		it("preview functions agree with realised amounts (within rounding)", async () => {
+		test("preview functions agree with realised amounts (within rounding)", async ({
+			fundedVault: { vault },
+		}) => {
 			const previewShares = await vault.previewDeposit(DEPOSIT_AMOUNT);
 			const previewAssetsForMint = await vault.previewMint(previewShares);
 			expect(previewAssetsForMint >= DEPOSIT_AMOUNT).toBe(true);

@@ -26,12 +26,16 @@ import {
 	type Action,
 	Actions,
 	ByzantineClient,
+	LocalNonceManager,
 	type TimelockFunction,
 } from "../src";
 import type { AllocatorSettingsConfig } from "./allocators-settings";
 import type { CuratorsSettingsConfig } from "./curators-settings";
 import type { OwnerSettingsConfig } from "./owners-settings";
-import { buildAllocatorSetupActions, runAllocatorOperations } from "./utils/allocator";
+import {
+	buildAllocatorSetupActions,
+	runAllocatorOperations,
+} from "./utils/allocator";
 import { buildCuratorActions, deployCuratorAdapters } from "./utils/curator";
 import { checkAndApproveIfNeeded } from "./utils/depositor";
 import { buildOwnerActions } from "./utils/owner";
@@ -48,7 +52,8 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 interface SetupVaultConfig {
 	/** Defaults to the running wallet's address. */
 	owner?: string;
-	asset: string;
+	/** If omitted, defaults to the chain's USDC address (resolved at runtime). */
+	asset?: string;
 	/** Optional salt for deterministic vault address. */
 	salt?: string;
 	deposit_amount?: bigint;
@@ -60,8 +65,7 @@ interface SetupVaultConfig {
 }
 
 const SETUP_VAULT_CONFIG: SetupVaultConfig = {
-	asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-
+	// `asset` left unset → resolved at runtime to the chain's USDC.
 	deposit_amount: parseUnits("0.1", 6),
 
 	owner_settings: {
@@ -81,10 +85,15 @@ async function main() {
 
 	const provider = new ethers.JsonRpcProvider(RPC_URL);
 	const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
-	const client = new ByzantineClient(provider, wallet);
+	// Wrap with LocalNonceManager — harmless on real chains, essential
+	// when running this example against a local Anvil fork (where the
+	// pending pool is briefly stale right after a block mines).
+	const signer = new LocalNonceManager(wallet);
+	const client = new ByzantineClient(provider, signer);
 	const me = await wallet.getAddress();
 
-	const ownerSettings: OwnerSettingsConfig = SETUP_VAULT_CONFIG.owner_settings ?? {};
+	const ownerSettings: OwnerSettingsConfig =
+		SETUP_VAULT_CONFIG.owner_settings ?? {};
 	const curatorSettings: CuratorsSettingsConfig =
 		SETUP_VAULT_CONFIG.curators_settings ?? {};
 	const allocatorSettings: AllocatorSettingsConfig =
@@ -94,8 +103,7 @@ async function main() {
 	const intendedOwner = SETUP_VAULT_CONFIG.owner ?? me;
 	const intendedCurator = ownerSettings.curator;
 	const userIsOwner = me.toLowerCase() === intendedOwner.toLowerCase();
-	const userIsCurator =
-		intendedCurator?.toLowerCase() === me.toLowerCase();
+	const userIsCurator = intendedCurator?.toLowerCase() === me.toLowerCase();
 
 	const hasOwnerWork =
 		ownerSettings.shares_name !== undefined ||
@@ -114,11 +122,17 @@ async function main() {
 	const needsTempCurator = !userIsCurator && hasCuratorWork;
 
 	// ----- 1. create the vault -----
+	// Resolve the asset address: explicit config > chain's canonical USDC.
+	const cfg = await client.getNetworkConfig();
+	const assetAddress = SETUP_VAULT_CONFIG.asset ?? cfg.USDCaddress;
+
 	const initialOwner = userIsOwner ? intendedOwner : me;
-	console.log(`📨 Creating vault (initial owner: ${initialOwner})`);
+	console.log(
+		`📨 Creating vault on ${cfg.name} (initial owner: ${initialOwner}, asset: ${assetAddress})`,
+	);
 	const txCreate = await client.createVault(
 		initialOwner,
-		SETUP_VAULT_CONFIG.asset,
+		assetAddress,
 		SETUP_VAULT_CONFIG.salt ?? ethers.hexlify(randomBytes(32)),
 	);
 	console.log(`   tx: ${txCreate.hash}`);
@@ -142,14 +156,20 @@ async function main() {
 	// Allocator role is also controlled by the curator → flip ourselves on
 	// before doing curator actions.
 	const wasIntendedAllocator =
-		curatorSettings.allocators?.some((a) => a.toLowerCase() === me.toLowerCase()) ??
-		false;
+		curatorSettings.allocators?.some(
+			(a) => a.toLowerCase() === me.toLowerCase(),
+		) ?? false;
 	if (!wasIntendedAllocator && hasCuratorWork) {
 		curatorSettings.allocators = [...(curatorSettings.allocators ?? []), me];
 	}
 
 	const ownerActions = await buildOwnerActions(vault, ownerSettings);
-	const curatorActions = await buildCuratorActions(client, vault, curatorSettings, adapters);
+	const curatorActions = await buildCuratorActions(
+		client,
+		vault,
+		curatorSettings,
+		adapters,
+	);
 	const allocatorSetupActions = await buildAllocatorSetupActions(
 		client,
 		vault,

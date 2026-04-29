@@ -40,6 +40,25 @@ await vault.instantX(...);    // submit + execute via multicall (timelock = 0 on
   builders return the `string[]` tuple and `flattenActions` handles the
   rest. Don't change this contract.
 
+### Multicall ordering rules
+
+Order matters inside a single multicall. Bundles that follow these rules
+work; bundles that don't will revert:
+
+1. **Role swaps come before the actions that depend on them.**
+   `setCurator(me)` must be emitted before any `Actions.curator.instantX`
+   if the running wallet isn't already curator.
+2. **Role restores come after the role-scoped actions.**
+   `setCurator(realCurator)` and `setOwner(realOwner)` go at the very end
+   (and `setOwner` last of all — anything after it would run as the new
+   owner).
+3. **Timelock-bumping actions come AFTER any `instant*` that assumes the
+   relevant timelock is 0.** An `instantIncreaseTimelock` followed by an
+   `instantX` for the same selector reverts the `instantX`'s execute leg
+   because `executableAt > block.timestamp`.
+4. **Fee recipient before fee value.** The contract requires
+   `recipient != 0` before `fee != 0`.
+
 ## Conversions
 
 Bigint ↔ human strings live in `src/utils/conversions.ts` as

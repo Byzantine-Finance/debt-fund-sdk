@@ -27,10 +27,14 @@ export const hasRpcAndSigner = () => hasRpc() && MNEMONIC.length > 0;
  */
 export const hasTestVault = () => hasRpc() && TEST_VAULT_ADDRESS.length > 0;
 
-/** Multicall bundle test needs a real ERC4626 vault to plug in as adapter target. */
-export const TEST_UNDERLYING_VAULT = process.env.TEST_UNDERLYING_VAULT ?? "";
-export const hasTestUnderlying = () =>
-	hasRpcAndSigner() && TEST_UNDERLYING_VAULT.length > 0;
+/**
+ * `DEBUG=1` toggles per-tx gas / hash / block logging in integration
+ * tests via the `logTx()` helper. Off by default to keep CI output tidy.
+ *
+ *   DEBUG=1 npm run test:integration:write
+ */
+export const DEBUG =
+	process.env.DEBUG === "1" || process.env.DEBUG?.toLowerCase() === "true";
 
 /**
  * Vitest helper: returns a `describe.skipIf` predicate with a printed

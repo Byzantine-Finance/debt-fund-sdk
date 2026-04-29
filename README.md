@@ -490,10 +490,15 @@ The SDK ships with three test tiers, all driven by [vitest](https://vitest.dev):
 ```bash
 npm test                         # unit tests only — no RPC, ~1s
 npm run test:integration:read    # read-only RPC checks — needs RPC_URL
-npm run test:integration:write   # full e2e — needs RPC_URL + MNEMONIC + funds
+npm run test:integration:write   # full e2e — needs RPC_URL + MNEMONIC + anvil
 npm run test:all                 # everything
 npm run test:watch               # vitest in watch mode
 ```
+
+`test:integration:write` requires Foundry's [`anvil`](https://book.getfoundry.sh/getting-started/installation)
+on `PATH` — each write test forks a local Anvil from `RPC_URL` and runs
+in isolation, so you don't need any real on-chain funds. See
+[test/README.md](test/README.md) for the full test infrastructure.
 
 `integration-read` uses `TEST_VAULT_ADDRESS` if set to inspect a specific vault; otherwise vault-state tests are skipped. A live Vault V2 you can point it at:
 
@@ -502,8 +507,17 @@ TEST_VAULT_ADDRESS=0x30cacd22f178c9e57b0b010e1f9432881aa530c4   # Ethereum Mainn
 ```
 
 > ⚠️ The address above is **read-only**. Write-side integration tests always
-> deploy a **fresh** vault via the test setup helpers and operate on that
+> deploy a **fresh** vault on a per-test Anvil fork and operate on that
 > vault — they never touch `TEST_VAULT_ADDRESS`.
+
+Set `DEBUG=1` to make every write tx in the integration suites print its
+hash, block, gas used and total cost in native:
+
+```bash
+DEBUG=1 npm run test:integration:write
+#   ⛽ deposit: tx 0x...
+#      block 12345 | gas 184302 @ 0.012 gwei | cost 0.00000022 native
+```
 
 ## License
 

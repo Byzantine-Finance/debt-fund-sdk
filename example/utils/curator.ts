@@ -62,6 +62,14 @@ export async function deployCuratorAdapters(
  * only know what to addAdapter / cap once the adapter addresses exist.
  *
  * Pure: no transactions are sent.
+ *
+ * Order rules respected:
+ *   - fee recipients are pushed BEFORE fee values (contract requires
+ *     `recipient != 0` before `fee != 0`).
+ *   - if you ever extend this to bundle `instantIncreaseTimelock` /
+ *     `instantDecreaseTimelock`, push them LAST — putting them before any
+ *     `instant*` for the same selector would make that `instant*`'s
+ *     execute leg revert (`executableAt > block.timestamp`).
  */
 export async function buildCuratorActions(
 	client: ByzantineClient,
@@ -82,19 +90,27 @@ export async function buildCuratorActions(
 	// ----- FEES (recipients FIRST, then values — contract requires it) -----
 	if (config.performance_fee_recipient) {
 		actions.push(
-			Actions.curator.instantSetPerformanceFeeRecipient(config.performance_fee_recipient),
+			Actions.curator.instantSetPerformanceFeeRecipient(
+				config.performance_fee_recipient,
+			),
 		);
 	}
 	if (config.management_fee_recipient) {
 		actions.push(
-			Actions.curator.instantSetManagementFeeRecipient(config.management_fee_recipient),
+			Actions.curator.instantSetManagementFeeRecipient(
+				config.management_fee_recipient,
+			),
 		);
 	}
 	if (config.performance_fee !== undefined) {
-		actions.push(Actions.curator.instantSetPerformanceFee(config.performance_fee));
+		actions.push(
+			Actions.curator.instantSetPerformanceFee(config.performance_fee),
+		);
 	}
 	if (config.management_fee !== undefined) {
-		actions.push(Actions.curator.instantSetManagementFee(config.management_fee));
+		actions.push(
+			Actions.curator.instantSetManagementFee(config.management_fee),
+		);
 	}
 
 	// ----- ADAPTERS (already deployed) -----
@@ -126,16 +142,28 @@ export async function buildCuratorActions(
 						const current = await vault.relativeCap(idForCap);
 						actions.push(
 							current <= cap.relative_cap
-								? Actions.curator.instantIncreaseRelativeCap(idDataBlob, cap.relative_cap)
-								: Actions.curator.decreaseRelativeCap(idDataBlob, cap.relative_cap),
+								? Actions.curator.instantIncreaseRelativeCap(
+										idDataBlob,
+										cap.relative_cap,
+									)
+								: Actions.curator.decreaseRelativeCap(
+										idDataBlob,
+										cap.relative_cap,
+									),
 						);
 					}
 					if (cap.absolute_cap !== undefined) {
 						const current = await vault.absoluteCap(idForCap);
 						actions.push(
 							current <= cap.absolute_cap
-								? Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, cap.absolute_cap)
-								: Actions.curator.decreaseAbsoluteCap(idDataBlob, cap.absolute_cap),
+								? Actions.curator.instantIncreaseAbsoluteCap(
+										idDataBlob,
+										cap.absolute_cap,
+									)
+								: Actions.curator.decreaseAbsoluteCap(
+										idDataBlob,
+										cap.absolute_cap,
+									),
 						);
 					}
 				}
