@@ -1,5 +1,7 @@
+import type { ethers } from "ethers";
 import * as dotenv from "dotenv";
 import type {
+	Action,
 	AdapterType,
 	ByzantineClient,
 	TimelockFunction,
@@ -40,6 +42,40 @@ export const waitDelay = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
 export const waitSecond = () => waitDelay(1000);
 export const waitHalfSecond = () => waitDelay(500);
+
+/**
+ * Pretty-print each action in a multicall before sending it. Decodes
+ * calldata via the vault's `Interface`. For an `instantX` action (a
+ * `[submit, execute]` pair) only the execute leg is printed and prefixed
+ * with `instant` so the timelock pattern is obvious without doubling the
+ * line count.
+ */
+export function describeActions(
+	vault: { contract: ethers.Contract },
+	actions: readonly Action[],
+): void {
+	const iface = vault.contract.interface;
+	const fmt = (data: string): string => {
+		try {
+			const parsed = iface.parseTransaction({ data });
+			if (!parsed) return data;
+			return `${parsed.name}(${parsed.args.map(String).join(", ")})`;
+		} catch {
+			return data;
+		}
+	};
+
+	let i = 1;
+	for (const a of actions) {
+		if (typeof a === "string") {
+			console.log(`   ${i++}. ${fmt(a)}`);
+		} else {
+			// [submitCalldata, executeCalldata] — log only the execute leg.
+			const execute = a[a.length - 1];
+			console.log(`   ${i++}. instant ${fmt(execute)}`);
+		}
+	}
+}
 
 interface AdapterSnapshot {
 	index: number;
@@ -91,11 +127,11 @@ async function readAdapterIds(
 ): Promise<string[]> {
 	switch (type) {
 		case "erc4626":
-			return [await client.getIdsERC4626(address)];
+			return client.getIdsERC4626(address);
 		case "erc4626Merkl":
-			return [await client.getIdsERC4626Merkl(address)];
+			return client.getIdsERC4626Merkl(address);
 		case "compoundV3":
-			return [await client.getIdsCompoundV3(address)];
+			return client.getIdsCompoundV3(address);
 		case "morphoMarketV1": {
 			const out: string[] = [];
 			const len = await client.getMarketIdsLength(address);

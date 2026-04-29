@@ -57,7 +57,7 @@ export async function findERC4626MerklAdapter(
 // Adapter reads
 // ============================================================================
 
-export async function getIds(contract: ethers.Contract): Promise<string> {
+export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 

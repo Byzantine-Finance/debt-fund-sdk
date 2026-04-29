@@ -248,13 +248,19 @@ async function defaultIdForAdapter(
 	adapterAddress: string,
 	type: "erc4626" | "erc4626Merkl" | "compoundV3" | "morphoMarketV1",
 ): Promise<string> {
+	const pickFirst = (ids: string[]): string => {
+		if (ids.length === 0) {
+			throw new Error(`Adapter ${adapterAddress} (${type}) returned no ids`);
+		}
+		return ids[0];
+	};
 	switch (type) {
 		case "erc4626":
-			return client.getIdsERC4626(adapterAddress);
+			return pickFirst(await client.getIdsERC4626(adapterAddress));
 		case "erc4626Merkl":
-			return client.getIdsERC4626Merkl(adapterAddress);
+			return pickFirst(await client.getIdsERC4626Merkl(adapterAddress));
 		case "compoundV3":
-			return client.getIdsCompoundV3(adapterAddress);
+			return pickFirst(await client.getIdsCompoundV3(adapterAddress));
 		case "morphoMarketV1":
 			throw new Error(
 				"Morpho Market V1 adapters expose multiple ids — pass `cap.id` explicitly.",

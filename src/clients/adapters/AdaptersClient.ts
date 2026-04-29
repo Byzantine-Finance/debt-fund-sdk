@@ -173,7 +173,7 @@ export class AdapterInstance {
 	}
 
 	// ----- per-type reads -----
-	getIdsERC4626(): Promise<string> {
+	getIdsERC4626(): Promise<string[]> {
 		this.requireType("erc4626");
 		return ERC4626.getIds(this.contract);
 	}
@@ -182,7 +182,7 @@ export class AdapterInstance {
 		return ERC4626.getUnderlying(this.contract);
 	}
 
-	getIdsERC4626Merkl(): Promise<string> {
+	getIdsERC4626Merkl(): Promise<string[]> {
 		this.requireType("erc4626Merkl");
 		return ERC4626Merkl.getIds(this.contract);
 	}
@@ -191,7 +191,7 @@ export class AdapterInstance {
 		return ERC4626Merkl.getUnderlying(this.contract);
 	}
 
-	getIdsCompoundV3(): Promise<string> {
+	getIdsCompoundV3(): Promise<string[]> {
 		this.requireType("compoundV3");
 		return CompoundV3.getIds(this.contract);
 	}

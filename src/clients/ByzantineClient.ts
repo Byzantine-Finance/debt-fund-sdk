@@ -146,15 +146,15 @@ export class ByzantineClient {
 	}
 
 	// ----- per-type adapter reads -----
-	getIdsERC4626(adapterAddress: string): Promise<string> {
+	getIdsERC4626(adapterAddress: string): Promise<string[]> {
 		return this.adaptersClient.adapter(adapterAddress, "erc4626").getIdsERC4626();
 	}
-	getIdsERC4626Merkl(adapterAddress: string): Promise<string> {
+	getIdsERC4626Merkl(adapterAddress: string): Promise<string[]> {
 		return this.adaptersClient
 			.adapter(adapterAddress, "erc4626Merkl")
 			.getIdsERC4626Merkl();
 	}
-	getIdsCompoundV3(adapterAddress: string): Promise<string> {
+	getIdsCompoundV3(adapterAddress: string): Promise<string[]> {
 		return this.adaptersClient
 			.adapter(adapterAddress, "compoundV3")
 			.getIdsCompoundV3();
