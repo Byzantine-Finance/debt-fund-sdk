@@ -113,6 +113,38 @@ export async function buildCuratorActions(
 		);
 	}
 
+	// ----- GATES (transfer / deposit / withdraw filters) -----
+	// Each setX*Gate is timelocked, so `instantX` only works while the
+	// corresponding timelock is still 0 (typically right after vault
+	// creation). Skip emit when the desired value already matches on-chain.
+	if (config.gates) {
+		const g = config.gates;
+		if (g.receive_shares !== undefined) {
+			const current = await vault.receiveSharesGate();
+			if (current.toLowerCase() !== g.receive_shares.toLowerCase()) {
+				actions.push(Actions.curator.instantSetReceiveSharesGate(g.receive_shares));
+			}
+		}
+		if (g.send_shares !== undefined) {
+			const current = await vault.sendSharesGate();
+			if (current.toLowerCase() !== g.send_shares.toLowerCase()) {
+				actions.push(Actions.curator.instantSetSendSharesGate(g.send_shares));
+			}
+		}
+		if (g.receive_assets !== undefined) {
+			const current = await vault.receiveAssetsGate();
+			if (current.toLowerCase() !== g.receive_assets.toLowerCase()) {
+				actions.push(Actions.curator.instantSetReceiveAssetsGate(g.receive_assets));
+			}
+		}
+		if (g.send_assets !== undefined) {
+			const current = await vault.sendAssetsGate();
+			if (current.toLowerCase() !== g.send_assets.toLowerCase()) {
+				actions.push(Actions.curator.instantSetSendAssetsGate(g.send_assets));
+			}
+		}
+	}
+
 	// ----- ADAPTERS (already deployed) -----
 	if (config.underlying_vaults?.length) {
 		for (const u of config.underlying_vaults) {

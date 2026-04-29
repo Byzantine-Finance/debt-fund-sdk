@@ -40,6 +40,16 @@ export interface CuratorsSettingsConfig {
 	management_fee_recipient?: string;
 	underlying_vaults?: VaultConfig[];
 	timelockFunctionsToIncrease?: Partial<Record<TimelockFunction, number>>;
+	/**
+	 * Optional gate addresses (transfer/deposit/withdraw filters). Pass
+	 * `0x000…000` to disable a previously-set gate. Omit to leave as-is.
+	 */
+	gates?: {
+		receive_shares?: string;
+		send_shares?: string;
+		receive_assets?: string;
+		send_assets?: string;
+	};
 }
 
 // *******************************************************************

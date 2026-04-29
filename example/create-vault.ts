@@ -116,7 +116,11 @@ async function main() {
 		curatorSettings.management_fee !== undefined ||
 		curatorSettings.performance_fee_recipient !== undefined ||
 		curatorSettings.management_fee_recipient !== undefined ||
-		(curatorSettings.underlying_vaults?.length ?? 0) > 0;
+		(curatorSettings.underlying_vaults?.length ?? 0) > 0 ||
+		curatorSettings.gates?.receive_shares !== undefined ||
+		curatorSettings.gates?.send_shares !== undefined ||
+		curatorSettings.gates?.receive_assets !== undefined ||
+		curatorSettings.gates?.send_assets !== undefined;
 
 	const needsTempOwner = !userIsOwner && hasOwnerWork;
 	const needsTempCurator = !userIsCurator && hasCuratorWork;
