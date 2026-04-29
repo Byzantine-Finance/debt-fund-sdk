@@ -98,10 +98,9 @@ async function readAdapterIds(
 			return [await client.getIdsCompoundV3(address)];
 		case "morphoMarketV1": {
 			const out: string[] = [];
-			const len = await client.getMarketParamsListLength(address);
+			const len = await client.getMarketIdsLength(address);
 			for (let i = 0; i < len; i++) {
-				const params = await client.getMarketParamsList(address, i);
-				out.push(...(await client.getIdsMarketV1(address, params)));
+				out.push(await client.getMarketId(address, i));
 			}
 			return out;
 		}

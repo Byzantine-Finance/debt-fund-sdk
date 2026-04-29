@@ -1,70 +1,76 @@
-import { Actions, type Vault } from "../../src";
+import { Actions, type Action, type Vault } from "../../src";
 import type { OwnerSettingsConfig } from "../owners-settings";
-import { waitHalfSecond } from "./toolbox";
 
 /**
- * Apply a batch of owner-only changes to the vault.
+ * Build the list of owner-only Actions implied by `config`. Pure: doesn't
+ * send any transaction. The caller bundles them into a multicall (alone or
+ * combined with curator/allocator actions).
  *
- * All owner setters (setName, setSymbol, setCurator, setIsSentinel) are
- * non-timelocked, so we bundle every requested change into a single
- * `multicall` transaction.
- *
- * `setOwner` is intentionally executed *last* and as a separate tx — once
- * ownership transfers, the current signer can't run further multicall.
+ * Notes:
+ * - `setOwner` is intentionally placed LAST in the action list so any
+ *   subsequent actions in the same multicall still execute as the
+ *   original owner.
+ * - Only emits actions for fields that actually differ from current state
+ *   (avoids no-op txs).
  */
-export async function setupOwnerSettings(
+export async function buildOwnerActions(
 	vault: Vault,
-	userAddress: string,
 	config: OwnerSettingsConfig,
-): Promise<void> {
-	console.log("\n || 👮 Setting owner settings ||");
+): Promise<Action[]> {
+	const actions: Action[] = [];
 
-	const owner = await vault.owner();
-	if (owner !== userAddress) {
-		throw new Error(`Access denied: only the owner can run this. Got ${owner}, expected ${userAddress}.`);
-	}
-
-	const calls = [];
-
-	// Name + symbol — only push if value differs from current.
 	if (config.shares_name) {
 		const current = await vault.name();
 		if (current !== config.shares_name) {
-			calls.push(Actions.owner.setName(config.shares_name));
-			console.log(`  - setName(${config.shares_name})`);
+			actions.push(Actions.owner.setName(config.shares_name));
 		}
 	}
 	if (config.shares_symbol) {
 		const current = await vault.symbol();
 		if (current !== config.shares_symbol) {
-			calls.push(Actions.owner.setSymbol(config.shares_symbol));
-			console.log(`  - setSymbol(${config.shares_symbol})`);
+			actions.push(Actions.owner.setSymbol(config.shares_symbol));
 		}
 	}
 
 	if (config.curator) {
-		calls.push(Actions.owner.setCurator(config.curator));
-		console.log(`  - setCurator(${config.curator})`);
+		actions.push(Actions.owner.setCurator(config.curator));
 	}
 
-	if (config.sentinels) {
+	if (config.sentinels?.length) {
 		for (const sentinel of config.sentinels) {
-			calls.push(Actions.owner.setIsSentinel(sentinel, true));
-			console.log(`  - setIsSentinel(${sentinel}, true)`);
+			actions.push(Actions.owner.setIsSentinel(sentinel, true));
 		}
 	}
 
-	if (calls.length > 0) {
-		console.log(`  → bundling ${calls.length} call(s) into one multicall tx`);
-		await (await vault.multicall(calls)).wait();
-		await waitHalfSecond();
-	} else {
-		console.log("  → nothing to update");
+	// `setOwner` LAST — anything after this would run as the new owner.
+	if (config.new_owner) {
+		actions.push(Actions.owner.setOwner(config.new_owner));
 	}
 
-	// Owner transfer goes last — after this tx, we lose admin power.
-	if (config.new_owner) {
-		console.log(`  - setOwner(${config.new_owner}) — separate tx (final)`);
-		await (await vault.setOwner(config.new_owner)).wait();
+	return actions;
+}
+
+/**
+ * Convenience wrapper: build + send the owner actions as a single
+ * multicall. Returns the tx response (or `null` if there was nothing
+ * to do).
+ */
+export async function setupOwnerSettings(
+	vault: Vault,
+	me: string,
+	config: OwnerSettingsConfig,
+) {
+	console.log("\n || 👮 Owner settings ||");
+
+	if ((await vault.owner()) !== me) {
+		throw new Error(`Access denied: only the owner can run this. Got ${me}.`);
 	}
+
+	const actions = await buildOwnerActions(vault, config);
+	if (actions.length === 0) {
+		console.log("  → nothing to update");
+		return null;
+	}
+	console.log(`  → bundling ${actions.length} action(s) into one multicall`);
+	return vault.multicall(actions);
 }

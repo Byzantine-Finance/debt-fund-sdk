@@ -75,7 +75,9 @@ export class AdaptersFactoryClient {
 			return ERC4626Merkl.findERC4626MerklAdapter(this.cp, parentVault, underlying);
 		}
 		if (type === "morphoMarketV1") {
-			return MorphoMarketV1.findMorphoMarketV1Adapter(this.cp, parentVault, underlying);
+			// V2 factory: `underlying` is unused — there is exactly one
+			// MorphoMarketV1 adapter per parentVault per chain.
+			return MorphoMarketV1.findMorphoMarketV1Adapter(this.cp, parentVault);
 		}
 
 		// Type unspecified — try them all.
@@ -102,7 +104,6 @@ export class AdaptersFactoryClient {
 					found = await MorphoMarketV1.findMorphoMarketV1Adapter(
 						this.cp,
 						parentVault,
-						underlying,
 					);
 				}
 				if (found && found !== ZERO_ADDRESS) return found;
@@ -207,13 +208,13 @@ export class AdapterInstance {
 		this.requireType("morphoMarketV1");
 		return MorphoMarketV1.getUnderlying(this.contract);
 	}
-	getMarketParamsListLength(): Promise<number> {
+	getMarketIdsLength(): Promise<number> {
 		this.requireType("morphoMarketV1");
-		return MorphoMarketV1.getMarketParamsListLength(this.contract);
+		return MorphoMarketV1.getMarketIdsLength(this.contract);
 	}
-	getMarketParamsList(index: number): Promise<MorphoMarketV1.MarketParams> {
+	getMarketId(index: number): Promise<string> {
 		this.requireType("morphoMarketV1");
-		return MorphoMarketV1.getMarketParamsList(this.contract, index);
+		return MorphoMarketV1.getMarketId(this.contract, index);
 	}
 
 	// ----- generic reads (work for any type) -----

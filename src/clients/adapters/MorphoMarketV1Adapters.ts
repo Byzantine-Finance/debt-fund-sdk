@@ -17,30 +17,27 @@ export interface MarketParams {
 }
 
 // ============================================================================
-// Factory functions
+// Factory functions — V2 ABI: morpho + adaptiveCurveIrm are baked into the
+// factory at deploy time, so per-call only `parentVault` is passed.
 // ============================================================================
 
 export async function deployMorphoMarketV1Adapter(
 	cp: ContractProvider,
 	vaultAddress: string,
-	morphoMarketV1: string,
 ): Promise<DeployAdapterResult> {
 	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
 	try {
-		const adapterAddress: string = await factory.createMorphoMarketV1Adapter.staticCall(
-			vaultAddress,
-			morphoMarketV1,
-		);
+		const adapterAddress: string =
+			await factory.createMorphoMarketV1AdapterV2.staticCall(vaultAddress);
 		const tx = await executeContractMethod(
 			factory,
-			"createMorphoMarketV1Adapter",
+			"createMorphoMarketV1AdapterV2",
 			vaultAddress,
-			morphoMarketV1,
 		);
 		(tx as DeployAdapterResult).adapterAddress = adapterAddress;
 		return tx as DeployAdapterResult;
 	} catch (error) {
-		throw formatContractError("createMorphoMarketV1Adapter", error);
+		throw formatContractError("createMorphoMarketV1AdapterV2", error);
 	}
 }
 
@@ -49,16 +46,29 @@ export async function isMorphoMarketV1Adapter(
 	account: string,
 ): Promise<boolean> {
 	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
-	return callContractMethod(factory, "isMorphoMarketV1Adapter", account);
+	return callContractMethod(factory, "isMorphoMarketV1AdapterV2", account);
 }
 
 export async function findMorphoMarketV1Adapter(
 	cp: ContractProvider,
 	vaultAddress: string,
-	morphoMarketV1: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
-	return callContractMethod(factory, "morphoMarketV1Adapter", vaultAddress, morphoMarketV1);
+	return callContractMethod(factory, "morphoMarketV1AdapterV2", vaultAddress);
+}
+
+/** Read the morpho address baked into the factory. */
+export async function getFactoryMorpho(cp: ContractProvider): Promise<string> {
+	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
+	return callContractMethod(factory, "morpho");
+}
+
+/** Read the adaptive-curve IRM address baked into the factory. */
+export async function getFactoryAdaptiveCurveIrm(
+	cp: ContractProvider,
+): Promise<string> {
+	const factory = await getAdapterFactoryContract(cp, "morphoMarketV1");
+	return callContractMethod(factory, "adaptiveCurveIrm");
 }
 
 // ============================================================================
@@ -76,15 +86,15 @@ export async function getUnderlying(contract: ethers.Contract): Promise<string> 
 	return callContractMethod(contract, "morpho");
 }
 
-export async function getMarketParamsListLength(
+export async function getMarketIdsLength(
 	contract: ethers.Contract,
 ): Promise<number> {
-	return callContractMethod(contract, "marketParamsListLength");
+	return callContractMethod(contract, "marketIdsLength");
 }
 
-export async function getMarketParamsList(
+export async function getMarketId(
 	contract: ethers.Contract,
 	index: number,
-): Promise<MarketParams> {
-	return callContractMethod(contract, "marketParamsList", index);
+): Promise<string> {
+	return callContractMethod(contract, "marketIds", index);
 }

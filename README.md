@@ -185,9 +185,13 @@ All four implementations are bigint-only — `parseX(formatX(v)) === v` for repr
 const { vault, vaultAddress } = await client.createVault(owner, asset, salt);
 
 // Deploy an adapter — `cometRewards` only required for compoundV3.
+// For `morphoMarketV1` the `underlying` arg is ignored (the morpho address
+// is fixed by the factory's constructor — V2 ABI).
 await client.deployAdapter(type, parentVault, underlying, cometRewards?);
 
 // Find an existing adapter (any type if `type` omitted).
+// For `morphoMarketV1` there is exactly one adapter per parentVault (the
+// `underlying` arg is ignored).
 await client.findAdapter(parentVault, underlying, { type?, cometRewards? });
 
 // Adapter introspection
@@ -202,8 +206,8 @@ await client.getUnderlyingERC4626(address);
 await client.getUnderlyingERC4626Merkl(address);
 await client.getUnderlyingCompoundV3(address);
 await client.getUnderlyingMarketV1(address);
-await client.getMarketParamsListLength(address);
-await client.getMarketParamsList(address, index);
+await client.getMarketIdsLength(address);
+await client.getMarketId(address, index);              // returns bytes32
 
 // Network
 await client.getNetworkConfig();

@@ -39,11 +39,9 @@ export async function deployAdapter(
 				cometRewards,
 			);
 		case "morphoMarketV1":
-			return MorphoMarketV1.deployMorphoMarketV1Adapter(
-				cp,
-				parentAddress,
-				underlyingAddress,
-			);
+			// V2 factory: `underlyingAddress` is unused — the morpho address is
+			// fixed by the factory's constructor.
+			return MorphoMarketV1.deployMorphoMarketV1Adapter(cp, parentAddress);
 	}
 }
 

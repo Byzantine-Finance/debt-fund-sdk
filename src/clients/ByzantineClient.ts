@@ -185,15 +185,15 @@ export class ByzantineClient {
 			.getUnderlyingMarketFromAdapterV1();
 	}
 
-	getMarketParamsListLength(adapterAddress: string): Promise<number> {
+	getMarketIdsLength(adapterAddress: string): Promise<number> {
 		return this.adaptersClient
 			.adapter(adapterAddress, "morphoMarketV1")
-			.getMarketParamsListLength();
+			.getMarketIdsLength();
 	}
-	getMarketParamsList(adapterAddress: string, index: number): Promise<MarketParams> {
+	getMarketId(adapterAddress: string, index: number): Promise<string> {
 		return this.adaptersClient
 			.adapter(adapterAddress, "morphoMarketV1")
-			.getMarketParamsList(index);
+			.getMarketId(index);
 	}
 
 	// ====================================================================

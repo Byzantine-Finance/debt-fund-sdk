@@ -11,173 +11,177 @@ import { waitHalfSecond } from "./toolbox";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 /**
- * Apply curator-side configuration to a vault in a single `multicall` tx.
+ * Pre-deploy any missing adapters listed in `config.underlying_vaults` and
+ * return a map `underlying → adapter address`. Adapter deployment goes
+ * through a separate factory contract, so it cannot be inside the vault's
+ * multicall — that's why this is a distinct phase.
  *
- * The previous version of this helper sent up to ~15 sequential txs (one
- * per `instantX` call). Now we collect every change as an `Action`, then
- * fire one transaction:
- *
- *   - allocators (setIsAllocator)
- *   - fee recipients + fees
- *   - per-adapter:
- *       - addAdapter
- *       - setForceDeallocatePenalty
- *       - increase relative + absolute caps (or decrease if shrinking)
- *
- * Adapter creation (`deployAdapter`) cannot be batched — adapter
- * factories are separate contracts, not the vault itself. Those are
- * still done one-by-one before the multicall.
+ * Returns the mapping for `buildCuratorActions` to consume.
  */
-export async function setupCuratorsSettings(
+export async function deployCuratorAdapters(
 	client: ByzantineClient,
 	vault: Vault,
-	userAddress: string,
 	config: CuratorsSettingsConfig,
-): Promise<void> {
-	console.log("\n || 🧑‍🍳 Setting curator settings ||");
+): Promise<Map<string, string>> {
+	const map = new Map<string, string>();
+	if (!config.underlying_vaults?.length) return map;
 
-	const curator = await vault.curator();
-	if (curator !== userAddress) {
-		throw new Error(
-			`Access denied: only the curator can run this. Got ${curator}, expected ${userAddress}.`,
-		);
+	for (const u of config.underlying_vaults) {
+		let adapterAddress: string | undefined;
+		try {
+			adapterAddress = await client.findAdapter(vault.address, u.address, {
+				type: u.type,
+				cometRewards: u.comet_rewards,
+			});
+		} catch {
+			/* not found — fall through to deploy */
+		}
+
+		if (!adapterAddress || adapterAddress === ZERO_ADDRESS) {
+			console.log(`  - deploying adapter for ${u.address} (${u.type})`);
+			const tx = await client.deployAdapter(
+				u.type,
+				vault.address,
+				u.address,
+				u.comet_rewards,
+			);
+			await tx.wait();
+			await waitHalfSecond();
+			adapterAddress = tx.adapterAddress;
+		}
+		map.set(u.address, adapterAddress);
 	}
+	return map;
+}
 
-	const calls: Action[] = [];
+/**
+ * Build the curator-side Action list (allocators, fees, recipients,
+ * addAdapter, force-deallocate penalties, cap up/down) for a multicall.
+ *
+ * `adaptersByUnderlying` must be supplied by `deployCuratorAdapters` — we
+ * only know what to addAdapter / cap once the adapter addresses exist.
+ *
+ * Pure: no transactions are sent.
+ */
+export async function buildCuratorActions(
+	client: ByzantineClient,
+	vault: Vault,
+	config: CuratorsSettingsConfig,
+	adaptersByUnderlying: Map<string, string>,
+): Promise<Action[]> {
+	const actions: Action[] = [];
 
 	// ----- ALLOCATORS -----
 	if (config.allocators?.length) {
 		for (const allocator of config.allocators) {
-			if (await vault.isAllocator(allocator)) {
-				console.log(`  - allocator ${allocator} already set, skipping`);
-				continue;
-			}
-			calls.push(Actions.curator.instantSetIsAllocator(allocator, true));
-			console.log(`  - + instantSetIsAllocator(${allocator})`);
+			if (await vault.isAllocator(allocator)) continue;
+			actions.push(Actions.curator.instantSetIsAllocator(allocator, true));
 		}
 	}
 
-	// ----- FEES (recipients FIRST, then fee values) -----
-	// Reason: the contract requires `recipient != 0` before `fee != 0`.
+	// ----- FEES (recipients FIRST, then values — contract requires it) -----
 	if (config.performance_fee_recipient) {
-		calls.push(
+		actions.push(
 			Actions.curator.instantSetPerformanceFeeRecipient(config.performance_fee_recipient),
 		);
-		console.log(`  - + perf fee recipient = ${config.performance_fee_recipient}`);
 	}
 	if (config.management_fee_recipient) {
-		calls.push(
+		actions.push(
 			Actions.curator.instantSetManagementFeeRecipient(config.management_fee_recipient),
 		);
-		console.log(`  - + mgmt fee recipient = ${config.management_fee_recipient}`);
 	}
 	if (config.performance_fee !== undefined) {
-		calls.push(Actions.curator.instantSetPerformanceFee(config.performance_fee));
-		console.log(`  - + perf fee = ${config.performance_fee}`);
+		actions.push(Actions.curator.instantSetPerformanceFee(config.performance_fee));
 	}
 	if (config.management_fee !== undefined) {
-		calls.push(Actions.curator.instantSetManagementFee(config.management_fee));
-		console.log(`  - + mgmt fee = ${config.management_fee}`);
+		actions.push(Actions.curator.instantSetManagementFee(config.management_fee));
 	}
 
-	// ----- ADAPTERS (deploy first — separate txs — then bundle the rest) -----
-	const adapterByUnderlying = new Map<string, string>();
-
+	// ----- ADAPTERS (already deployed) -----
 	if (config.underlying_vaults?.length) {
 		for (const u of config.underlying_vaults) {
-			let adapterAddress: string | undefined;
-			try {
-				adapterAddress = await client.findAdapter(vault.address, u.address, {
-					type: u.type,
-					cometRewards: u.comet_rewards,
-				});
-			} catch {
-				/* not found — fall through to deploy */
+			const adapter = adaptersByUnderlying.get(u.address);
+			if (!adapter) continue; // shouldn't happen if deployCuratorAdapters ran
+
+			if (!(await vault.isAdapter(adapter))) {
+				actions.push(Actions.curator.instantAddAdapter(adapter));
 			}
 
-			if (!adapterAddress || adapterAddress === ZERO_ADDRESS) {
-				console.log(`  - deploying adapter for ${u.address} (${u.type})`);
-				const tx = await client.deployAdapter(
-					u.type,
-					vault.address,
-					u.address,
-					u.comet_rewards,
-				);
-				await tx.wait();
-				await waitHalfSecond();
-				adapterAddress = tx.adapterAddress;
-			}
-			adapterByUnderlying.set(u.address, adapterAddress);
-
-			// addAdapter — bundle into multicall
-			if (!(await vault.isAdapter(adapterAddress))) {
-				calls.push(Actions.curator.instantAddAdapter(adapterAddress));
-				console.log(`  - + addAdapter(${adapterAddress})`);
-			}
-
-			// force-deallocate penalty
 			if (u.deallocate_penalty !== undefined) {
-				calls.push(
+				actions.push(
 					Actions.curator.instantSetForceDeallocatePenalty(
-						adapterAddress,
+						adapter,
 						u.deallocate_penalty,
 					),
 				);
-				console.log(`  - + forceDeallocatePenalty(${adapterAddress}, ${u.deallocate_penalty})`);
 			}
 
-			// caps — read current to decide between increase/decrease
 			if (u.caps_per_id?.length) {
 				for (const cap of u.caps_per_id) {
 					const idForCap =
-						cap.id ?? (await defaultIdForAdapter(client, adapterAddress, u.type));
-					const idDataBlob = idData("this", adapterAddress);
+						cap.id ?? (await defaultIdForAdapter(client, adapter, u.type));
+					const idDataBlob = idData("this", adapter);
 
 					if (cap.relative_cap !== undefined) {
 						const current = await vault.relativeCap(idForCap);
-						if (current <= cap.relative_cap) {
-							calls.push(
-								Actions.curator.instantIncreaseRelativeCap(idDataBlob, cap.relative_cap),
-							);
-							console.log(`  - + increaseRelativeCap → ${cap.relative_cap}`);
-						} else {
-							calls.push(Actions.curator.decreaseRelativeCap(idDataBlob, cap.relative_cap));
-							console.log(`  - + decreaseRelativeCap → ${cap.relative_cap}`);
-						}
+						actions.push(
+							current <= cap.relative_cap
+								? Actions.curator.instantIncreaseRelativeCap(idDataBlob, cap.relative_cap)
+								: Actions.curator.decreaseRelativeCap(idDataBlob, cap.relative_cap),
+						);
 					}
 					if (cap.absolute_cap !== undefined) {
 						const current = await vault.absoluteCap(idForCap);
-						if (current <= cap.absolute_cap) {
-							calls.push(
-								Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, cap.absolute_cap),
-							);
-							console.log(`  - + increaseAbsoluteCap → ${cap.absolute_cap}`);
-						} else {
-							calls.push(Actions.curator.decreaseAbsoluteCap(idDataBlob, cap.absolute_cap));
-							console.log(`  - + decreaseAbsoluteCap → ${cap.absolute_cap}`);
-						}
+						actions.push(
+							current <= cap.absolute_cap
+								? Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, cap.absolute_cap)
+								: Actions.curator.decreaseAbsoluteCap(idDataBlob, cap.absolute_cap),
+						);
 					}
 				}
 			}
 		}
 	}
 
-	// ----- FIRE THE BUNDLE -----
-	if (calls.length === 0) {
-		console.log("  → nothing to update");
-		return;
+	return actions;
+}
+
+/**
+ * Convenience wrapper: deploy missing adapters, then send all curator
+ * actions as a single multicall. Returns the multicall tx response (or
+ * `null` if there was nothing to do).
+ *
+ * Use `deployCuratorAdapters` + `buildCuratorActions` directly if you
+ * want to fold curator actions into a larger multicall (alongside owner
+ * and allocator actions).
+ */
+export async function setupCuratorsSettings(
+	client: ByzantineClient,
+	vault: Vault,
+	me: string,
+	config: CuratorsSettingsConfig,
+) {
+	console.log("\n || 🧑‍🍳 Curator settings ||");
+
+	if ((await vault.curator()) !== me) {
+		throw new Error(`Access denied: only the curator can run this. Got ${me}.`);
 	}
-	console.log(`\n  🚀 Bundling ${calls.length} curator action(s) into ONE multicall tx`);
-	const tx = await vault.multicall(calls);
-	const receipt = await tx.wait();
-	console.log(`  ✅ tx ${tx.hash} (gas ${receipt?.gasUsed})`);
+
+	const adapters = await deployCuratorAdapters(client, vault, config);
+	const actions = await buildCuratorActions(client, vault, config, adapters);
+
+	if (actions.length === 0) {
+		console.log("  → nothing to update");
+		return null;
+	}
+	console.log(`  → bundling ${actions.length} action(s) into one multicall`);
+	return vault.multicall(actions);
 }
 
 /**
  * Default id used by cap helpers when the user didn't provide one.
- * For single-id adapters (erc4626, erc4626Merkl, compoundV3) this is the
- * adapter's only id. For Morpho Market V1 the user must specify the id
- * explicitly (we don't auto-pick a market).
+ * Single-id adapters return their lone id from `ids()`; Morpho Market V1
+ * exposes many ids and the user must specify which one to cap.
  */
 async function defaultIdForAdapter(
 	client: ByzantineClient,

@@ -77,11 +77,13 @@ describe("getAdapterFactoryContract — ABI surface per type", () => {
 		expect(f.interface.getFunction("compoundV3Adapter")).not.toBeNull();
 	});
 
-	it("morphoMarketV1 factory exposes createMorphoMarketV1Adapter + isMorphoMarketV1Adapter", async () => {
+	it("morphoMarketV1 factory exposes createMorphoMarketV1AdapterV2 + isMorphoMarketV1AdapterV2", async () => {
 		const f = await getAdapterFactoryContract(cp, "morphoMarketV1");
-		expect(f.interface.getFunction("createMorphoMarketV1Adapter")).not.toBeNull();
-		expect(f.interface.getFunction("isMorphoMarketV1Adapter")).not.toBeNull();
-		expect(f.interface.getFunction("morphoMarketV1Adapter")).not.toBeNull();
+		expect(f.interface.getFunction("createMorphoMarketV1AdapterV2")).not.toBeNull();
+		expect(f.interface.getFunction("isMorphoMarketV1AdapterV2")).not.toBeNull();
+		expect(f.interface.getFunction("morphoMarketV1AdapterV2")).not.toBeNull();
+		expect(f.interface.getFunction("morpho")).not.toBeNull();
+		expect(f.interface.getFunction("adaptiveCurveIrm")).not.toBeNull();
 	});
 });
 
@@ -109,13 +111,14 @@ describe("getAdapterContract — ABI surface per deployed-adapter type", () => {
 		expect(c.interface.getFunction("comet")).not.toBeNull();
 	});
 
-	it("morphoMarketV1 adapter exposes ids + morpho + marketParamsList", () => {
+	it("morphoMarketV1 adapter exposes ids + morpho + marketIds", () => {
 		const c = getAdapterContract(cp, ADAPTER_ADDR, "morphoMarketV1");
 		expect(c.target).toBe(ADAPTER_ADDR);
 		expect(c.interface.getFunction("ids")).not.toBeNull();
 		expect(c.interface.getFunction("morpho")).not.toBeNull();
-		expect(c.interface.getFunction("marketParamsList")).not.toBeNull();
-		expect(c.interface.getFunction("marketParamsListLength")).not.toBeNull();
+		expect(c.interface.getFunction("marketIds")).not.toBeNull();
+		expect(c.interface.getFunction("marketIdsLength")).not.toBeNull();
+		expect(c.interface.getFunction("adaptiveCurveIrm")).not.toBeNull();
 	});
 
 	it("each adapter Interface exposes a `factory()` getter", () => {
@@ -149,8 +152,8 @@ describe("AdapterInstance — class wrapper", () => {
 		expect(() => inst.getIdsCompoundV3()).toThrow(/compoundV3/);
 	});
 
-	it("getMarketParamsList throws if called on a non-morphoMarketV1 adapter", () => {
+	it("getMarketId throws if called on a non-morphoMarketV1 adapter", () => {
 		const inst = new AdapterInstance(cp, ADAPTER_ADDR, "erc4626");
-		expect(() => inst.getMarketParamsList(0)).toThrow(/morphoMarketV1/);
+		expect(() => inst.getMarketId(0)).toThrow(/morphoMarketV1/);
 	});
 });
