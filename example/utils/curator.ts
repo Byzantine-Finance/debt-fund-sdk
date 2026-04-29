@@ -1,351 +1,199 @@
-import { ByzantineClient } from "../../src";
+import {
+	type Action,
+	Actions,
+	type ByzantineClient,
+	idData,
+	type Vault,
+} from "../../src";
+import type { CuratorsSettingsConfig } from "../curators-settings";
 import { waitHalfSecond } from "./toolbox";
-import { CuratorsSettingsConfig } from "../curators-settings";
-import { getIdData } from "../../src/clients/curators/Cap";
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+/**
+ * Apply curator-side configuration to a vault in a single `multicall` tx.
+ *
+ * The previous version of this helper sent up to ~15 sequential txs (one
+ * per `instantX` call). Now we collect every change as an `Action`, then
+ * fire one transaction:
+ *
+ *   - allocators (setIsAllocator)
+ *   - fee recipients + fees
+ *   - per-adapter:
+ *       - addAdapter
+ *       - setForceDeallocatePenalty
+ *       - increase relative + absolute caps (or decrease if shrinking)
+ *
+ * Adapter creation (`deployAdapter`) cannot be batched — adapter
+ * factories are separate contracts, not the vault itself. Those are
+ * still done one-by-one before the multicall.
+ */
 export async function setupCuratorsSettings(
-  client: ByzantineClient,
-  vaultAddress: string,
-  userAddress: string,
-  curatorsSettings: CuratorsSettingsConfig
-) {
-  try {
-    const curator = await client.getCurator(vaultAddress);
-    if (curator !== userAddress) {
-      console.log("Access denied: only the curator can proceed here.");
-      throw new Error("Access denied: only the curator can proceed here.");
-    }
+	client: ByzantineClient,
+	vault: Vault,
+	userAddress: string,
+	config: CuratorsSettingsConfig,
+): Promise<void> {
+	console.log("\n || 🧑‍🍳 Setting curator settings ||");
 
-    const newAllocators = curatorsSettings.allocators;
+	const curator = await vault.curator();
+	if (curator !== userAddress) {
+		throw new Error(
+			`Access denied: only the curator can run this. Got ${curator}, expected ${userAddress}.`,
+		);
+	}
 
-    if (newAllocators && newAllocators.length > 0) {
-      for (const allocator of newAllocators) {
-        try {
-          const isAllocator = await client.getIsAllocator(
-            vaultAddress,
-            allocator
-          );
-          if (isAllocator) {
-            console.log(`👷‍ Allocator ${allocator} is already set`);
-            continue;
-          }
-          const tx = await client.instantSetIsAllocator(
-            vaultAddress,
-            allocator,
-            true
-          );
-          await tx.wait();
-        } catch {
-          const timelockSetIsAllocator = await client.getTimelock(
-            vaultAddress,
-            "setIsAllocator"
-          );
-          console.error(
-            `Error setting allocator ${allocator}, please wait ${timelockSetIsAllocator} seconds`
-          );
-        }
-        await waitHalfSecond();
-        console.log(`👷‍ Allocator ${allocator} set to true`);
-      }
-    }
+	const calls: Action[] = [];
 
-    console.log("💰 Setting fees");
+	// ----- ALLOCATORS -----
+	if (config.allocators?.length) {
+		for (const allocator of config.allocators) {
+			if (await vault.isAllocator(allocator)) {
+				console.log(`  - allocator ${allocator} already set, skipping`);
+				continue;
+			}
+			calls.push(Actions.curator.instantSetIsAllocator(allocator, true));
+			console.log(`  - + instantSetIsAllocator(${allocator})`);
+		}
+	}
 
-    if (curatorsSettings.performance_fee_recipient !== undefined) {
-      console.log(
-        `  - Setting performance fee recipient to ${curatorsSettings.performance_fee_recipient}`
-      );
-      const tx = await client.instantSetPerformanceFeeRecipient(
-        vaultAddress,
-        curatorsSettings.performance_fee_recipient
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.management_fee_recipient !== undefined) {
-      console.log(
-        `  - Setting management fee recipient to ${curatorsSettings.management_fee_recipient}`
-      );
-      const tx = await client.instantSetManagementFeeRecipient(
-        vaultAddress,
-        curatorsSettings.management_fee_recipient
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.performance_fee !== undefined) {
-      console.log(
-        `  - Setting performance fee to ${curatorsSettings.performance_fee}`
-      );
-      const tx = await client.instantSetPerformanceFee(
-        vaultAddress,
-        curatorsSettings.performance_fee
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
-    if (curatorsSettings.management_fee !== undefined) {
-      console.log(
-        `  - Setting management fee to ${curatorsSettings.management_fee}`
-      );
-      const tx = await client.instantSetManagementFee(
-        vaultAddress,
-        curatorsSettings.management_fee
-      );
-      await tx.wait();
-      await waitHalfSecond();
-    }
+	// ----- FEES (recipients FIRST, then fee values) -----
+	// Reason: the contract requires `recipient != 0` before `fee != 0`.
+	if (config.performance_fee_recipient) {
+		calls.push(
+			Actions.curator.instantSetPerformanceFeeRecipient(config.performance_fee_recipient),
+		);
+		console.log(`  - + perf fee recipient = ${config.performance_fee_recipient}`);
+	}
+	if (config.management_fee_recipient) {
+		calls.push(
+			Actions.curator.instantSetManagementFeeRecipient(config.management_fee_recipient),
+		);
+		console.log(`  - + mgmt fee recipient = ${config.management_fee_recipient}`);
+	}
+	if (config.performance_fee !== undefined) {
+		calls.push(Actions.curator.instantSetPerformanceFee(config.performance_fee));
+		console.log(`  - + perf fee = ${config.performance_fee}`);
+	}
+	if (config.management_fee !== undefined) {
+		calls.push(Actions.curator.instantSetManagementFee(config.management_fee));
+		console.log(`  - + mgmt fee = ${config.management_fee}`);
+	}
 
-    // const NEEDS_TO_ADD_UNDERLYING_VAULT = // Because only curator can add underlying vault
-    //   curatorsSettings.underlying_vaults &&
-    //   curatorsSettings.underlying_vaults.length > 0;
-    const NEEDS_TO_CAP_BY_ID = // There must be at least one underlying vault with at least one cap_per_id
-      curatorsSettings.underlying_vaults &&
-      curatorsSettings.underlying_vaults.reduce(
-        (acc, underlying) =>
-          acc +
-          (underlying.caps_per_id && underlying.caps_per_id.length > 0 ? 1 : 0),
-        0
-      ) > 0;
+	// ----- ADAPTERS (deploy first — separate txs — then bundle the rest) -----
+	const adapterByUnderlying = new Map<string, string>();
 
-    if (curatorsSettings.underlying_vaults) {
-      // Maps to store adapter addresses and deallocate penalties
-      const mappingAdapters = new Map<string, string>(); // Will store the address of the adapter for each underlying vault
-      const mappingDeallocatePenalties = new Map<string, bigint>(); // Will store deallocate penalties per adapter
+	if (config.underlying_vaults?.length) {
+		for (const u of config.underlying_vaults) {
+			let adapterAddress: string | undefined;
+			try {
+				adapterAddress = await client.findAdapter(vault.address, u.address, {
+					type: u.type,
+					cometRewards: u.comet_rewards,
+				});
+			} catch {
+				/* not found — fall through to deploy */
+			}
 
-      // First round: create adapters if needed and build mapping
-      for (const underlying of curatorsSettings.underlying_vaults) {
-        let adapterAddress;
+			if (!adapterAddress || adapterAddress === ZERO_ADDRESS) {
+				console.log(`  - deploying adapter for ${u.address} (${u.type})`);
+				const tx = await client.deployAdapter(
+					u.type,
+					vault.address,
+					u.address,
+					u.comet_rewards,
+				);
+				await tx.wait();
+				await waitHalfSecond();
+				adapterAddress = tx.adapterAddress;
+			}
+			adapterByUnderlying.set(u.address, adapterAddress);
 
-        console.log(
-          `- Processing underlying vault: ${underlying.address} (${underlying.type})`
-        );
+			// addAdapter — bundle into multicall
+			if (!(await vault.isAdapter(adapterAddress))) {
+				calls.push(Actions.curator.instantAddAdapter(adapterAddress));
+				console.log(`  - + addAdapter(${adapterAddress})`);
+			}
 
-        // Try to find existing adapter
-        try {
-          adapterAddress = await client.findAdapter(
-            vaultAddress,
-            underlying.address,
-            {
-              type: underlying.type,
-              cometRewards: underlying.comet_rewards,
-            }
-          );
-          console.log(
-            `  - Found existing adapter: ${adapterAddress} for parent ${vaultAddress} and underlying ${
-              underlying.address
-            } ${
-              underlying.comet_rewards &&
-              `and cometRewards ${underlying.comet_rewards}`
-            }`
-          );
-        } catch (error) {
-          console.log(
-            `  - No existing adapter found for parent ${vaultAddress} and underlying ${
-              underlying.address
-            } ${
-              underlying.comet_rewards &&
-              `and cometRewards ${underlying.comet_rewards}`
-            }`
-          );
-        }
+			// force-deallocate penalty
+			if (u.deallocate_penalty !== undefined) {
+				calls.push(
+					Actions.curator.instantSetForceDeallocatePenalty(
+						adapterAddress,
+						u.deallocate_penalty,
+					),
+				);
+				console.log(`  - + forceDeallocatePenalty(${adapterAddress}, ${u.deallocate_penalty})`);
+			}
 
-        // If no adapter found or it's the zero address, create one
-        if (
-          !adapterAddress ||
-          adapterAddress === "0x0000000000000000000000000000000000000000"
-        ) {
-          console.log(`    - Creating new adapter for ${underlying.address}`);
-          const tx = await client.deployAdapter(
-            underlying.type,
-            vaultAddress,
-            underlying.address,
-            underlying.comet_rewards
-          );
-          await tx.wait();
-          await waitHalfSecond();
-          adapterAddress = tx.adapterAddress;
-          console.log(`    - Deployed new adapter: ${adapterAddress}`);
-        }
+			// caps — read current to decide between increase/decrease
+			if (u.caps_per_id?.length) {
+				for (const cap of u.caps_per_id) {
+					const idForCap =
+						cap.id ?? (await defaultIdForAdapter(client, adapterAddress, u.type));
+					const idDataBlob = idData("this", adapterAddress);
 
-        // Store the adapter address in mapping
-        if (adapterAddress) {
-          mappingAdapters.set(underlying.address, adapterAddress);
-        }
+					if (cap.relative_cap !== undefined) {
+						const current = await vault.relativeCap(idForCap);
+						if (current <= cap.relative_cap) {
+							calls.push(
+								Actions.curator.instantIncreaseRelativeCap(idDataBlob, cap.relative_cap),
+							);
+							console.log(`  - + increaseRelativeCap → ${cap.relative_cap}`);
+						} else {
+							calls.push(Actions.curator.decreaseRelativeCap(idDataBlob, cap.relative_cap));
+							console.log(`  - + decreaseRelativeCap → ${cap.relative_cap}`);
+						}
+					}
+					if (cap.absolute_cap !== undefined) {
+						const current = await vault.absoluteCap(idForCap);
+						if (current <= cap.absolute_cap) {
+							calls.push(
+								Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, cap.absolute_cap),
+							);
+							console.log(`  - + increaseAbsoluteCap → ${cap.absolute_cap}`);
+						} else {
+							calls.push(Actions.curator.decreaseAbsoluteCap(idDataBlob, cap.absolute_cap));
+							console.log(`  - + decreaseAbsoluteCap → ${cap.absolute_cap}`);
+						}
+					}
+				}
+			}
+		}
+	}
 
-        // Store deallocate penalty if it exists
-        if (underlying.deallocate_penalty) {
-          mappingDeallocatePenalties.set(
-            underlying.address,
-            underlying.deallocate_penalty
-          );
-        }
+	// ----- FIRE THE BUNDLE -----
+	if (calls.length === 0) {
+		console.log("  → nothing to update");
+		return;
+	}
+	console.log(`\n  🚀 Bundling ${calls.length} curator action(s) into ONE multicall tx`);
+	const tx = await vault.multicall(calls);
+	const receipt = await tx.wait();
+	console.log(`  ✅ tx ${tx.hash} (gas ${receipt?.gasUsed})`);
+}
 
-        await waitHalfSecond();
-      }
-
-      // Second round: add the adapters to the vault
-      console.log("  - Adding adapters to vault...");
-      for (const [underlyingAddress, adapterAddress] of mappingAdapters) {
-        try {
-          console.log(
-            `    - Setting adapter ${adapterAddress} for underlying ${underlyingAddress}`
-          );
-          await client.instantAddAdapter(vaultAddress, adapterAddress);
-          await waitHalfSecond();
-        } catch (error) {
-          console.error(
-            `    - Error setting adapter for ${underlyingAddress}:`,
-            error
-          );
-        }
-      }
-
-      // Third round: set deallocate penalties for adapters
-      console.log("  - Setting deallocate penalties for adapters...");
-      for (const [underlyingAddress, penalty] of mappingDeallocatePenalties) {
-        const adapterAddress = mappingAdapters.get(underlyingAddress);
-        if (!adapterAddress) {
-          console.warn(
-            `    - No adapter found for ${underlyingAddress}, skipping deallocate penalty`
-          );
-          continue;
-        }
-        try {
-          console.log(
-            `    - Setting deallocate penalty ${penalty} for ${adapterAddress}`
-          );
-          await client.instantSetForceDeallocatePenalty(
-            vaultAddress,
-            adapterAddress,
-            penalty
-          );
-          await waitHalfSecond();
-        } catch (error) {
-          console.error(
-            `    - Error setting deallocate penalty for ${adapterAddress}:`,
-            error
-          );
-        }
-      }
-
-      console.log("  - Adapter mapping completed:");
-      console.log(
-        "    - Underlying -> Adapter mapping:",
-        Object.fromEntries(mappingAdapters)
-      );
-      console.log(
-        "    - Deallocate penalties mapping:",
-        Object.fromEntries(mappingDeallocatePenalties)
-      );
-
-      // Fourth round: set caps per ID if configured
-      if (NEEDS_TO_CAP_BY_ID && curatorsSettings.underlying_vaults) {
-        console.log("  - Setting caps per ID...");
-
-        for (const underlying of curatorsSettings.underlying_vaults) {
-          if (underlying.caps_per_id && underlying.caps_per_id.length > 0) {
-            for (const capConfig of underlying.caps_per_id) {
-              try {
-                // Get the adapter address for this underlying
-                const adapterAddress = mappingAdapters.get(underlying.address);
-                if (!adapterAddress) {
-                  console.warn(
-                    `    - No adapter found for underlying ${underlying.address}, skipping caps for ID ${capConfig.id}`
-                  );
-                  continue;
-                }
-
-                console.log(
-                  `    - Setting caps for ID ${capConfig.id} (from underlying ${underlying.address}, adapter ${adapterAddress})`
-                );
-
-                const idData = getIdData("this", [adapterAddress]);
-
-                if (capConfig.relative_cap) {
-                  const vaultId = await client.getIdsAdapterERC4626(
-                    adapterAddress
-                  );
-
-                  const currentRelativeCap = await client.getRelativeCap(
-                    vaultAddress,
-                    vaultId
-                  );
-                  // console.log(
-                  //   "currentRelativeCap",
-                  //   currentRelativeCap,
-                  //   " and capConfig.relative_cap",
-                  //   capConfig.relative_cap,
-                  //   " and currentRelativeCap <= capConfig.relative_cap",
-                  //   currentRelativeCap <= capConfig.relative_cap
-                  // );
-                  if (currentRelativeCap <= capConfig.relative_cap) {
-                    console.log(
-                      `    - Increasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
-                    );
-                    await client.instantIncreaseRelativeCap(
-                      vaultAddress,
-                      idData, // Use the ID directly as idData
-                      capConfig.relative_cap
-                    );
-                  } else {
-                    console.log(
-                      `    - Decreasing relative cap ${capConfig.relative_cap} for ID ${capConfig.id} with idData ${idData}`
-                    );
-                    await client.decreaseRelativeCap(
-                      vaultAddress,
-                      idData, // Use the ID directly as idData
-                      capConfig.relative_cap
-                    );
-                  }
-                  await waitHalfSecond();
-                }
-
-                if (capConfig.absolute_cap) {
-                  const vaultId = await client.getIdsAdapterERC4626(
-                    adapterAddress
-                  );
-
-                  const currentAbsoluteCap = await client.getAbsoluteCap(
-                    vaultAddress,
-                    vaultId
-                  );
-                  if (currentAbsoluteCap <= capConfig.absolute_cap) {
-                    console.log(
-                      `    - Increasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
-                    );
-                    const tx = await client.instantIncreaseAbsoluteCap(
-                      vaultAddress,
-                      idData, // Use the ID directly as idData
-                      capConfig.absolute_cap
-                    );
-                    await tx.wait();
-                  } else {
-                    console.log(
-                      `    -  Decreasing absolute cap ${capConfig.absolute_cap} for ID ${capConfig.id} with idData ${idData}`
-                    );
-                    const tx = await client.decreaseAbsoluteCap(
-                      vaultAddress,
-                      idData, // Use the ID directly as idData
-                      capConfig.absolute_cap
-                    );
-                    await tx.wait();
-                  }
-
-                  await waitHalfSecond();
-                }
-              } catch (error) {
-                console.error(
-                  `    - Error setting caps for ID ${capConfig.id}:`,
-                  error
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error curating vault:", error);
-  }
+/**
+ * Default id used by cap helpers when the user didn't provide one.
+ * For single-id adapters (erc4626, erc4626Merkl, compoundV3) this is the
+ * adapter's only id. For Morpho Market V1 the user must specify the id
+ * explicitly (we don't auto-pick a market).
+ */
+async function defaultIdForAdapter(
+	client: ByzantineClient,
+	adapterAddress: string,
+	type: "erc4626" | "erc4626Merkl" | "compoundV3" | "morphoMarketV1",
+): Promise<string> {
+	switch (type) {
+		case "erc4626":
+			return client.getIdsERC4626(adapterAddress);
+		case "erc4626Merkl":
+			return client.getIdsERC4626Merkl(adapterAddress);
+		case "compoundV3":
+			return client.getIdsCompoundV3(adapterAddress);
+		case "morphoMarketV1":
+			throw new Error(
+				"Morpho Market V1 adapters expose multiple ids — pass `cap.id` explicitly.",
+			);
+	}
 }

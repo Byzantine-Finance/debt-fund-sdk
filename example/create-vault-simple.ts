@@ -1,42 +1,37 @@
-import { ByzantineClient } from "../src/clients/ByzantineClient";
 import { ethers, randomBytes } from "ethers";
-import { fullReading, RPC_URL, MNEMONIC } from "./utils";
+import { ByzantineClient } from "../src";
+import { fullReading, MNEMONIC, RPC_URL } from "./utils/toolbox";
 
-// Example of minimal configuration
-// We'll set your address as the owner
-// And we'll pick a random salt for the vault creation
+/**
+ * Minimal example: create a vault with the calling wallet as the owner.
+ * The salt is randomized so each run produces a fresh vault address.
+ */
 const SETUP_VAULT_CONFIG = {
-  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on base
+	asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
 };
 
 async function main() {
-  console.log("Start example to create and configure a vault");
+	console.log("Start example: create vault (minimal)");
 
-  try {
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
-    const client = new ByzantineClient(provider, wallet);
+	const provider = new ethers.JsonRpcProvider(RPC_URL);
+	const wallet = ethers.Wallet.fromPhrase(MNEMONIC).connect(provider);
+	const client = new ByzantineClient(provider, wallet);
+	const userAddress = await wallet.getAddress();
 
-    const userAddress = await wallet.getAddress();
+	const tx = await client.createVault(
+		userAddress,
+		SETUP_VAULT_CONFIG.asset,
+		ethers.hexlify(randomBytes(32)),
+	);
+	console.log(`Vault creation tx: ${tx.hash}`);
+	await tx.wait();
+	console.log(`✅ Vault deployed at ${tx.vaultAddress}`);
 
-    const txCreateVault = await client.createVault(
-      userAddress,
-      SETUP_VAULT_CONFIG.asset,
-      ethers.hexlify(randomBytes(32))
-    );
-    await txCreateVault.wait();
-
-    console.log("Vault creation transaction sent", txCreateVault.hash);
-    const VAULT_ADDRESS = txCreateVault.vaultAddress;
-
-    if (!VAULT_ADDRESS) {
-      throw new Error("Vault address not found");
-    }
-
-    await fullReading(client, VAULT_ADDRESS, userAddress);
-  } catch (error) {
-    console.error("Error creating vault simple:", error);
-  }
+	// `tx.vault` is a ready-to-use Vault instance — handy for chained config.
+	await fullReading(client, tx.vault, userAddress);
 }
 
-main();
+main().catch((err) => {
+	console.error("Error:", err);
+	process.exit(1);
+});

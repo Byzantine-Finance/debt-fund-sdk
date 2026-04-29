@@ -1,51 +1,40 @@
-import { ByzantineClient } from "../../src/clients/ByzantineClient";
-import { formatUnits } from "ethers";
+import type { Vault } from "../../src";
+import { formatAmount } from "../../src";
 import { waitHalfSecond } from "./toolbox";
 
-export // Helper function to check and approve asset if needed
-async function checkAndApproveIfNeeded(
-  client: ByzantineClient,
-  vaultAddress: string,
-  amount: bigint,
-  userAddress: string,
-  operation: "deposit" | "mint" | "withdraw" | "redeem" = "deposit"
+/**
+ * Ensure the vault has enough underlying-asset allowance for a given operation.
+ * Approves only if needed; returns `true` if an approval tx was sent.
+ *
+ * For `mint`, the input is in shares — we preview the asset cost first.
+ */
+export async function checkAndApproveIfNeeded(
+	vault: Vault,
+	amount: bigint,
+	userAddress: string,
+	operation: "deposit" | "mint" | "withdraw" | "redeem" = "deposit",
 ): Promise<boolean> {
-  // For mint operations, we need to calculate how many assets are needed
-  let amountToApprove = amount;
+	let amountToApprove = amount;
 
-  if (operation === "mint") {
-    amountToApprove = await client.previewMint(vaultAddress, amount);
-    console.log(
-      `   📊 For minting ${formatUnits(amount, 18)} shares, need ${formatUnits(
-        amountToApprove,
-        6
-      )} USDC`
-    );
-  }
+	if (operation === "mint") {
+		amountToApprove = await vault.previewMint(amount);
+		console.log(
+			`   📊 Mint ${formatAmount(amount, 18, 4)} shares → need ${formatAmount(amountToApprove, 6, 4)} USDC`,
+		);
+	}
 
-  const currentAllowance = await client.getAssetAllowance(
-    vaultAddress,
-    userAddress
-  );
+	const currentAllowance = await vault.assetAllowance(userAddress);
+	if (currentAllowance < amountToApprove) {
+		console.log(
+			`   🔓 Approving vault for ${formatAmount(amountToApprove, 6, 4)} USDC (${operation})`,
+		);
+		await (await vault.approveAsset(amountToApprove)).wait();
+		await waitHalfSecond();
+		return true;
+	}
 
-  if (currentAllowance < amountToApprove) {
-    console.log(
-      `   🔓 Approving vault to spend ${formatUnits(
-        amountToApprove,
-        6
-      )} USDC for ${operation}`
-    );
-    const tx = await client.approveAsset(vaultAddress, amountToApprove);
-    await tx.wait();
-    await waitHalfSecond();
-    return true; // Approval was needed and performed
-  }
-
-  console.log(
-    `   ✅ Vault already has sufficient allowance (${formatUnits(
-      currentAllowance,
-      6
-    )} USDC) for ${operation}`
-  );
-  return false; // No approval needed
+	console.log(
+		`   ✅ Allowance sufficient (${formatAmount(currentAllowance, 6, 4)} USDC) for ${operation}`,
+	);
+	return false;
 }
