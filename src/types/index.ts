@@ -6,6 +6,7 @@ export interface NetworkConfig {
 	morphoRegistry: string;
 	scanLink: string;
 	USDCaddress: string;
+	EURCaddress: string;
 	adapters: {
 		erc4626AdapterFactory: string;
 		erc4626MerklAdapterFactory: string;

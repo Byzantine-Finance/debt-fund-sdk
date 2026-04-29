@@ -11,7 +11,8 @@
  * instance; everything else lives there.
  */
 
-import type { ethers } from "ethers";
+import { Contract, type ethers } from "ethers";
+import { VAULT_FACTORY_ABI } from "../constants/abis";
 import type { ChainsOptions, NetworkConfig } from "../types";
 import { Vault } from "../Vault";
 import { ContractProvider, executeContractMethod, formatContractError } from "../utils";
@@ -70,7 +71,7 @@ export class ByzantineClient {
 		salt: string,
 	): Promise<CreateVaultResult> {
 		try {
-			const factory = await this.contractProvider.getVaultFactoryContract();
+			const factory = await this.getVaultFactoryContract();
 
 			const vaultAddress: string = await factory.createVaultV2.staticCall(
 				owner,
@@ -203,10 +204,11 @@ export class ByzantineClient {
 		return this.contractProvider.getNetworkConfig();
 	}
 	getChainId(): Promise<ChainsOptions> {
-		return this.contractProvider.getCurrentChainId();
+		return this.contractProvider.getChainId();
 	}
-	getVaultFactoryContract(): Promise<ethers.Contract> {
-		return this.contractProvider.getVaultFactoryContract();
+	async getVaultFactoryContract(): Promise<ethers.Contract> {
+		const cfg = await this.contractProvider.getNetworkConfig();
+		return new Contract(cfg.vaultV2Factory, VAULT_FACTORY_ABI, this.contractProvider.runner);
 	}
 
 	// ====================================================================
