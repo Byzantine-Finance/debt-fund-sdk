@@ -5,7 +5,9 @@
  */
 
 import { type HDNodeWallet, Wallet } from "ethers";
-import type { Address } from "viem";
+
+/** EVM address as a 0x-prefixed hex string. */
+export type Address = `0x${string}`;
 
 /**
  * Create an ethers `Wallet` from a BIP-39 mnemonic.
