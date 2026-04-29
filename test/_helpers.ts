@@ -17,7 +17,14 @@ export const hasRpc = () => RPC_URL.length > 0;
 /** Read-write integration tests need RPC + signer mnemonic. */
 export const hasRpcAndSigner = () => hasRpc() && MNEMONIC.length > 0;
 
-/** Some read tests want a known vault to inspect. */
+/**
+ * `TEST_VAULT_ADDRESS` points at an existing vault to inspect.
+ *
+ * 🚨 READ-ONLY. This address is only used by `integration-read/*` tests
+ * to verify reads against a real, populated vault. Never deploy, never
+ * write — write-side integration tests always create a *fresh* vault
+ * via `setupWithFreshVault()` and operate exclusively on that vault.
+ */
 export const hasTestVault = () => hasRpc() && TEST_VAULT_ADDRESS.length > 0;
 
 /** Multicall bundle test needs a real ERC4626 vault to plug in as adapter target. */
