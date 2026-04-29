@@ -50,8 +50,9 @@ tx (after that, the running wallet loses admin power).
 
 Drives `setupCuratorsSettings` from `example/utils/curator.ts`, which
 collects every curator-side change (allocators, fees, recipients,
-adapters, force-deallocate penalties, cap up/down) into a single
-multicall. Previously this was up to ~15 sequential transactions.
+adapters, force-deallocate penalties, cap up/down, transfer/deposit/
+withdraw gates) into a single multicall. Previously this was up to
+~15 sequential transactions.
 
 ### 💼 `allocators-settings.ts` — allocator ops
 
@@ -72,8 +73,10 @@ multicall transaction.
 
 `example/utils/` contains pieces reused across the examples:
 
-- `toolbox.ts` — env loading, wait helpers, and `fullReading()` which
-  prints a vault's full state.
+- `toolbox.ts` — env loading, wait helpers, `fullReading()` which
+  prints a vault's full state, and `describeActions()` which decodes
+  each calldata in a multicall before sending it (handy for tracing
+  what's actually in a bundle).
 - `owner.ts`, `curator.ts`, `allocator.ts` — the per-role setup
   functions; each bundles whatever it can into one multicall.
 - `depositor.ts` — `checkAndApproveIfNeeded()` for the deposit/mint
