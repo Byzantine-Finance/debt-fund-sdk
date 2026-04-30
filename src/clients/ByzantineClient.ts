@@ -23,8 +23,11 @@ import { Vault } from "../Vault";
 import type {
 	AdapterInstance,
 	AdapterType,
+	CometState,
 	DeployAdapterResult,
+	ERC4626VaultState,
 	MarketParams,
+	MorphoMarketState,
 } from "./adapters";
 import { AdaptersClient, AdaptersFactoryClient } from "./adapters";
 
@@ -208,6 +211,45 @@ export class ByzantineClient {
 		return this.adaptersClient
 			.adapter(adapterAddress, "morphoMarketV1")
 			.getMarketId(index);
+	}
+
+	// ----- live state reads (per-adapter-type) -----
+	/** Read live state of a Morpho V1 market by id. */
+	getMarketState(
+		adapterAddress: string,
+		id: string,
+	): Promise<MorphoMarketState> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "morphoMarketV1")
+			.getMarketState(id);
+	}
+	/** Read live state of the underlying Comet for a Compound V3 adapter. */
+	getCometState(adapterAddress: string): Promise<CometState> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "compoundV3")
+			.getCometState();
+	}
+	/** Read live state of the underlying ERC-4626 vault for an erc4626 adapter. */
+	getVaultStateERC4626(adapterAddress: string): Promise<ERC4626VaultState> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "erc4626")
+			.getVaultStateERC4626();
+	}
+	/** Read live state of the underlying ERC-4626 vault for an erc4626Merkl adapter. */
+	getVaultStateERC4626Merkl(
+		adapterAddress: string,
+	): Promise<ERC4626VaultState> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "erc4626Merkl")
+			.getVaultStateERC4626Merkl();
+	}
+
+	/** Read the on-chain `adapterId` (bytes32) — works for any adapter type. */
+	getAdapterId(
+		adapterAddress: string,
+		type: AdapterType,
+	): Promise<string> {
+		return this.adaptersClient.adapter(adapterAddress, type).getAdapterId();
 	}
 
 	/**

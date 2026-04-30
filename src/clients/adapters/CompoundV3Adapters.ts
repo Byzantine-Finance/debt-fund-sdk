@@ -1,4 +1,5 @@
-import type { ethers } from "ethers";
+import { Contract, type ethers } from "ethers";
+import { CometV3ABI } from "../../constants/abis";
 import {
 	type ContractProvider,
 	callContractMethod,
@@ -7,6 +8,21 @@ import {
 } from "../../utils";
 import { getAdapterFactoryContract } from "./_contracts";
 import type { DeployAdapterResult } from "./GlobalAdapters";
+
+/** Snapshot of a Compound V3 (Comet) base market. Assets in baseToken units. */
+export interface CometState {
+	cometAddress: string;
+	totalSupply: bigint;
+	totalBorrow: bigint;
+	/** totalSupply - totalBorrow. */
+	liquidity: bigint;
+	/** Per-Comet 1e18 utilization (totalBorrow / totalSupply). */
+	utilization: bigint;
+	/** Adapter's withdrawable balance in base token (Comet rebases `balanceOf`). */
+	adapterBalance: bigint;
+	/** Per-second supply rate in WAD. */
+	supplyRatePerSec: bigint;
+}
 
 // ============================================================================
 // Factory functions
@@ -72,10 +88,53 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
+/** Read the on-chain `adapterId` (bytes32) baked into the deployed adapter. */
+export async function getAdapterId(
+	contract: ethers.Contract,
+): Promise<string> {
+	return callContractMethod(contract, "adapterId");
+}
+
 export async function getUnderlying(
 	contract: ethers.Contract,
 ): Promise<string> {
 	return callContractMethod(contract, "comet");
+}
+
+/**
+ * Read the live state of the underlying Comet for this adapter.
+ * Returns liquidity, utilization, supply rate, and the adapter's own balance.
+ */
+export async function getCometState(
+	contract: ethers.Contract,
+): Promise<CometState> {
+	const cometAddress = await getUnderlying(contract);
+	const comet = new Contract(cometAddress, CometV3ABI, contract.runner);
+
+	const [totalSupply, totalBorrow, utilization, adapterBalance] =
+		await Promise.all([
+			comet.totalSupply() as Promise<bigint>,
+			comet.totalBorrow() as Promise<bigint>,
+			comet.getUtilization() as Promise<bigint>,
+			comet.balanceOf(contract.target) as Promise<bigint>,
+		]);
+
+	let supplyRatePerSec = 0n;
+	try {
+		supplyRatePerSec = (await comet.getSupplyRate(utilization)) as bigint;
+	} catch {
+		supplyRatePerSec = 0n;
+	}
+
+	return {
+		cometAddress,
+		totalSupply,
+		totalBorrow,
+		liquidity: totalSupply - totalBorrow,
+		utilization,
+		adapterBalance,
+		supplyRatePerSec,
+	};
 }
 
 export async function getCometRewards(

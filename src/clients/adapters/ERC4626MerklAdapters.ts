@@ -1,4 +1,4 @@
-import type { ethers } from "ethers";
+import { Contract, type ethers } from "ethers";
 import {
 	type ContractProvider,
 	callContractMethod,
@@ -6,7 +6,14 @@ import {
 	formatContractError,
 } from "../../utils";
 import { getAdapterFactoryContract } from "./_contracts";
+import type { ERC4626VaultState } from "./ERC4626Adapters";
 import type { DeployAdapterResult } from "./GlobalAdapters";
+
+const ERC4626_VIEW_ABI = [
+	"function totalAssets() view returns (uint256)",
+	"function totalSupply() view returns (uint256)",
+	"function maxWithdraw(address owner) view returns (uint256)",
+];
 
 // ============================================================================
 // Factory functions
@@ -67,10 +74,35 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
+/** Read the on-chain `adapterId` (bytes32) baked into the deployed adapter. */
+export async function getAdapterId(
+	contract: ethers.Contract,
+): Promise<string> {
+	return callContractMethod(contract, "adapterId");
+}
+
 export async function getUnderlying(
 	contract: ethers.Contract,
 ): Promise<string> {
 	return callContractMethod(contract, "erc4626Vault");
+}
+
+/** Read the live state of the underlying ERC-4626 vault. */
+export async function getVaultState(
+	contract: ethers.Contract,
+): Promise<ERC4626VaultState> {
+	const underlyingAddress = await getUnderlying(contract);
+	const underlying = new Contract(
+		underlyingAddress,
+		ERC4626_VIEW_ABI,
+		contract.runner,
+	);
+	const [totalAssets, totalSupply, maxWithdraw] = await Promise.all([
+		underlying.totalAssets() as Promise<bigint>,
+		underlying.totalSupply() as Promise<bigint>,
+		underlying.maxWithdraw(contract.target) as Promise<bigint>,
+	]);
+	return { underlyingAddress, totalAssets, totalSupply, maxWithdraw };
 }
 
 export async function getMerklDistributor(

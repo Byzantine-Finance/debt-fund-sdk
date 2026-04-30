@@ -15,7 +15,7 @@ interface VaultOperations {
 	redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0x08077ad8ddca0aa4f91922d9397d48877257fdd7";
+const VAULT_ADDRESS = "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145";
 
 const DEPOSIT_CONFIG: VaultOperations = {
 	// depositAmount: parseUnits("0.1", 6),

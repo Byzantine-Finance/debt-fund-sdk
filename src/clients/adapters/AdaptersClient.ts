@@ -195,6 +195,10 @@ export class AdapterInstance {
 		this.requireType("erc4626");
 		return ERC4626.getUnderlying(this.contract);
 	}
+	getVaultStateERC4626(): Promise<ERC4626.ERC4626VaultState> {
+		this.requireType("erc4626");
+		return ERC4626.getVaultState(this.contract);
+	}
 
 	getIdsERC4626Merkl(): Promise<string[]> {
 		this.requireType("erc4626Merkl");
@@ -204,6 +208,10 @@ export class AdapterInstance {
 		this.requireType("erc4626Merkl");
 		return ERC4626Merkl.getUnderlying(this.contract);
 	}
+	getVaultStateERC4626Merkl(): Promise<ERC4626.ERC4626VaultState> {
+		this.requireType("erc4626Merkl");
+		return ERC4626Merkl.getVaultState(this.contract);
+	}
 
 	getIdsCompoundV3(): Promise<string[]> {
 		this.requireType("compoundV3");
@@ -212,6 +220,10 @@ export class AdapterInstance {
 	getUnderlyingCompoundV3(): Promise<string> {
 		this.requireType("compoundV3");
 		return CompoundV3.getUnderlying(this.contract);
+	}
+	getCometState(): Promise<CompoundV3.CometState> {
+		this.requireType("compoundV3");
+		return CompoundV3.getCometState(this.contract);
 	}
 
 	getIdsMarketV1(marketParams: MorphoMarketV1.MarketParams): Promise<string[]> {
@@ -229,6 +241,24 @@ export class AdapterInstance {
 	getMarketId(index: number): Promise<string> {
 		this.requireType("morphoMarketV1");
 		return MorphoMarketV1.getMarketId(this.contract, index);
+	}
+	getMarketState(id: string): Promise<MorphoMarketV1.MorphoMarketState> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getMarketState(this.contract, id);
+	}
+
+	/** Read the on-chain `adapterId` (bytes32) — implemented by every adapter type. */
+	getAdapterId(): Promise<string> {
+		switch (this.type) {
+			case "erc4626":
+				return ERC4626.getAdapterId(this.contract);
+			case "erc4626Merkl":
+				return ERC4626Merkl.getAdapterId(this.contract);
+			case "compoundV3":
+				return CompoundV3.getAdapterId(this.contract);
+			case "morphoMarketV1":
+				return MorphoMarketV1.getAdapterId(this.contract);
+		}
 	}
 
 	// ----- generic reads (work for any type) -----

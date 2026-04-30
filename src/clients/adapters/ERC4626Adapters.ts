@@ -1,4 +1,4 @@
-import type { ethers } from "ethers";
+import { Contract, type ethers } from "ethers";
 import {
 	type ContractProvider,
 	callContractMethod,
@@ -7,6 +7,24 @@ import {
 } from "../../utils";
 import { getAdapterFactoryContract } from "./_contracts";
 import type { DeployAdapterResult } from "./GlobalAdapters";
+
+/** Standard ERC-4626 view surface — used to query any underlying vault. */
+const ERC4626_VIEW_ABI = [
+	"function totalAssets() view returns (uint256)",
+	"function totalSupply() view returns (uint256)",
+	"function maxWithdraw(address owner) view returns (uint256)",
+];
+
+/** Snapshot of an underlying ERC-4626 vault held by this adapter. */
+export interface ERC4626VaultState {
+	underlyingAddress: string;
+	/** TVL of the underlying vault, in asset units. */
+	totalAssets: bigint;
+	/** Underlying vault's share supply. */
+	totalSupply: bigint;
+	/** Assets the adapter can withdraw right now. */
+	maxWithdraw: bigint;
+}
 
 // ============================================================================
 // Factory functions
@@ -67,6 +85,13 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
+/** Read the on-chain `adapterId` (bytes32) baked into the deployed adapter. */
+export async function getAdapterId(
+	contract: ethers.Contract,
+): Promise<string> {
+	return callContractMethod(contract, "adapterId");
+}
+
 export async function getUnderlying(
 	contract: ethers.Contract,
 ): Promise<string> {
@@ -77,6 +102,27 @@ export async function getSkimRecipient(
 	contract: ethers.Contract,
 ): Promise<string> {
 	return callContractMethod(contract, "skimRecipient");
+}
+
+/**
+ * Read the live state of the underlying ERC-4626 vault.
+ * No on-chain APY (would require historical share-price drift).
+ */
+export async function getVaultState(
+	contract: ethers.Contract,
+): Promise<ERC4626VaultState> {
+	const underlyingAddress = await getUnderlying(contract);
+	const underlying = new Contract(
+		underlyingAddress,
+		ERC4626_VIEW_ABI,
+		contract.runner,
+	);
+	const [totalAssets, totalSupply, maxWithdraw] = await Promise.all([
+		underlying.totalAssets() as Promise<bigint>,
+		underlying.totalSupply() as Promise<bigint>,
+		underlying.maxWithdraw(contract.target) as Promise<bigint>,
+	]);
+	return { underlyingAddress, totalAssets, totalSupply, maxWithdraw };
 }
 
 // ============================================================================

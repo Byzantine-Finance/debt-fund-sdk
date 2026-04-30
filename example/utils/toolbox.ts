@@ -73,10 +73,27 @@ export function describeActions(
 	}
 }
 
+/**
+ * Per-id live snapshot pulled from the underlying protocol. All four
+ * adapter types contribute the fields they can read on-chain — fields
+ * that don't apply (e.g. APY for ERC4626 vaults) are left undefined.
+ */
+interface IdMarketData {
+	/** Total assets supplied in the underlying market (loanToken units). */
+	underlyingTotalAssets?: bigint;
+	/** Free liquidity available right now in the underlying market. */
+	underlyingLiquidity?: bigint;
+	/** 1e18-scaled utilization (totalBorrow/totalSupply). */
+	utilization?: bigint;
+	/** Per-second supply rate in WAD. Annualize via `formatAnnualRate`. */
+	supplyRatePerSec?: bigint;
+}
+
 interface AdapterSnapshot {
 	index: number;
 	address: string;
 	adapterType: AdapterType | undefined;
+	adapterId: string | undefined;
 	underlying: string;
 	forceDeallocatePenalty: bigint;
 	idsWithCaps: {
@@ -84,6 +101,7 @@ interface AdapterSnapshot {
 		absoluteCap: bigint;
 		relativeCap: bigint;
 		allocation: bigint;
+		marketData?: IdMarketData;
 	}[];
 }
 
@@ -162,6 +180,59 @@ async function readAdapterUnderlying(
 }
 
 /**
+ * Pull live state for a single (adapter, id) pair from the underlying protocol.
+ * Returns `undefined` for fields that don't apply to the adapter type
+ * (ERC4626/Merkl have no on-chain APY, etc.) or when the read fails.
+ */
+async function readIdMarketData(
+	client: ByzantineClient,
+	adapterAddress: string,
+	type: AdapterType | undefined,
+	id: string,
+): Promise<IdMarketData | undefined> {
+	try {
+		switch (type) {
+			case "morphoMarketV1": {
+				const s = await client.getMarketState(adapterAddress, id);
+				return {
+					underlyingTotalAssets: s.totalSupplyAssets,
+					underlyingLiquidity: s.liquidity,
+					utilization: s.utilization,
+					supplyRatePerSec: s.supplyRatePerSec,
+				};
+			}
+			case "compoundV3": {
+				const s = await client.getCometState(adapterAddress);
+				return {
+					underlyingTotalAssets: s.totalSupply,
+					underlyingLiquidity: s.liquidity,
+					utilization: s.utilization,
+					supplyRatePerSec: s.supplyRatePerSec,
+				};
+			}
+			case "erc4626": {
+				const s = await client.getVaultStateERC4626(adapterAddress);
+				return {
+					underlyingTotalAssets: s.totalAssets,
+					underlyingLiquidity: s.maxWithdraw,
+				};
+			}
+			case "erc4626Merkl": {
+				const s = await client.getVaultStateERC4626Merkl(adapterAddress);
+				return {
+					underlyingTotalAssets: s.totalAssets,
+					underlyingLiquidity: s.maxWithdraw,
+				};
+			}
+			default:
+				return undefined;
+		}
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Print the full state of a vault to the console and return it as a struct.
  * Useful in examples / debugging — not meant for production code paths.
  */
@@ -224,12 +295,24 @@ export async function fullReading(
 				adapterType,
 			);
 
+			const adapterId = adapterType
+				? await client
+						.getAdapterId(address, adapterType)
+						.catch(() => undefined)
+				: undefined;
+
 			const idsWithCaps = await Promise.all(
 				ids.map(async (id) => ({
 					id,
 					absoluteCap: await vault.absoluteCap(id).catch(() => 0n),
 					relativeCap: await vault.relativeCap(id).catch(() => 0n),
 					allocation: await vault.allocation(id).catch(() => 0n),
+					marketData: await readIdMarketData(
+						client,
+						address,
+						adapterType,
+						id,
+					),
 				})),
 			);
 
@@ -237,6 +320,7 @@ export async function fullReading(
 				index,
 				address,
 				adapterType,
+				adapterId,
 				underlying,
 				forceDeallocatePenalty,
 				idsWithCaps,
@@ -301,6 +385,9 @@ export async function fullReading(
 				isLiquidity ? "  💦 (liquidity adapter)" : ""
 			}`,
 		);
+		if (a.adapterId) {
+			console.log(`*       adapterId: ${a.adapterId}`);
+		}
 		if (a.idsWithCaps.length === 0) {
 			console.log(`*       no IDs found`);
 		}
@@ -308,6 +395,31 @@ export async function fullReading(
 			console.log(
 				`*       ID ${c.id}: relCap ${formatPercent(c.relativeCap)}% | absCap ${formatAmount(c.absoluteCap, 6, 4)} USDC | alloc ${formatAmount(c.allocation, 6, 4)}`,
 			);
+			const md = c.marketData;
+			if (md) {
+				const parts: string[] = [];
+				if (md.underlyingTotalAssets !== undefined) {
+					parts.push(
+						`undTVL ${formatAmount(md.underlyingTotalAssets, 6, 2)}`,
+					);
+				}
+				if (md.underlyingLiquidity !== undefined) {
+					parts.push(
+						`undLiq ${formatAmount(md.underlyingLiquidity, 6, 2)}`,
+					);
+				}
+				if (md.utilization !== undefined) {
+					parts.push(`util ${formatPercent(md.utilization)}%`);
+				}
+				if (md.supplyRatePerSec !== undefined) {
+					parts.push(
+						`supplyAPY ${formatAnnualRate(md.supplyRatePerSec)}%/y`,
+					);
+				}
+				if (parts.length > 0) {
+					console.log(`*           ${parts.join(" | ")}`);
+				}
+			}
 		}
 	}
 	console.log(`*`);
