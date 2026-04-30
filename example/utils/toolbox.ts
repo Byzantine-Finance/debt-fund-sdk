@@ -1,9 +1,10 @@
 import * as dotenv from "dotenv";
-import type { ethers } from "ethers";
+import { AbiCoder, type ethers, keccak256 } from "ethers";
 import type {
 	Action,
 	AdapterType,
 	ByzantineClient,
+	MarketParams,
 	TimelockFunction,
 	Vault,
 } from "../../src";
@@ -73,6 +74,54 @@ export function describeActions(
 	}
 }
 
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+/** Format an absolute cap, collapsing `type(uint256).max` to `∞` (unlimited). */
+function fmtAbsCap(cap: bigint, decimals = 6): string {
+	if (cap >= MAX_UINT256) return "∞";
+	return `${formatAmount(cap, decimals, 4)} USDC`;
+}
+
+type MorphoFlavour =
+	| "this"
+	| "this/marketParams"
+	| "collateralToken"
+	| "unknown";
+
+/**
+ * Label a Morpho V1 vault id by which `idData` flavour produced it.
+ *
+ * The Morpho V1 adapter's `ids(marketParams)` returns exactly three buckets
+ * — `this` (adapter-wide), `collateralToken` (per-collateral, shared across
+ * adapters), and `this/marketParams` (per-market under this adapter). We
+ * match the first two by recomputing `keccak256(abi.encode(...))` directly;
+ * anything else returned by the adapter for a market is, by elimination,
+ * the `this/marketParams` bucket.
+ */
+function classifyMorphoFlavour(
+	id: string,
+	adapterAddress: string,
+	adapterId: string | undefined,
+	marketParams: MarketParams | undefined,
+): MorphoFlavour {
+	const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+	if (adapterId && eq(id, adapterId)) return "this";
+	if (!marketParams) return "unknown";
+
+	const abi = AbiCoder.defaultAbiCoder();
+	const idCollateral = keccak256(
+		abi.encode(
+			["string", "address"],
+			["collateralToken", marketParams.collateralToken],
+		),
+	);
+	if (eq(id, idCollateral)) return "collateralToken";
+
+	// By elimination — current Morpho V1 adapter exposes only three flavours.
+	void adapterAddress;
+	return "this/marketParams";
+}
+
 /**
  * Per-id live snapshot pulled from the underlying protocol. All four
  * adapter types contribute the fields they can read on-chain — fields
@@ -89,6 +138,23 @@ interface IdMarketData {
 	supplyRatePerSec?: bigint;
 }
 
+interface IdCapEntry {
+	/** Vault-side id (the bytes32 the vault uses for caps + allocation). */
+	id: string;
+	absoluteCap: bigint;
+	relativeCap: bigint;
+	allocation: bigint;
+	/**
+	 * Morpho V1 only — the raw `bytes32` market id this entry was derived
+	 * from. Multiple vault ids can share one raw market (e.g. one bucket
+	 * per `idData` flavour: `this/marketParams`, `collateralToken`, …).
+	 */
+	rawMarketId?: string;
+	/** Morpho V1 only — the marketParams of `rawMarketId`. */
+	marketParams?: MarketParams;
+	marketData?: IdMarketData;
+}
+
 interface AdapterSnapshot {
 	index: number;
 	address: string;
@@ -96,13 +162,7 @@ interface AdapterSnapshot {
 	adapterId: string | undefined;
 	underlying: string;
 	forceDeallocatePenalty: bigint;
-	idsWithCaps: {
-		id: string;
-		absoluteCap: bigint;
-		relativeCap: bigint;
-		allocation: bigint;
-		marketData?: IdMarketData;
-	}[];
+	idsWithCaps: IdCapEntry[];
 }
 
 export interface FullReadingVault {
@@ -133,26 +193,87 @@ export interface FullReadingVault {
 	timelocks: { name: TimelockFunction; timelock: bigint }[];
 }
 
-/** Pull the per-adapter ids list — branches on the adapter type. */
-async function readAdapterIds(
+/**
+ * Build the list of cap-bearing entries for an adapter. The `id` field on
+ * each entry is the **vault-side** id (used by `vault.absoluteCap(id)` etc.).
+ *
+ * - For single-id adapter types (erc4626, erc4626Merkl, compoundV3) the
+ *   adapter's `ids()` returns the vault id directly — one entry per id.
+ * - For Morpho V1 markets, the adapter stores raw Morpho market ids in
+ *   `marketIds[]`, but caps/allocations are tracked under the vault ids
+ *   returned by `adapter.ids(marketParams)` (typically several buckets
+ *   per market). We resolve the marketParams via Morpho's
+ *   `idToMarketParams` and emit one entry per vault id, all sharing the
+ *   same `rawMarketId` and `marketData`.
+ */
+async function buildIdEntries(
 	client: ByzantineClient,
-	address: string,
+	vault: Vault,
+	adapterAddress: string,
 	type: AdapterType | undefined,
-): Promise<string[]> {
+): Promise<IdCapEntry[]> {
+	const fetchCaps = async (id: string) => ({
+		absoluteCap: await vault.absoluteCap(id).catch(() => 0n),
+		relativeCap: await vault.relativeCap(id).catch(() => 0n),
+		allocation: await vault.allocation(id).catch(() => 0n),
+	});
+
 	switch (type) {
 		case "erc4626":
-			return client.getIdsERC4626(address);
 		case "erc4626Merkl":
-			return client.getIdsERC4626Merkl(address);
-		case "compoundV3":
-			return client.getIdsCompoundV3(address);
+		case "compoundV3": {
+			const ids =
+				type === "erc4626"
+					? await client.getIdsERC4626(adapterAddress)
+					: type === "erc4626Merkl"
+						? await client.getIdsERC4626Merkl(adapterAddress)
+						: await client.getIdsCompoundV3(adapterAddress);
+			return Promise.all(
+				ids.map(async (id) => ({
+					id,
+					...(await fetchCaps(id)),
+					marketData: await readIdMarketData(
+						client,
+						adapterAddress,
+						type,
+						id,
+					),
+				})),
+			);
+		}
 		case "morphoMarketV1": {
-			const out: string[] = [];
-			const len = await client.getMarketIdsLength(address);
-			for (let i = 0; i < len; i++) {
-				out.push(await client.getMarketId(address, i));
-			}
-			return out;
+			const len = Number(await client.getMarketIdsLength(adapterAddress));
+			const perMarket = await Promise.all(
+				Array.from({ length: len }, async (_, i) => {
+					const rawMarketId = await client.getMarketId(adapterAddress, i);
+					const state = await client
+						.getMarketState(adapterAddress, rawMarketId)
+						.catch(() => undefined);
+					if (!state) return [] as IdCapEntry[];
+
+					const marketData: IdMarketData = {
+						underlyingTotalAssets: state.totalSupplyAssets,
+						underlyingLiquidity: state.liquidity,
+						utilization: state.utilization,
+						supplyRatePerSec: state.supplyRatePerSec,
+					};
+
+					const vaultIds = await client
+						.getIdsMarketV1(adapterAddress, state.marketParams)
+						.catch(() => [] as string[]);
+
+					return Promise.all(
+						vaultIds.map(async (id) => ({
+							id,
+							rawMarketId,
+							marketParams: state.marketParams,
+							marketData,
+							...(await fetchCaps(id)),
+						})),
+					);
+				}),
+			);
+			return perMarket.flat();
 		}
 		default:
 			return [];
@@ -288,7 +409,6 @@ export async function fullReading(
 				console.log(`  ! Could not detect type for ${address}: ${err}`);
 			}
 
-			const ids = await readAdapterIds(client, address, adapterType);
 			const underlying = await readAdapterUnderlying(
 				client,
 				address,
@@ -301,19 +421,11 @@ export async function fullReading(
 						.catch(() => undefined)
 				: undefined;
 
-			const idsWithCaps = await Promise.all(
-				ids.map(async (id) => ({
-					id,
-					absoluteCap: await vault.absoluteCap(id).catch(() => 0n),
-					relativeCap: await vault.relativeCap(id).catch(() => 0n),
-					allocation: await vault.allocation(id).catch(() => 0n),
-					marketData: await readIdMarketData(
-						client,
-						address,
-						adapterType,
-						id,
-					),
-				})),
+			const idsWithCaps = await buildIdEntries(
+				client,
+				vault,
+				address,
+				adapterType,
 			);
 
 			return {
@@ -390,36 +502,74 @@ export async function fullReading(
 		}
 		if (a.idsWithCaps.length === 0) {
 			console.log(`*       no IDs found`);
+			continue;
 		}
-		for (const c of a.idsWithCaps) {
-			console.log(
-				`*       ID ${c.id}: relCap ${formatPercent(c.relativeCap)}% | absCap ${formatAmount(c.absoluteCap, 6, 4)} USDC | alloc ${formatAmount(c.allocation, 6, 4)}`,
-			);
-			const md = c.marketData;
-			if (md) {
-				const parts: string[] = [];
-				if (md.underlyingTotalAssets !== undefined) {
-					parts.push(
-						`undTVL ${formatAmount(md.underlyingTotalAssets, 6, 2)}`,
-					);
-				}
-				if (md.underlyingLiquidity !== undefined) {
-					parts.push(
-						`undLiq ${formatAmount(md.underlyingLiquidity, 6, 2)}`,
-					);
-				}
-				if (md.utilization !== undefined) {
-					parts.push(`util ${formatPercent(md.utilization)}%`);
-				}
-				if (md.supplyRatePerSec !== undefined) {
-					parts.push(
-						`supplyAPY ${formatAnnualRate(md.supplyRatePerSec)}%/y`,
-					);
-				}
-				if (parts.length > 0) {
-					console.log(`*           ${parts.join(" | ")}`);
-				}
+
+		const printMarketData = (md: IdMarketData | undefined): void => {
+			if (!md) return;
+			const parts: string[] = [];
+			if (md.underlyingTotalAssets !== undefined) {
+				parts.push(`undTVL ${formatAmount(md.underlyingTotalAssets, 6, 2)}`);
 			}
+			if (md.underlyingLiquidity !== undefined) {
+				parts.push(`undLiq ${formatAmount(md.underlyingLiquidity, 6, 2)}`);
+			}
+			if (md.utilization !== undefined) {
+				parts.push(`util ${formatPercent(md.utilization)}%`);
+			}
+			if (md.supplyRatePerSec !== undefined) {
+				parts.push(`supplyAPY ${formatAnnualRate(md.supplyRatePerSec)}%/y`);
+			}
+			if (parts.length > 0) {
+				console.log(`*           ${parts.join(" | ")}`);
+			}
+		};
+		const printCapLine = (
+			c: IdCapEntry,
+			label: string | undefined,
+		): void => {
+			const lbl = label ? ` (${label})` : "";
+			console.log(
+				`*       ID ${c.id}${lbl}: relCap ${formatPercent(c.relativeCap)}% | absCap ${fmtAbsCap(c.absoluteCap)} | alloc ${formatAmount(c.allocation, 6, 4)}`,
+			);
+		};
+
+		// Pull out the adapter-wide ("this") entry — it appears once per
+		// market for Morpho V1 (same id across markets), so we dedupe and
+		// print it once at the top.
+		const isThis = (c: IdCapEntry) =>
+			a.adapterId !== undefined &&
+			c.id.toLowerCase() === a.adapterId.toLowerCase();
+		const adapterWide = a.idsWithCaps.find(isThis);
+		const perMarket = a.idsWithCaps.filter((c) => !isThis(c));
+
+		if (adapterWide) {
+			printCapLine(adapterWide, "adapter-wide");
+		}
+
+		let lastRawMarketId: string | undefined;
+		for (const c of perMarket) {
+			if (c.rawMarketId && c.rawMarketId !== lastRawMarketId) {
+				console.log(`*       Market ${c.rawMarketId}`);
+				lastRawMarketId = c.rawMarketId;
+			}
+			const flavour =
+				a.adapterType === "morphoMarketV1"
+					? classifyMorphoFlavour(
+							c.id,
+							a.address,
+							a.adapterId,
+							c.marketParams,
+						)
+					: undefined;
+			const label =
+				flavour === "this/marketParams"
+					? "per-market"
+					: flavour === "collateralToken"
+						? "collateral"
+						: undefined;
+			printCapLine(c, label);
+			printMarketData(c.marketData);
 		}
 	}
 	console.log(`*`);

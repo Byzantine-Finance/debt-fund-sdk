@@ -172,60 +172,66 @@ export async function getMarketState(
 	const morphoAddress = await getUnderlying(contract);
 	const morpho = new Contract(morphoAddress, MorphoBlueABI, contract.runner);
 
-	const [params, market] = await Promise.all([
+	const [params, marketResult] = await Promise.all([
 		morpho.idToMarketParams(id),
 		morpho.market(id),
 	]);
 
-	const marketParams: MarketParams = {
-		loanToken: params.loanToken,
-		collateralToken: params.collateralToken,
-		oracle: params.oracle,
-		irm: params.irm,
-		lltv: params.lltv.toString(),
+	// Build explicit structs — passing the raw ethers `Result` to a struct
+	// param sometimes encodes positionally, which breaks if the IRM ABI
+	// names don't line up byte-for-byte. Explicit objects avoid that.
+	const marketStruct = {
+		totalSupplyAssets: marketResult.totalSupplyAssets as bigint,
+		totalSupplyShares: marketResult.totalSupplyShares as bigint,
+		totalBorrowAssets: marketResult.totalBorrowAssets as bigint,
+		totalBorrowShares: marketResult.totalBorrowShares as bigint,
+		lastUpdate: marketResult.lastUpdate as bigint,
+		fee: marketResult.fee as bigint,
+	};
+	const paramsStruct = {
+		loanToken: params.loanToken as string,
+		collateralToken: params.collateralToken as string,
+		oracle: params.oracle as string,
+		irm: params.irm as string,
+		lltv: params.lltv as bigint,
 	};
 
-	const totalSupplyAssets = market.totalSupplyAssets as bigint;
-	const totalSupplyShares = market.totalSupplyShares as bigint;
-	const totalBorrowAssets = market.totalBorrowAssets as bigint;
-	const totalBorrowShares = market.totalBorrowShares as bigint;
-	const lastUpdate = market.lastUpdate as bigint;
-	const fee = market.fee as bigint;
-
 	const utilization =
-		totalSupplyAssets === 0n
+		marketStruct.totalSupplyAssets === 0n
 			? 0n
-			: (totalBorrowAssets * WAD) / totalSupplyAssets;
-	const liquidity = totalSupplyAssets - totalBorrowAssets;
+			: (marketStruct.totalBorrowAssets * WAD) / marketStruct.totalSupplyAssets;
+	const liquidity =
+		marketStruct.totalSupplyAssets - marketStruct.totalBorrowAssets;
 
 	let supplyRatePerSec = 0n;
-	if (marketParams.irm !== "0x0000000000000000000000000000000000000000") {
+	if (paramsStruct.irm !== "0x0000000000000000000000000000000000000000") {
 		try {
 			const irm = new Contract(
-				marketParams.irm,
+				paramsStruct.irm,
 				AdaptiveCurveIrmABI,
 				contract.runner,
 			);
 			const borrowRatePerSec: bigint = await irm.borrowRateView(
-				marketParams,
-				market,
+				paramsStruct,
+				marketStruct,
 			);
 			// supplyRate = borrowRate * util * (1 - fee), all in WAD.
 			supplyRatePerSec =
-				(borrowRatePerSec * utilization * (WAD - fee)) / (WAD * WAD);
+				(borrowRatePerSec * utilization * (WAD - marketStruct.fee)) /
+				(WAD * WAD);
 		} catch {
 			supplyRatePerSec = 0n;
 		}
 	}
 
 	return {
-		marketParams,
-		totalSupplyAssets,
-		totalSupplyShares,
-		totalBorrowAssets,
-		totalBorrowShares,
-		lastUpdate,
-		fee,
+		marketParams: { ...paramsStruct, lltv: paramsStruct.lltv.toString() },
+		totalSupplyAssets: marketStruct.totalSupplyAssets,
+		totalSupplyShares: marketStruct.totalSupplyShares,
+		totalBorrowAssets: marketStruct.totalBorrowAssets,
+		totalBorrowShares: marketStruct.totalBorrowShares,
+		lastUpdate: marketStruct.lastUpdate,
+		fee: marketStruct.fee,
 		utilization,
 		liquidity,
 		supplyRatePerSec,
