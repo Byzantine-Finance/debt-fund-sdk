@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { AbiCoder, type ethers, keccak256 } from "ethers";
+import type { ethers } from "ethers";
 import type {
 	Action,
 	AdapterType,
@@ -8,7 +8,12 @@ import type {
 	TimelockFunction,
 	Vault,
 } from "../../src";
-import { formatAmount, formatAnnualRate, formatPercent } from "../../src";
+import {
+	formatAmount,
+	formatAnnualRate,
+	formatPercent,
+	idHash,
+} from "../../src";
 
 dotenv.config();
 
@@ -91,12 +96,11 @@ export type MorphoFlavour =
 /**
  * Label a Morpho V1 vault id by which `idData` flavour produced it.
  *
- * The Morpho V1 adapter's `ids(marketParams)` returns exactly three buckets
- * — `this` (adapter-wide), `collateralToken` (per-collateral, shared across
- * adapters), and `this/marketParams` (per-market under this adapter). We
- * match the first two by recomputing `keccak256(abi.encode(...))` directly;
- * anything else returned by the adapter for a market is, by elimination,
- * the `this/marketParams` bucket.
+ * Each match is a positive hash check against the SDK's `idHash` —
+ * single source of truth for the contract-side encoding (see
+ * https://docs.morpho.org/get-started/resources/contracts/morpho-market-v1-adapter-v2/).
+ * Anything that doesn't match returns `unknown`, so a future 4th bucket
+ * is flagged instead of silently mislabelled.
  */
 export function classifyMorphoFlavour(
 	id: string,
@@ -108,18 +112,13 @@ export function classifyMorphoFlavour(
 	if (adapterId && eq(id, adapterId)) return "this";
 	if (!marketParams) return "unknown";
 
-	const abi = AbiCoder.defaultAbiCoder();
-	const idCollateral = keccak256(
-		abi.encode(
-			["string", "address"],
-			["collateralToken", marketParams.collateralToken],
-		),
-	);
-	if (eq(id, idCollateral)) return "collateralToken";
-
-	// By elimination — current Morpho V1 adapter exposes only three flavours.
-	void adapterAddress;
-	return "this/marketParams";
+	if (eq(id, idHash("collateralToken", marketParams.collateralToken))) {
+		return "collateralToken";
+	}
+	if (eq(id, idHash("this/marketParams", adapterAddress, marketParams))) {
+		return "this/marketParams";
+	}
+	return "unknown";
 }
 
 /**

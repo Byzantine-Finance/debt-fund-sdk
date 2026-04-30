@@ -21,6 +21,7 @@ export {
 	Actions,
 	flattenActions,
 	idData,
+	idHash,
 	timelockSelector,
 } from "./actions";
 export type {

@@ -80,8 +80,8 @@ multicall transaction.
   which decodes each calldata in a multicall before sending it
   (handy for tracing what's actually in a bundle). Also exports
   `classifyMorphoFlavour()` which labels a Morpho V1 vault id as
-  `this` / `this/marketParams` / `collateralToken` by recomputing
-  its `keccak256(idData)` locally.
+  `this` / `this/marketParams` / `collateralToken` by reusing the
+  SDK's `idHash` helper for the on-chain encoding.
 - `owner.ts`, `curator.ts`, `allocator.ts` — the per-role setup
   functions; each bundles whatever it can into one multicall.
 - `depositor.ts` — `checkAndApproveIfNeeded()` for the deposit/mint

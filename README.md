@@ -20,6 +20,8 @@ Breaking change vs v1: every `client.X(vaultAddress, ...)` call became `vault.X(
 
 **v2.0.1** adds on-chain live-state reads for each adapter type — utilization, free liquidity and (for Morpho V1 markets and Compound V3) instantaneous supply APY — plus a universal `getAdapterId()`. See [Live state reads](#live-state-reads).
 
+**v2.0.2** fixes the encoding of `idData("this/marketParams", ...)` (was bytes-wrapped, now inline-tuple) so its `keccak256` actually matches the bucket id the Morpho V1 adapter exposes. The signature now takes a `MarketParams` struct directly. A new `idHash(type, ...)` helper returns the hashed bucket id in one call.
+
 ## Supported networks
 
 - **Ethereum Mainnet** (chain ID `1`)
@@ -308,7 +310,19 @@ await vault.assetBalance(account);
 await vault.assetAllowance(owner);
 await vault.idleBalance();                   // asset balance held idle by the vault
 vault.idData("this", adapterAddress);        // helper for cap idData
+vault.idData("collateralToken", token);
+vault.idData("this/marketParams", adapterAddress, marketParams);
 ```
+
+The standalone `idData(type, ...)` helper is also exported from the
+package. A companion `idHash(type, ...)` returns the bytes32 the vault
+stores caps under — i.e. `keccak256(idData(...))`. Useful for matching
+a vault id against a known bucket without rebuilding the encoding by
+hand. Note that `idData("this/marketParams", ...)` takes the
+`MarketParams` struct directly — the SDK encodes it inline, matching
+the on-chain adapter so that `keccak256(idData(...))` lines up
+byte-for-byte with the bucket id returned by
+`MorphoMarketV1AdapterV2.ids(marketParams)`.
 
 ### Owner writes (instant — no timelock)
 

@@ -114,8 +114,15 @@ describe("Vault.idData mirrors the standalone idData helper", () => {
 	});
 
 	it('forwards "this/marketParams" overload', () => {
-		expect(v.idData("this/marketParams", adapter, "0xdeadbeef")).toBe(
-			idData("this/marketParams", adapter, "0xdeadbeef"),
+		const params = {
+			loanToken: "0x4444444444444444444444444444444444444444",
+			collateralToken: "0x5555555555555555555555555555555555555555",
+			oracle: "0x6666666666666666666666666666666666666666",
+			irm: "0x7777777777777777777777777777777777777777",
+			lltv: "860000000000000000",
+		};
+		expect(v.idData("this/marketParams", adapter, params)).toBe(
+			idData("this/marketParams", adapter, params),
 		);
 	});
 });

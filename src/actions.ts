@@ -10,7 +10,8 @@
  * so the caller (`msg.sender`) must hold the relevant role for each action.
  */
 
-import { AbiCoder, Interface } from "ethers";
+import { AbiCoder, Interface, keccak256 } from "ethers";
+import type { MarketParams } from "./clients/adapters";
 import { VAULT_ABI } from "./constants/abis";
 
 const I = new Interface(VAULT_ABI);
@@ -36,33 +37,74 @@ export type Action = string | readonly string[];
 
 export type IdType = "this" | "collateralToken" | "this/marketParams";
 
+const abi = AbiCoder.defaultAbiCoder();
+const MARKET_PARAMS_TUPLE = "tuple(address,address,address,address,uint256)";
+
+const marketParamsTuple = (m: MarketParams) =>
+	[m.loanToken, m.collateralToken, m.oracle, m.irm, m.lltv] as const;
+
 /**
- * Build the `idData` blob used by cap functions.
+ * Build the `idData` blob the vault hashes to derive a cap id.
  *
- * - `this`: single-id adapters (e.g. ERC4626) → keccak256(encode("this", adapter))
- * - `collateralToken`: per-collateral cap (Morpho Market V1 adapters)
- * - `this/marketParams`: per-market cap (Morpho Market V1 adapters)
+ * Three flavours, matching the buckets returned by
+ * `MorphoMarketV1AdapterV2.ids(marketParams)`:
+ * - `this` — single-id adapters; also the adapter-wide bucket on Morpho V1
+ *   (= `keccak256(abi.encode("this", adapter))`).
+ * - `collateralToken` — per-collateral cap, shared across adapters/markets.
+ * - `this/marketParams` — per-market cap under this adapter.
+ *
+ * For `this/marketParams` the contract encodes the `MarketParams` struct
+ * **inline** (not bytes-wrapped); we mirror that here so the round-trip
+ * `keccak256(idData(...))` matches the adapter's bucket id exactly. See
+ * `idHash` below.
  */
 export function idData(type: "this", adapter: string): string;
 export function idData(type: "collateralToken", token: string): string;
 export function idData(
 	type: "this/marketParams",
 	adapter: string,
-	marketParams: string,
+	marketParams: MarketParams,
 ): string;
-export function idData(type: IdType, ...args: string[]): string {
-	const abi = new AbiCoder();
+export function idData(type: IdType, ...args: unknown[]): string {
 	switch (type) {
 		case "this":
-			return abi.encode(["string", "address"], ["this", args[0]]);
+			return abi.encode(["string", "address"], ["this", args[0] as string]);
 		case "collateralToken":
-			return abi.encode(["string", "address"], ["collateralToken", args[0]]);
+			return abi.encode(
+				["string", "address"],
+				["collateralToken", args[0] as string],
+			);
 		case "this/marketParams":
 			return abi.encode(
-				["string", "address", "bytes"],
-				["this/marketParams", args[0], args[1]],
+				["string", "address", MARKET_PARAMS_TUPLE],
+				[
+					"this/marketParams",
+					args[0] as string,
+					marketParamsTuple(args[1] as MarketParams),
+				],
 			);
 	}
+}
+
+/**
+ * Compute the bytes32 id the vault stores caps and allocations under for a
+ * given `idData` flavour — i.e. `keccak256(idData(type, ...))`.
+ *
+ * Useful for matching vault ids against expected buckets without rebuilding
+ * the encoding by hand.
+ */
+export function idHash(type: "this", adapter: string): string;
+export function idHash(type: "collateralToken", token: string): string;
+export function idHash(
+	type: "this/marketParams",
+	adapter: string,
+	marketParams: MarketParams,
+): string;
+export function idHash(type: IdType, ...args: unknown[]): string {
+	// Re-dispatch through the typed `idData` overloads. The cast is safe
+	// because the public overloads above already constrain each shape.
+	const blob = (idData as (...a: unknown[]) => string)(type, ...args);
+	return keccak256(blob);
 }
 
 // ============================================================================

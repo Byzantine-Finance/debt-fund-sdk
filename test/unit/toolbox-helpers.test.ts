@@ -5,17 +5,19 @@
  *  - `fmtAbsCap` — boundary handling for `type(uint256).max`.
  *  - `classifyMorphoFlavour` — the keccak-based labelling that turns the
  *    bytes32 ids returned by `morphoMarketV1Adapter.ids(marketParams)`
- *    into one of `this` / `collateralToken` / `this/marketParams`.
+ *    into one of `this` / `collateralToken` / `this/marketParams`. Each
+ *    flavour is a positive hash check against the SDK's `idHash`; any
+ *    other input must come back as `unknown`.
  */
 
-import { AbiCoder, keccak256 } from "ethers";
 import { describe, expect, it } from "vitest";
-import type { MarketParams } from "../../src";
 import {
 	classifyMorphoFlavour,
 	fmtAbsCap,
 	MAX_UINT256,
 } from "../../example/utils/toolbox";
+import type { MarketParams } from "../../src";
+import { idHash } from "../../src";
 import { ADDR_A, ADDR_B, ADDR_C, ADDR_D } from "../_fixtures";
 
 const ADAPTER = ADDR_A;
@@ -32,14 +34,9 @@ const PARAMS: MarketParams = {
 	lltv: "860000000000000000",
 };
 
-const abi = AbiCoder.defaultAbiCoder();
-
-const ID_THIS = keccak256(
-	abi.encode(["string", "address"], ["this", ADAPTER]),
-);
-const ID_COLLATERAL = keccak256(
-	abi.encode(["string", "address"], ["collateralToken", COLLATERAL]),
-);
+const ID_THIS = idHash("this", ADAPTER);
+const ID_COLLATERAL = idHash("collateralToken", COLLATERAL);
+const ID_MARKET_PARAMS = idHash("this/marketParams", ADAPTER, PARAMS);
 const ID_UNRELATED =
 	"0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
 
@@ -89,13 +86,16 @@ describe("classifyMorphoFlavour", () => {
 		).toBe("collateralToken");
 	});
 
-	it("falls back to `this/marketParams` for any other morpho-returned id", () => {
-		// The Morpho V1 adapter currently exposes only three flavours, so
-		// anything that is neither `this` nor `collateralToken` is, by
-		// elimination, the per-market bucket.
+	it("returns `this/marketParams` for the recomputed market-params hash", () => {
+		expect(
+			classifyMorphoFlavour(ID_MARKET_PARAMS, ADAPTER, ID_THIS, PARAMS),
+		).toBe("this/marketParams");
+	});
+
+	it("returns `unknown` for an id that matches no flavour (e.g. a future 4th bucket)", () => {
 		expect(
 			classifyMorphoFlavour(ID_UNRELATED, ADAPTER, ID_THIS, PARAMS),
-		).toBe("this/marketParams");
+		).toBe("unknown");
 	});
 
 	it("returns `unknown` when marketParams are missing and id is not adapterId", () => {
@@ -105,8 +105,6 @@ describe("classifyMorphoFlavour", () => {
 	});
 
 	it("returns `unknown` when adapterId is missing and id can't be matched", () => {
-		// no adapterId provided AND no marketParams → classifier has nothing
-		// to compare against, hits the unknown branch.
 		expect(
 			classifyMorphoFlavour(ID_UNRELATED, ADAPTER, undefined, undefined),
 		).toBe("unknown");
@@ -115,9 +113,19 @@ describe("classifyMorphoFlavour", () => {
 	it("does NOT confuse two different collateral tokens", () => {
 		const otherParams: MarketParams = { ...PARAMS, collateralToken: ADDR_D };
 		// ID_COLLATERAL was hashed for COLLATERAL=ADDR_B, but PARAMS now
-		// claims collateral=ADDR_D — must NOT classify as collateralToken.
+		// claims collateral=ADDR_D — must NOT classify as collateralToken,
+		// AND the marketParams hash also differs (different collateral inside),
+		// so it falls through to `unknown`.
 		expect(
 			classifyMorphoFlavour(ID_COLLATERAL, ADAPTER, ID_THIS, otherParams),
-		).toBe("this/marketParams");
+		).toBe("unknown");
+	});
+
+	it("does NOT confuse this/marketParams ids across different markets", () => {
+		const otherParams: MarketParams = { ...PARAMS, lltv: "770000000000000000" };
+		// Same adapter, different market → different `this/marketParams` hash.
+		expect(
+			classifyMorphoFlavour(ID_MARKET_PARAMS, ADAPTER, ID_THIS, otherParams),
+		).toBe("unknown");
 	});
 });

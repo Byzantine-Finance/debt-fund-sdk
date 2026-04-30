@@ -24,6 +24,7 @@ import {
 	flattenActions,
 	timelockSelector,
 } from "./actions";
+import type { MarketParams } from "./clients/adapters";
 import { VAULT_ABI } from "./constants/abis";
 import { callContractMethod, executeContractMethod } from "./utils";
 
@@ -239,7 +240,14 @@ export class Vault {
 	}
 
 	/** Build the `idData` blob for cap-related actions. */
-	idData(type: IdType, ...args: string[]): string {
+	idData(type: "this", adapter: string): string;
+	idData(type: "collateralToken", token: string): string;
+	idData(
+		type: "this/marketParams",
+		adapter: string,
+		marketParams: MarketParams,
+	): string;
+	idData(type: IdType, ...args: unknown[]): string {
 		// @ts-expect-error — variadic forwarding to overloaded `buildIdData`
 		return buildIdData(type, ...args);
 	}
