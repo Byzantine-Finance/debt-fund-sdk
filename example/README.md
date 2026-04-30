@@ -74,9 +74,14 @@ multicall transaction.
 `example/utils/` contains pieces reused across the examples:
 
 - `toolbox.ts` — env loading, wait helpers, `fullReading()` which
-  prints a vault's full state, and `describeActions()` which decodes
-  each calldata in a multicall before sending it (handy for tracing
-  what's actually in a bundle).
+  prints a vault's full state (now including per-id underlying
+  liquidity, utilization, and supply APY pulled directly on-chain
+  from Morpho V1 / Compound V3 / ERC4626), and `describeActions()`
+  which decodes each calldata in a multicall before sending it
+  (handy for tracing what's actually in a bundle). Also exports
+  `classifyMorphoFlavour()` which labels a Morpho V1 vault id as
+  `this` / `this/marketParams` / `collateralToken` by recomputing
+  its `keccak256(idData)` locally.
 - `owner.ts`, `curator.ts`, `allocator.ts` — the per-role setup
   functions; each bundles whatever it can into one multicall.
 - `depositor.ts` — `checkAndApproveIfNeeded()` for the deposit/mint

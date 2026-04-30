@@ -74,15 +74,15 @@ export function describeActions(
 	}
 }
 
-const MAX_UINT256 = (1n << 256n) - 1n;
+export const MAX_UINT256 = (1n << 256n) - 1n;
 
 /** Format an absolute cap, collapsing `type(uint256).max` to `∞` (unlimited). */
-function fmtAbsCap(cap: bigint, decimals = 6): string {
+export function fmtAbsCap(cap: bigint, decimals = 6): string {
 	if (cap >= MAX_UINT256) return "∞";
 	return `${formatAmount(cap, decimals, 4)} USDC`;
 }
 
-type MorphoFlavour =
+export type MorphoFlavour =
 	| "this"
 	| "this/marketParams"
 	| "collateralToken"
@@ -98,7 +98,7 @@ type MorphoFlavour =
  * anything else returned by the adapter for a market is, by elimination,
  * the `this/marketParams` bucket.
  */
-function classifyMorphoFlavour(
+export function classifyMorphoFlavour(
 	id: string,
 	adapterAddress: string,
 	adapterId: string | undefined,

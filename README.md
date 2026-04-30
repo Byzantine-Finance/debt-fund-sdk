@@ -204,6 +204,7 @@ await client.findAdapter(parentVault, underlying, { type?, cometRewards? });
 await client.isAdapter(type, address);
 await client.getAdapterType(address);                // returns the AdapterType
 await client.getAdapterFactoryAddress(address);
+await client.getAdapterId(address, type);             // bytes32 stored on the adapter
 await client.getIdsERC4626(address);
 await client.getIdsERC4626Merkl(address);
 await client.getIdsCompoundV3(address);
@@ -214,6 +215,14 @@ await client.getUnderlyingCompoundV3(address);
 await client.getUnderlyingMarketV1(address);
 await client.getMarketIdsLength(address);
 await client.getMarketId(address, index);              // returns bytes32
+
+// Live state reads — pull utilization, liquidity, and (where on-chain)
+// supply rate from the underlying protocol. Useful for UIs that mirror
+// the vault's exposure dashboard. See `### Live state reads` below.
+await client.getMarketState(address, id);              // morphoMarketV1
+await client.getCometState(address);                   // compoundV3
+await client.getVaultStateERC4626(address);            // erc4626
+await client.getVaultStateERC4626Merkl(address);       // erc4626Merkl
 
 // Per-adapter admin surface — see `### Adapter admin writes` below.
 const adapter = client.adapter(address, type);
@@ -459,6 +468,39 @@ await adapter.abdicate(selector);               // permanent, irreversible
 await adapter.increaseTimelock(selector, duration);  // not itself timelocked
 await adapter.decreaseTimelock(selector, duration);  // itself timelocked — submit first
 ```
+
+### Live state reads
+
+Each adapter type exposes a "state" helper that reaches into the
+underlying protocol to surface the data a dashboard would want — TVL,
+free liquidity, utilization, and (where the protocol publishes it
+on-chain) the per-second supply rate. APYs are intentionally derived
+from on-chain reads only — no historical sampling, no off-chain APIs.
+
+```ts
+// MorphoMarketV1 — per market `id` (bytes32). Resolves marketParams
+// from `morpho.idToMarketParams`, pulls the market struct, and computes
+// the supply rate via the IRM's `borrowRateView`.
+const m = await client.getMarketState(adapter, id);
+// → { marketParams, totalSupplyAssets, totalBorrowAssets, lastUpdate, fee,
+//     utilization, liquidity, supplyRatePerSec }
+
+// CompoundV3 — reads the underlying Comet directly.
+const c = await client.getCometState(adapter);
+// → { cometAddress, totalSupply, totalBorrow, liquidity, utilization,
+//     adapterBalance, supplyRatePerSec }
+
+// ERC4626 + ERC4626Merkl — `totalAssets` + `maxWithdraw` on the
+// underlying vault. No supply rate (would require historical share-
+// price drift, off-chain).
+const v = await client.getVaultStateERC4626(adapter);
+const v2 = await client.getVaultStateERC4626Merkl(adapter);
+// → { underlyingAddress, totalAssets, totalSupply, maxWithdraw }
+```
+
+`supplyRatePerSec` is a WAD-per-second rate — annualize via
+`formatAnnualRate(rate)` to get a percent string, the same way
+`maxRate` and `managementFee` are displayed elsewhere in the SDK.
 
 ### User writes
 

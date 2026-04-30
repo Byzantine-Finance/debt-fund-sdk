@@ -92,6 +92,20 @@ describe("ERC4626Merkl adapter — AdapterInstance", () => {
 		expect(typeof inst.skim).toBe("function");
 		expect(typeof inst.getIdsERC4626Merkl).toBe("function");
 		expect(typeof inst.getUnderlyingERC4626Merkl).toBe("function");
+		expect(typeof inst.getVaultStateERC4626Merkl).toBe("function");
+	});
+
+	it("exposes the universal adapterId getter", () => {
+		expect(typeof inst.getAdapterId).toBe("function");
+		const p = inst.getAdapterId();
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
+	});
+
+	it("getVaultStateERC4626Merkl returns a Promise (lazy — does NOT send)", () => {
+		const p = inst.getVaultStateERC4626Merkl();
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
 	});
 
 	it("exposes the rewards surface (claim, setClaimer, getClaimer, getMerklDistributor)", () => {
@@ -115,6 +129,11 @@ describe("ERC4626Merkl adapter — AdapterInstance", () => {
 
 	it("rejects compoundV3-specific methods", () => {
 		expect(() => inst.getCometRewards()).toThrow(/compoundV3/);
+		expect(() => inst.getCometState()).toThrow(/compoundV3/);
+	});
+
+	it("rejects erc4626-specific methods", () => {
+		expect(() => inst.getVaultStateERC4626()).toThrow(/erc4626/);
 	});
 
 	it("rejects morphoMarketV1-specific methods", () => {
@@ -122,5 +141,10 @@ describe("ERC4626Merkl adapter — AdapterInstance", () => {
 		expect(() => inst.abdicate("0x00000000")).toThrow(/morphoMarketV1/);
 		expect(() => inst.getTimelock("0x00000000")).toThrow(/morphoMarketV1/);
 		expect(() => inst.getAbdicated("0x00000000")).toThrow(/morphoMarketV1/);
+		expect(() =>
+			inst.getMarketState(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			),
+		).toThrow(/morphoMarketV1/);
 	});
 });

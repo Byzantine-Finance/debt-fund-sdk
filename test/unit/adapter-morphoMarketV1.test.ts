@@ -129,6 +129,22 @@ describe("MorphoMarketV1 V2 adapter — AdapterInstance", () => {
 		expect(typeof inst.getUnderlyingMarketFromAdapterV1).toBe("function");
 		expect(typeof inst.getMarketId).toBe("function");
 		expect(typeof inst.getMarketIdsLength).toBe("function");
+		expect(typeof inst.getMarketState).toBe("function");
+	});
+
+	it("exposes the universal adapterId getter", () => {
+		expect(typeof inst.getAdapterId).toBe("function");
+		const p = inst.getAdapterId();
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
+	});
+
+	it("getMarketState returns a Promise (lazy — does NOT send)", () => {
+		const p = inst.getMarketState(
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+		);
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
 	});
 
 	it("exposes the timelock surface (submit, revoke, abdicate, [in|de]creaseTimelock)", () => {
@@ -168,10 +184,16 @@ describe("MorphoMarketV1 V2 adapter — AdapterInstance", () => {
 
 	it("rejects compoundV3-specific methods", () => {
 		expect(() => inst.getCometRewards()).toThrow(/compoundV3/);
+		expect(() => inst.getCometState()).toThrow(/compoundV3/);
+	});
+
+	it("rejects erc4626-specific methods", () => {
+		expect(() => inst.getVaultStateERC4626()).toThrow(/erc4626/);
 	});
 
 	it("rejects erc4626Merkl-specific methods", () => {
 		expect(() => inst.getMerklDistributor()).toThrow(/erc4626Merkl/);
+		expect(() => inst.getVaultStateERC4626Merkl()).toThrow(/erc4626Merkl/);
 	});
 
 	it("rejects rewards methods (claim/setClaimer/getClaimer)", () => {

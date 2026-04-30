@@ -93,6 +93,20 @@ describe("CompoundV3 adapter — AdapterInstance", () => {
 		expect(typeof inst.skim).toBe("function");
 		expect(typeof inst.getIdsCompoundV3).toBe("function");
 		expect(typeof inst.getUnderlyingCompoundV3).toBe("function");
+		expect(typeof inst.getCometState).toBe("function");
+	});
+
+	it("exposes the universal adapterId getter", () => {
+		expect(typeof inst.getAdapterId).toBe("function");
+		const p = inst.getAdapterId();
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
+	});
+
+	it("getCometState returns a Promise (lazy — does NOT send)", () => {
+		const p = inst.getCometState();
+		expect(p).toBeInstanceOf(Promise);
+		p.catch(() => {});
 	});
 
 	it("exposes the rewards surface (claim, setClaimer, getClaimer, getCometRewards)", () => {
@@ -114,8 +128,13 @@ describe("CompoundV3 adapter — AdapterInstance", () => {
 		p.catch(() => {});
 	});
 
+	it("rejects erc4626-specific methods", () => {
+		expect(() => inst.getVaultStateERC4626()).toThrow(/erc4626/);
+	});
+
 	it("rejects erc4626Merkl-specific methods", () => {
 		expect(() => inst.getMerklDistributor()).toThrow(/erc4626Merkl/);
+		expect(() => inst.getVaultStateERC4626Merkl()).toThrow(/erc4626Merkl/);
 	});
 
 	it("rejects morphoMarketV1-specific methods", () => {
@@ -123,5 +142,10 @@ describe("CompoundV3 adapter — AdapterInstance", () => {
 		expect(() => inst.abdicate("0x00000000")).toThrow(/morphoMarketV1/);
 		expect(() => inst.getTimelock("0x00000000")).toThrow(/morphoMarketV1/);
 		expect(() => inst.getMarketIdsLength()).toThrow(/morphoMarketV1/);
+		expect(() =>
+			inst.getMarketState(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			),
+		).toThrow(/morphoMarketV1/);
 	});
 });
