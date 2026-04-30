@@ -545,6 +545,11 @@ export async function fullReading(
 
 		if (adapterWide) {
 			printCapLine(adapterWide, "adapter-wide");
+			// Single-id adapters (erc4626 / erc4626Merkl / compoundV3) only
+			// expose the `this` bucket — so the live state attaches here.
+			// For Morpho V1 the `this` row is shared across markets and its
+			// `marketData` is undefined; we print state per market below.
+			printMarketData(adapterWide.marketData);
 		}
 
 		let lastRawMarketId: string | undefined;
