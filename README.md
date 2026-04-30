@@ -18,6 +18,8 @@ The SDK has been rewritten around three primitives:
 
 Breaking change vs v1: every `client.X(vaultAddress, ...)` call became `vault.X(...)` (where `vault = client.vault(addr)`), and several methods were renamed to match the contract directly (e.g. `getOwner` → `owner()`, `addAdapterAfterTimelock` → `addAdapter`).
 
+**v2.0.1** adds on-chain live-state reads for each adapter type — utilization, free liquidity and (for Morpho V1 markets and Compound V3) instantaneous supply APY — plus a universal `getAdapterId()`. See [Live state reads](#live-state-reads).
+
 ## Supported networks
 
 - **Ethereum Mainnet** (chain ID `1`)
@@ -502,6 +504,16 @@ const v2 = await client.getVaultStateERC4626Merkl(adapter);
 `formatAnnualRate(rate)` to get a percent string, the same way
 `maxRate` and `managementFee` are displayed elsewhere in the SDK.
 
+The same reads are exposed on the `AdapterInstance` returned by
+`client.adapter(address, type)`, so you can chain them with the
+admin surface above without re-typing the address:
+
+```ts
+const adapter = client.adapter(addr, "morphoMarketV1");
+await adapter.getAdapterId();
+await adapter.getMarketState(id);
+```
+
 ### User writes
 
 ```ts
@@ -565,7 +577,7 @@ A full set of runnable examples lives under [`example/`](./example):
 | `multicall-showcase.ts` | Full vault setup (12+ ops) in **one transaction** |
 | `create-vault-simple.ts` | Minimal vault creation |
 | `create-vault.ts` | End-to-end create + configure with role swaps |
-| `users-deposit.ts` | Deposit / mint / withdraw / redeem |
+| `users-deposit.ts` | Deposit / mint / withdraw / redeem — also a good demo of `fullReading` with live per-id state (utilization, supply APY, liquidity) |
 | `owners-settings.ts` | Owner-side admin (name, symbol, sentinels, …) |
 | `curators-settings.ts` | Curator-side config (allocators, fees, adapters, caps) |
 | `allocators-settings.ts` | Allocator ops (allocate, deallocate, force-deallocate) |
