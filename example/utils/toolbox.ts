@@ -1,5 +1,5 @@
-import type { ethers } from "ethers";
 import * as dotenv from "dotenv";
+import type { ethers } from "ethers";
 import type {
 	Action,
 	AdapterType,
@@ -7,11 +7,7 @@ import type {
 	TimelockFunction,
 	Vault,
 } from "../../src";
-import {
-	formatAmount,
-	formatAnnualRate,
-	formatPercent,
-} from "../../src";
+import { formatAmount, formatAnnualRate, formatPercent } from "../../src";
 
 dotenv.config();
 
@@ -211,7 +207,8 @@ export async function fullReading(
 	snapshot.adapters = await Promise.all(
 		Array.from({ length: adaptersLength }, async (_, index) => {
 			const address = await vault.adapter(index);
-			const forceDeallocatePenalty = await vault.forceDeallocatePenalty(address);
+			const forceDeallocatePenalty =
+				await vault.forceDeallocatePenalty(address);
 
 			let adapterType: AdapterType | undefined;
 			try {
@@ -221,7 +218,11 @@ export async function fullReading(
 			}
 
 			const ids = await readAdapterIds(client, address, adapterType);
-			const underlying = await readAdapterUnderlying(client, address, adapterType);
+			const underlying = await readAdapterUnderlying(
+				client,
+				address,
+				adapterType,
+			);
 
 			const idsWithCaps = await Promise.all(
 				ids.map(async (id) => ({
@@ -278,7 +279,9 @@ export async function fullReading(
 	);
 	console.log(`* Perf. Recipient: ${snapshot.performanceFeeRecipient}`);
 	console.log(`* Mgmt. Recipient: ${snapshot.managementFeeRecipient}`);
-	console.log(`* Max Rate:        ${formatAnnualRate(snapshot.maxRate)} %/year`);
+	console.log(
+		`* Max Rate:        ${formatAnnualRate(snapshot.maxRate)} %/year`,
+	);
 	console.log(`* Adapter Registry: ${snapshot.adapterRegistry}`);
 	console.log(`*`);
 	console.log(`* Receive Shares Gate: ${snapshot.receiveSharesGate}`);

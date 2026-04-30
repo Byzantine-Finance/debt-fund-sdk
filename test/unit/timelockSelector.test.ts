@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import { describe, expect, it } from "vitest";
-import { timelockSelector, type TimelockFunction } from "../../src/actions";
+import { type TimelockFunction, timelockSelector } from "../../src/actions";
 import { VAULT_ABI } from "../../src/constants";
 
 const I = new Interface(VAULT_ABI);

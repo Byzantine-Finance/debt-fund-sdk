@@ -83,12 +83,7 @@ describe("formatPercent / parsePercent", () => {
 	});
 
 	it("round-trips", () => {
-		for (const wad of [
-			0n,
-			ONE_WAD,
-			5n * ONE_PERCENT_WAD,
-			3n * 10n ** 17n,
-		]) {
+		for (const wad of [0n, ONE_WAD, 5n * ONE_PERCENT_WAD, 3n * 10n ** 17n]) {
 			expect(parsePercent(formatPercent(wad))).toBe(wad);
 		}
 	});

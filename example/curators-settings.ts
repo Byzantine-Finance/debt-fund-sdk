@@ -93,7 +93,12 @@ async function main() {
 	const vault = client.vault(VAULT_ADDRESS);
 	const userAddress = await wallet.getAddress();
 
-	await setupCuratorsSettings(client, vault, userAddress, CURATORS_SETTINGS_CONFIG);
+	await setupCuratorsSettings(
+		client,
+		vault,
+		userAddress,
+		CURATORS_SETTINGS_CONFIG,
+	);
 	await fullReading(client, vault, userAddress);
 }
 

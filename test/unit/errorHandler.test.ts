@@ -127,7 +127,9 @@ describe("formatContractError — priority order", () => {
 
 describe("formatContractError — return value is always a real Error", () => {
 	it("returns an instance of Error", () => {
-		const out = formatContractError("call", { revert: { name: "X", args: [] } });
+		const out = formatContractError("call", {
+			revert: { name: "X", args: [] },
+		});
 		expect(out).toBeInstanceOf(Error);
 	});
 	it("the prefix is the method name", () => {

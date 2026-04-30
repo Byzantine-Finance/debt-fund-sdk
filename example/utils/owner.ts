@@ -1,4 +1,4 @@
-import { Actions, type Action, type Vault } from "../../src";
+import { type Action, Actions, type Vault } from "../../src";
 import type { OwnerSettingsConfig } from "../owners-settings";
 
 /**

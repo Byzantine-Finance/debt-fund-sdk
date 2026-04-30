@@ -23,12 +23,7 @@
  */
 
 import { ethers, parseEther, parseUnits, randomBytes } from "ethers";
-import {
-	Actions,
-	ByzantineClient,
-	idData,
-	parseAnnualRate,
-} from "../src";
+import { Actions, ByzantineClient, idData, parseAnnualRate } from "../src";
 import { fullReading, MNEMONIC, RPC_URL } from "./utils/toolbox";
 
 // USDC on Base
@@ -57,7 +52,11 @@ async function main() {
 
 	// ----- step 2: deploy the adapter (also its own factory contract) -----
 	console.log("\n2️⃣  Deploying ERC4626 adapter…");
-	const deploy = await client.deployAdapter("erc4626", vault.address, UNDERLYING_VAULT);
+	const deploy = await client.deployAdapter(
+		"erc4626",
+		vault.address,
+		UNDERLYING_VAULT,
+	);
 	await deploy.wait();
 	const adapter = deploy.adapterAddress;
 	console.log(`   ✅ adapter @ ${adapter}`);
@@ -78,11 +77,20 @@ async function main() {
 		Actions.curator.instantSetPerformanceFeeRecipient(userAddress),
 		Actions.curator.instantSetManagementFeeRecipient(userAddress),
 		Actions.curator.instantSetPerformanceFee(parseUnits("0.05", 18)), // 5 %
-		Actions.curator.instantSetManagementFee(parseAnnualRate("1")),    // 1 %/year
+		Actions.curator.instantSetManagementFee(parseAnnualRate("1")), // 1 %/year
 		Actions.curator.instantAddAdapter(adapter),
-		Actions.curator.instantSetForceDeallocatePenalty(adapter, parseEther("0.01")), // 1 %
-		Actions.curator.instantIncreaseRelativeCap(adapterIdData, parseUnits("1", 18)), // 100 %
-		Actions.curator.instantIncreaseAbsoluteCap(adapterIdData, parseUnits("1000", 6)), // 1000 USDC
+		Actions.curator.instantSetForceDeallocatePenalty(
+			adapter,
+			parseEther("0.01"),
+		), // 1 %
+		Actions.curator.instantIncreaseRelativeCap(
+			adapterIdData,
+			parseUnits("1", 18),
+		), // 100 %
+		Actions.curator.instantIncreaseAbsoluteCap(
+			adapterIdData,
+			parseUnits("1000", 6),
+		), // 1000 USDC
 
 		// allocator-side
 		Actions.allocator.setLiquidityAdapterAndData(adapter, "0x"),
@@ -91,7 +99,9 @@ async function main() {
 
 	console.log(`   📨 tx: ${tx.hash}`);
 	const receipt = await tx.wait();
-	console.log(`   ✅ mined in block ${receipt?.blockNumber}, gas: ${receipt?.gasUsed}`);
+	console.log(
+		`   ✅ mined in block ${receipt?.blockNumber}, gas: ${receipt?.gasUsed}`,
+	);
 
 	// ----- step 4: verify -----
 	console.log("\n4️⃣  Reading back the configured vault…");

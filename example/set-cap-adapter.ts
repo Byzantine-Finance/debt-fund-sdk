@@ -33,8 +33,14 @@ async function main() {
 
 	// Bundle both cap updates into a single tx.
 	const tx = await vault.multicall([
-		Actions.curator.instantIncreaseRelativeCap(idDataBlob, CAPS_CONFIG.relativeCap),
-		Actions.curator.instantIncreaseAbsoluteCap(idDataBlob, CAPS_CONFIG.absoluteCap),
+		Actions.curator.instantIncreaseRelativeCap(
+			idDataBlob,
+			CAPS_CONFIG.relativeCap,
+		),
+		Actions.curator.instantIncreaseAbsoluteCap(
+			idDataBlob,
+			CAPS_CONFIG.absoluteCap,
+		),
 	]);
 	console.log(`tx: ${tx.hash}`);
 	await tx.wait();

@@ -1,54 +1,54 @@
 {
-  "name": "@byzantine/debt-fund-sdk",
-  "version": "2.0.0",
-  "description": "Byzantine Vault SDK for creating and managing debt funds vaults",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "license": "MIT",
-  "author": "Byzantine Finance",
-  "keywords": [
-    "byzantine",
-    "vault",
-    "vaults",
-    "sdk",
-    "debt",
-    "debt-funds",
-    "funds",
-    "lending",
-    "sdk",
-    "blockchain",
-    "ethereum",
-    "base"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "test": "vitest run test/unit",
-    "test:unit": "vitest run test/unit",
-    "test:integration:read": "vitest run test/integration-read",
-    "test:integration:write": "vitest run test/integration-write",
-    "test:all": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "ethers": "^6.16.0"
-  },
-  "homepage": "https://byzantine.fi",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/byzantine-finance/debt-fund-sdk.git"
-  },
-  "bugs": {
-    "url": "https://github.com/byzantine-finance/debt-fund-sdk/issues"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "devDependencies": {
-    "dotenv": "^17.2.1",
-    "vitest": "^4.1.5"
-  }
+	"name": "@byzantine/debt-fund-sdk",
+	"version": "2.0.0",
+	"description": "Byzantine Vault SDK for creating and managing debt funds vaults",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"license": "MIT",
+	"author": "Byzantine Finance",
+	"keywords": [
+		"byzantine",
+		"vault",
+		"vaults",
+		"sdk",
+		"debt",
+		"debt-funds",
+		"funds",
+		"lending",
+		"sdk",
+		"blockchain",
+		"ethereum",
+		"base"
+	],
+	"scripts": {
+		"build": "tsc",
+		"test": "vitest run test/unit",
+		"test:unit": "vitest run test/unit",
+		"test:integration:read": "vitest run test/integration-read",
+		"test:integration:write": "vitest run test/integration-write",
+		"test:all": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"ethers": "^6.16.0"
+	},
+	"homepage": "https://byzantine.fi",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/byzantine-finance/debt-fund-sdk.git"
+	},
+	"bugs": {
+		"url": "https://github.com/byzantine-finance/debt-fund-sdk/issues"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"devDependencies": {
+		"dotenv": "^17.2.1",
+		"vitest": "^4.1.5"
+	}
 }

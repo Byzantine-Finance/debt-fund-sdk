@@ -19,10 +19,11 @@ export async function deployERC4626Adapter(
 ): Promise<DeployAdapterResult> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626");
 	try {
-		const adapterAddress: string = await factory.createMorphoVaultV1Adapter.staticCall(
-			vaultAddress,
-			morphoVaultV1,
-		);
+		const adapterAddress: string =
+			await factory.createMorphoVaultV1Adapter.staticCall(
+				vaultAddress,
+				morphoVaultV1,
+			);
 		const tx = await executeContractMethod(
 			factory,
 			"createMorphoVaultV1Adapter",
@@ -50,7 +51,12 @@ export async function findERC4626Adapter(
 	morphoVaultV1: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626");
-	return callContractMethod(factory, "morphoVaultV1Adapter", vaultAddress, morphoVaultV1);
+	return callContractMethod(
+		factory,
+		"morphoVaultV1Adapter",
+		vaultAddress,
+		morphoVaultV1,
+	);
 }
 
 // ============================================================================
@@ -61,11 +67,15 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
-export async function getUnderlying(contract: ethers.Contract): Promise<string> {
+export async function getUnderlying(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "morphoVaultV1");
 }
 
-export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+export async function getSkimRecipient(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "skimRecipient");
 }
 

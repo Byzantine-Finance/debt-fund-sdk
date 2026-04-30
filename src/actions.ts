@@ -56,10 +56,7 @@ export function idData(type: IdType, ...args: string[]): string {
 		case "this":
 			return abi.encode(["string", "address"], ["this", args[0]]);
 		case "collateralToken":
-			return abi.encode(
-				["string", "address"],
-				["collateralToken", args[0]],
-			);
+			return abi.encode(["string", "address"], ["collateralToken", args[0]]);
 		case "this/marketParams":
 			return abi.encode(
 				["string", "address", "bytes"],
@@ -244,8 +241,7 @@ export const Actions = {
 	user: {
 		deposit: (assets: bigint, onBehalf: string) =>
 			enc("deposit", [assets, onBehalf]),
-		mint: (shares: bigint, onBehalf: string) =>
-			enc("mint", [shares, onBehalf]),
+		mint: (shares: bigint, onBehalf: string) => enc("mint", [shares, onBehalf]),
 		withdraw: (assets: bigint, receiver: string, onBehalf: string) =>
 			enc("withdraw", [assets, receiver, onBehalf]),
 		redeem: (shares: bigint, receiver: string, onBehalf: string) =>

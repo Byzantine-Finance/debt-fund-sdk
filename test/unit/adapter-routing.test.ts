@@ -8,18 +8,23 @@
 
 import { JsonRpcProvider } from "ethers";
 import { describe, expect, it } from "vitest";
-import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import {
 	getAdapterContract,
 	getAdapterFactoryContract,
 } from "../../src/clients/adapters/_contracts";
+import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import { NETWORKS } from "../../src/constants/networks";
 import type { ChainsOptions } from "../../src/types";
 import { ContractProvider } from "../../src/utils";
 import { ADDR_A as ADAPTER_ADDR } from "../_fixtures";
 
 const CHAINS: ChainsOptions[] = [1, 8453];
-const TYPES = ["erc4626", "erc4626Merkl", "compoundV3", "morphoMarketV1"] as const;
+const TYPES = [
+	"erc4626",
+	"erc4626Merkl",
+	"compoundV3",
+	"morphoMarketV1",
+] as const;
 
 /** Build a ContractProvider whose chain ID is locked without any RPC call. */
 function makeStubProvider(chainId: ChainsOptions): ContractProvider {
@@ -36,7 +41,9 @@ describe("getAdapterFactoryContract — address routing per (chain, type)", () =
 		describe(`chain ${chainId}`, () => {
 			const expected = NETWORKS[chainId].adapters;
 
-			it.each(TYPES)("%s factory address matches NETWORKS config", async (type) => {
+			it.each(
+				TYPES,
+			)("%s factory address matches NETWORKS config", async (type) => {
 				const cp = makeStubProvider(chainId);
 				const factory = await getAdapterFactoryContract(cp, type);
 				const fieldName = (
@@ -58,7 +65,9 @@ describe("getAdapterFactoryContract — ABI surface per type", () => {
 
 	it("erc4626 factory exposes createMorphoVaultV1Adapter + isMorphoVaultV1Adapter", async () => {
 		const f = await getAdapterFactoryContract(cp, "erc4626");
-		expect(f.interface.getFunction("createMorphoVaultV1Adapter")).not.toBeNull();
+		expect(
+			f.interface.getFunction("createMorphoVaultV1Adapter"),
+		).not.toBeNull();
 		expect(f.interface.getFunction("isMorphoVaultV1Adapter")).not.toBeNull();
 		expect(f.interface.getFunction("morphoVaultV1Adapter")).not.toBeNull();
 	});
@@ -79,7 +88,9 @@ describe("getAdapterFactoryContract — ABI surface per type", () => {
 
 	it("morphoMarketV1 factory exposes createMorphoMarketV1AdapterV2 + isMorphoMarketV1AdapterV2", async () => {
 		const f = await getAdapterFactoryContract(cp, "morphoMarketV1");
-		expect(f.interface.getFunction("createMorphoMarketV1AdapterV2")).not.toBeNull();
+		expect(
+			f.interface.getFunction("createMorphoMarketV1AdapterV2"),
+		).not.toBeNull();
 		expect(f.interface.getFunction("isMorphoMarketV1AdapterV2")).not.toBeNull();
 		expect(f.interface.getFunction("morphoMarketV1AdapterV2")).not.toBeNull();
 		expect(f.interface.getFunction("morpho")).not.toBeNull();

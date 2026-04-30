@@ -36,7 +36,10 @@ export async function buildAllocatorSetupActions(
 		);
 	} else if (config.setLiquidityAdapterFromUnderlyingVaultAndData) {
 		const cfg = config.setLiquidityAdapterFromUnderlyingVaultAndData;
-		const adapter = await client.findAdapter(vault.address, cfg.underlyingVault);
+		const adapter = await client.findAdapter(
+			vault.address,
+			cfg.underlyingVault,
+		);
 		actions.push(
 			Actions.allocator.setLiquidityAdapterAndData(adapter, cfg.liquidityData),
 		);
@@ -58,7 +61,10 @@ export async function runAllocatorOperations(
 ): Promise<void> {
 	if (config.allocateConfigFromUnderlyingVault) {
 		for (const a of config.allocateConfigFromUnderlyingVault) {
-			const adapter = await client.findAdapter(vault.address, a.underlyingVault);
+			const adapter = await client.findAdapter(
+				vault.address,
+				a.underlyingVault,
+			);
 			console.log(`\n  📤 allocate ${a.amountAsset} via adapter ${adapter}`);
 			await (await vault.allocate(adapter, "0x", a.amountAsset)).wait();
 		}
@@ -66,7 +72,9 @@ export async function runAllocatorOperations(
 	if (config.allocateConfigFromAdapter) {
 		for (const a of config.allocateConfigFromAdapter) {
 			console.log(`\n  📤 allocate ${a.amountAsset} via adapter ${a.adapter}`);
-			await (await vault.allocate(a.adapter, a.data || "0x", a.amountAsset)).wait();
+			await (
+				await vault.allocate(a.adapter, a.data || "0x", a.amountAsset)
+			).wait();
 		}
 	}
 	if (
@@ -78,14 +86,19 @@ export async function runAllocatorOperations(
 
 	if (config.deallocateConfigFromUnderlyingVault) {
 		for (const d of config.deallocateConfigFromUnderlyingVault) {
-			const adapter = await client.findAdapter(vault.address, d.underlyingVault);
+			const adapter = await client.findAdapter(
+				vault.address,
+				d.underlyingVault,
+			);
 			console.log(`\n  📥 deallocate ${d.amountAsset} via adapter ${adapter}`);
 			await (await vault.deallocate(adapter, "0x", d.amountAsset)).wait();
 		}
 	}
 	if (config.deallocateConfigFromAdapter) {
 		for (const d of config.deallocateConfigFromAdapter) {
-			console.log(`\n  📥 deallocate ${d.amountAsset} via adapter ${d.adapter}`);
+			console.log(
+				`\n  📥 deallocate ${d.amountAsset} via adapter ${d.adapter}`,
+			);
 			await (
 				await vault.deallocate(d.adapter, d.data || "0x", d.amountAsset)
 			).wait();
@@ -102,7 +115,12 @@ export async function runAllocatorOperations(
 		const f = config.forceDeallocateConfig;
 		console.log(`\n  🚨 forceDeallocate ${f.amountAsset} via ${f.adapter}`);
 		await (
-			await vault.forceDeallocate(f.adapter, f.data || "0x", f.amountAsset, f.onBehalf)
+			await vault.forceDeallocate(
+				f.adapter,
+				f.data || "0x",
+				f.amountAsset,
+				f.onBehalf,
+			)
 		).wait();
 	}
 }
@@ -126,7 +144,9 @@ export async function setupAllocatorsSettings(
 				`  - setMaxRate(${config.max_rate}) — ${formatAnnualRate(config.max_rate)} %/year`,
 			);
 		}
-		console.log(`  → bundling ${setupActions.length} setup action(s) into one multicall`);
+		console.log(
+			`  → bundling ${setupActions.length} setup action(s) into one multicall`,
+		);
 		await (await vault.multicall(setupActions)).wait();
 	}
 

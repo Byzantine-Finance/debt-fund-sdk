@@ -82,7 +82,9 @@ export async function getIds(
 	return callContractMethod(contract, "ids", marketParams);
 }
 
-export async function getUnderlying(contract: ethers.Contract): Promise<string> {
+export async function getUnderlying(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "morpho");
 }
 
@@ -99,7 +101,9 @@ export async function getMarketId(
 	return callContractMethod(contract, "marketIds", index);
 }
 
-export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+export async function getSkimRecipient(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "skimRecipient");
 }
 
@@ -162,7 +166,12 @@ export async function increaseTimelock(
 	selector: string,
 	newDuration: bigint,
 ): Promise<ethers.TransactionResponse> {
-	return executeContractMethod(contract, "increaseTimelock", selector, newDuration);
+	return executeContractMethod(
+		contract,
+		"increaseTimelock",
+		selector,
+		newDuration,
+	);
 }
 
 /** Decrease the timelock for `selector`. Itself timelocked — must be `submit`'d first. */
@@ -171,7 +180,12 @@ export async function decreaseTimelock(
 	selector: string,
 	newDuration: bigint,
 ): Promise<ethers.TransactionResponse> {
-	return executeContractMethod(contract, "decreaseTimelock", selector, newDuration);
+	return executeContractMethod(
+		contract,
+		"decreaseTimelock",
+		selector,
+		newDuration,
+	);
 }
 
 /** Timelocked — must be `submit`'d first. */

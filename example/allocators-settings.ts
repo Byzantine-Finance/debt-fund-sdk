@@ -73,11 +73,18 @@ async function main() {
 	const userAddress = await wallet.getAddress();
 
 	if (!(await vault.isAllocator(userAddress))) {
-		throw new Error(`User ${userAddress} is not an allocator on ${VAULT_ADDRESS}`);
+		throw new Error(
+			`User ${userAddress} is not an allocator on ${VAULT_ADDRESS}`,
+		);
 	}
 
 	await fullReading(client, vault, userAddress);
-	await setupAllocatorsSettings(client, vault, userAddress, ALLOCATOR_SETTINGS_CONFIG);
+	await setupAllocatorsSettings(
+		client,
+		vault,
+		userAddress,
+		ALLOCATOR_SETTINGS_CONFIG,
+	);
 	await fullReading(client, vault, userAddress);
 }
 

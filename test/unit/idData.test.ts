@@ -1,12 +1,15 @@
 import { AbiCoder } from "ethers";
 import { describe, expect, it } from "vitest";
 import { idData } from "../../src/actions";
-import { ADDR_A as adapter, ADDR_B as collateral, RAW_DATA as marketParams } from "../_fixtures";
+import {
+	ADDR_A as adapter,
+	ADDR_B as collateral,
+	RAW_DATA as marketParams,
+} from "../_fixtures";
 
 const abi = new AbiCoder();
 
 describe("idData", () => {
-
 	it('encodes ("this", adapter) as ABI-encoded ("this", address)', () => {
 		const expected = abi.encode(["string", "address"], ["this", adapter]);
 		expect(idData("this", adapter)).toBe(expected);

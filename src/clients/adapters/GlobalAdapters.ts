@@ -4,14 +4,15 @@ import {
 	callContractMethod,
 	formatContractError,
 } from "../../utils";
+import { getAdapterContract } from "./_contracts";
+import type { AdapterType } from "./AdaptersClient";
 import * as CompoundV3 from "./CompoundV3Adapters";
 import * as ERC4626 from "./ERC4626Adapters";
 import * as ERC4626Merkl from "./ERC4626MerklAdapters";
 import * as MorphoMarketV1 from "./MorphoMarketV1Adapters";
-import { getAdapterContract } from "./_contracts";
-import type { AdapterType } from "./AdaptersClient";
 
-export interface DeployAdapterResult extends ethers.ContractTransactionResponse {
+export interface DeployAdapterResult
+	extends ethers.ContractTransactionResponse {
 	adapterAddress: string;
 }
 
@@ -27,10 +28,16 @@ export async function deployAdapter(
 		case "erc4626":
 			return ERC4626.deployERC4626Adapter(cp, parentAddress, underlyingAddress);
 		case "erc4626Merkl":
-			return ERC4626Merkl.deployERC4626MerklAdapter(cp, parentAddress, underlyingAddress);
+			return ERC4626Merkl.deployERC4626MerklAdapter(
+				cp,
+				parentAddress,
+				underlyingAddress,
+			);
 		case "compoundV3":
 			if (!cometRewards) {
-				throw new Error("cometRewards is required to deploy a compoundV3 adapter");
+				throw new Error(
+					"cometRewards is required to deploy a compoundV3 adapter",
+				);
 			}
 			return CompoundV3.deployCompoundV3Adapter(
 				cp,

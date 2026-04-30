@@ -32,19 +32,18 @@ describe.skipIf(!hasRpc())("integration-read · factories", () => {
 		expect(code.length).toBeGreaterThan(2);
 	});
 
-	it.each(ADAPTER_TYPES)(
-		"isAdapter('%s', random) returns false (when callable)",
-		async (type) => {
-			// Most factories return false on a non-adapter address; some may
-			// revert on EXTCODESIZE checks. Either outcome confirms the SDK
-			// can reach the factory — we accept both.
-			try {
-				expect(await ctx.client.isAdapter(type, DEAD_ADDRESS)).toBe(false);
-			} catch (err) {
-				expect(String(err)).toMatch(/missing revert data|reverted/i);
-			}
-		},
-	);
+	it.each(
+		ADAPTER_TYPES,
+	)("isAdapter('%s', random) returns false (when callable)", async (type) => {
+		// Most factories return false on a non-adapter address; some may
+		// revert on EXTCODESIZE checks. Either outcome confirms the SDK
+		// can reach the factory — we accept both.
+		try {
+			expect(await ctx.client.isAdapter(type, DEAD_ADDRESS)).toBe(false);
+		} catch (err) {
+			expect(String(err)).toMatch(/missing revert data|reverted/i);
+		}
+	});
 
 	it("findAdapter returns ZeroAddress for a non-existent vault/underlying pair", async () => {
 		const found = await ctx.client.findAdapter(DEAD_ADDRESS, DEAD_ADDRESS, {

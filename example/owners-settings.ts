@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { ByzantineClient } from "../src";
-import { fullReading, MNEMONIC, RPC_URL } from "./utils/toolbox";
 import { setupOwnerSettings } from "./utils/owner";
+import { fullReading, MNEMONIC, RPC_URL } from "./utils/toolbox";
 
 export interface OwnerSettingsConfig {
 	shares_name?: string;

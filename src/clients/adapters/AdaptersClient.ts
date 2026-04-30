@@ -1,12 +1,12 @@
 import type { ethers } from "ethers";
 import { ContractProvider } from "../../utils";
+import { getAdapterContract, getAdapterFactoryContract } from "./_contracts";
 import * as CompoundV3 from "./CompoundV3Adapters";
 import * as ERC4626 from "./ERC4626Adapters";
 import * as ERC4626Merkl from "./ERC4626MerklAdapters";
-import * as MorphoMarketV1 from "./MorphoMarketV1Adapters";
-import * as Global from "./GlobalAdapters";
 import type { DeployAdapterResult } from "./GlobalAdapters";
-import { getAdapterContract, getAdapterFactoryContract } from "./_contracts";
+import * as Global from "./GlobalAdapters";
+import * as MorphoMarketV1 from "./MorphoMarketV1Adapters";
 
 export type AdapterType =
 	| "erc4626"
@@ -42,7 +42,13 @@ export class AdaptersFactoryClient {
 		underlying: string,
 		cometRewards?: string,
 	): Promise<DeployAdapterResult> {
-		return Global.deployAdapter(this.cp, type, parentVault, underlying, cometRewards);
+		return Global.deployAdapter(
+			this.cp,
+			type,
+			parentVault,
+			underlying,
+			cometRewards,
+		);
 	}
 
 	/**
@@ -72,7 +78,11 @@ export class AdaptersFactoryClient {
 			return ERC4626.findERC4626Adapter(this.cp, parentVault, underlying);
 		}
 		if (type === "erc4626Merkl") {
-			return ERC4626Merkl.findERC4626MerklAdapter(this.cp, parentVault, underlying);
+			return ERC4626Merkl.findERC4626MerklAdapter(
+				this.cp,
+				parentVault,
+				underlying,
+			);
 		}
 		if (type === "morphoMarketV1") {
 			// V2 factory: `underlying` is unused — there is exactly one
@@ -93,7 +103,11 @@ export class AdaptersFactoryClient {
 						cometRewards,
 					);
 				} else if (t === "erc4626") {
-					found = await ERC4626.findERC4626Adapter(this.cp, parentVault, underlying);
+					found = await ERC4626.findERC4626Adapter(
+						this.cp,
+						parentVault,
+						underlying,
+					);
 				} else if (t === "erc4626Merkl") {
 					found = await ERC4626Merkl.findERC4626MerklAdapter(
 						this.cp,
@@ -239,7 +253,9 @@ export class AdapterInstance {
 		}
 	}
 
-	setSkimRecipient(newSkimRecipient: string): Promise<ethers.TransactionResponse> {
+	setSkimRecipient(
+		newSkimRecipient: string,
+	): Promise<ethers.TransactionResponse> {
 		switch (this.type) {
 			case "erc4626":
 				return ERC4626.setSkimRecipient(this.contract, newSkimRecipient);
@@ -268,7 +284,8 @@ export class AdapterInstance {
 	// ----- compoundV3 / erc4626Merkl: rewards surface -----
 	getClaimer(): Promise<string> {
 		if (this.type === "compoundV3") return CompoundV3.getClaimer(this.contract);
-		if (this.type === "erc4626Merkl") return ERC4626Merkl.getClaimer(this.contract);
+		if (this.type === "erc4626Merkl")
+			return ERC4626Merkl.getClaimer(this.contract);
 		throw new Error(`getClaimer not supported on ${this.type}`);
 	}
 	setClaimer(newClaimer: string): Promise<ethers.TransactionResponse> {
@@ -279,8 +296,10 @@ export class AdapterInstance {
 		throw new Error(`setClaimer not supported on ${this.type}`);
 	}
 	claim(data: string): Promise<ethers.TransactionResponse> {
-		if (this.type === "compoundV3") return CompoundV3.claim(this.contract, data);
-		if (this.type === "erc4626Merkl") return ERC4626Merkl.claim(this.contract, data);
+		if (this.type === "compoundV3")
+			return CompoundV3.claim(this.contract, data);
+		if (this.type === "erc4626Merkl")
+			return ERC4626Merkl.claim(this.contract, data);
 		throw new Error(`claim not supported on ${this.type}`);
 	}
 
@@ -326,19 +345,29 @@ export class AdapterInstance {
 		newDuration: bigint,
 	): Promise<ethers.TransactionResponse> {
 		this.requireType("morphoMarketV1");
-		return MorphoMarketV1.increaseTimelock(this.contract, selector, newDuration);
+		return MorphoMarketV1.increaseTimelock(
+			this.contract,
+			selector,
+			newDuration,
+		);
 	}
 	decreaseTimelock(
 		selector: string,
 		newDuration: bigint,
 	): Promise<ethers.TransactionResponse> {
 		this.requireType("morphoMarketV1");
-		return MorphoMarketV1.decreaseTimelock(this.contract, selector, newDuration);
+		return MorphoMarketV1.decreaseTimelock(
+			this.contract,
+			selector,
+			newDuration,
+		);
 	}
 
 	private requireType(expected: AdapterType): void {
 		if (this.type !== expected) {
-			throw new Error(`This call requires a ${expected} adapter, got ${this.type}`);
+			throw new Error(
+				`This call requires a ${expected} adapter, got ${this.type}`,
+			);
 		}
 	}
 }

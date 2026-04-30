@@ -19,10 +19,11 @@ export async function deployERC4626MerklAdapter(
 ): Promise<DeployAdapterResult> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
 	try {
-		const adapterAddress: string = await factory.createERC4626MerklAdapter.staticCall(
-			vaultAddress,
-			erc4626Vault,
-		);
+		const adapterAddress: string =
+			await factory.createERC4626MerklAdapter.staticCall(
+				vaultAddress,
+				erc4626Vault,
+			);
 		const tx = await executeContractMethod(
 			factory,
 			"createERC4626MerklAdapter",
@@ -50,7 +51,12 @@ export async function findERC4626MerklAdapter(
 	erc4626Vault: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "erc4626Merkl");
-	return callContractMethod(factory, "erc4626MerklAdapter", vaultAddress, erc4626Vault);
+	return callContractMethod(
+		factory,
+		"erc4626MerklAdapter",
+		vaultAddress,
+		erc4626Vault,
+	);
 }
 
 // ============================================================================
@@ -61,11 +67,15 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
-export async function getUnderlying(contract: ethers.Contract): Promise<string> {
+export async function getUnderlying(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "erc4626Vault");
 }
 
-export async function getMerklDistributor(contract: ethers.Contract): Promise<string> {
+export async function getMerklDistributor(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "MERKL_DISTRIBUTOR");
 }
 
@@ -73,7 +83,9 @@ export async function getClaimer(contract: ethers.Contract): Promise<string> {
 	return callContractMethod(contract, "claimer");
 }
 
-export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+export async function getSkimRecipient(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "skimRecipient");
 }
 

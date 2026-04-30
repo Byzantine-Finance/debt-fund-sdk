@@ -8,14 +8,14 @@
 
 import { JsonRpcProvider } from "ethers";
 import { describe, expect, it } from "vitest";
-import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import { getAdapterContract } from "../../src/clients/adapters/_contracts";
+import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import type { ChainsOptions } from "../../src/types";
 import { ContractProvider } from "../../src/utils";
 import {
 	ADDR_A as ADAPTER_ADDR,
-	ADDR_B as RECIPIENT,
 	RAW_DATA,
+	ADDR_B as RECIPIENT,
 } from "../_fixtures";
 
 function makeStubProvider(chainId: ChainsOptions = 1): ContractProvider {

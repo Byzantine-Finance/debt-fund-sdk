@@ -8,8 +8,8 @@
 
 import { JsonRpcProvider } from "ethers";
 import { describe, expect, it } from "vitest";
-import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import { getAdapterContract } from "../../src/clients/adapters/_contracts";
+import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import type { ChainsOptions } from "../../src/types";
 import { ContractProvider } from "../../src/utils";
 import { ADDR_A as ADAPTER_ADDR, ADDR_B as RECIPIENT } from "../_fixtures";
@@ -60,7 +60,13 @@ describe("ERC4626 adapter — ABI surface", () => {
 	});
 
 	it("does NOT expose claim/setClaimer/submit/abdicate (specific to other types)", () => {
-		for (const fn of ["claim", "setClaimer", "submit", "abdicate", "increaseTimelock"]) {
+		for (const fn of [
+			"claim",
+			"setClaimer",
+			"submit",
+			"abdicate",
+			"increaseTimelock",
+		]) {
 			expect(c.interface.getFunction(fn), fn).toBeNull();
 		}
 	});

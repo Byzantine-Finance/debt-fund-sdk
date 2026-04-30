@@ -57,7 +57,11 @@ export async function getAdapterFactoryContract(
 	type: AdapterType,
 ): Promise<ethers.Contract> {
 	const cfg = await cp.getNetworkConfig();
-	return new Contract(factoryAddressFor(cfg, type), FACTORY_ABIS[type], cp.runner);
+	return new Contract(
+		factoryAddressFor(cfg, type),
+		FACTORY_ABIS[type],
+		cp.runner,
+	);
 }
 
 /** Build a deployed-adapter contract for `address` of the given `type`. */

@@ -20,11 +20,12 @@ export async function deployCompoundV3Adapter(
 ): Promise<DeployAdapterResult> {
 	const factory = await getAdapterFactoryContract(cp, "compoundV3");
 	try {
-		const adapterAddress: string = await factory.createCompoundV3Adapter.staticCall(
-			vaultAddress,
-			comet,
-			cometRewards,
-		);
+		const adapterAddress: string =
+			await factory.createCompoundV3Adapter.staticCall(
+				vaultAddress,
+				comet,
+				cometRewards,
+			);
 		const tx = await executeContractMethod(
 			factory,
 			"createCompoundV3Adapter",
@@ -54,7 +55,13 @@ export async function findCompoundV3Adapter(
 	cometRewards: string,
 ): Promise<string> {
 	const factory = await getAdapterFactoryContract(cp, "compoundV3");
-	return callContractMethod(factory, "compoundV3Adapter", vaultAddress, comet, cometRewards);
+	return callContractMethod(
+		factory,
+		"compoundV3Adapter",
+		vaultAddress,
+		comet,
+		cometRewards,
+	);
 }
 
 // ============================================================================
@@ -65,11 +72,15 @@ export async function getIds(contract: ethers.Contract): Promise<string[]> {
 	return callContractMethod(contract, "ids");
 }
 
-export async function getUnderlying(contract: ethers.Contract): Promise<string> {
+export async function getUnderlying(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "comet");
 }
 
-export async function getCometRewards(contract: ethers.Contract): Promise<string> {
+export async function getCometRewards(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "cometRewards");
 }
 
@@ -77,7 +88,9 @@ export async function getClaimer(contract: ethers.Contract): Promise<string> {
 	return callContractMethod(contract, "claimer");
 }
 
-export async function getSkimRecipient(contract: ethers.Contract): Promise<string> {
+export async function getSkimRecipient(
+	contract: ethers.Contract,
+): Promise<string> {
 	return callContractMethod(contract, "skimRecipient");
 }
 

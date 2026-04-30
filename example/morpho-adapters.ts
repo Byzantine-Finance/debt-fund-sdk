@@ -31,14 +31,22 @@ async function main() {
 
 	// 2. find existing adapter
 	console.log("\n🔎 Looking for existing adapter…");
-	let adapterAddress = await client.findAdapter(VAULT_ADDRESS, MORPHO_VAULT_V1, {
-		type: "erc4626",
-	});
+	let adapterAddress = await client.findAdapter(
+		VAULT_ADDRESS,
+		MORPHO_VAULT_V1,
+		{
+			type: "erc4626",
+		},
+	);
 
 	// 3. deploy if missing
 	if (adapterAddress === ethers.ZeroAddress) {
 		console.log("   ➡️  Not found — deploying a new one");
-		const tx = await client.deployAdapter("erc4626", VAULT_ADDRESS, MORPHO_VAULT_V1);
+		const tx = await client.deployAdapter(
+			"erc4626",
+			VAULT_ADDRESS,
+			MORPHO_VAULT_V1,
+		);
 		console.log(`   tx: ${tx.hash}`);
 		await waitHalfSecond();
 		await tx.wait();
@@ -50,9 +58,13 @@ async function main() {
 
 	// 4. read back
 	console.log("\n📋 Adapter info");
-	console.log(`   isAdapter (erc4626): ${await client.isAdapter("erc4626", adapterAddress)}`);
+	console.log(
+		`   isAdapter (erc4626): ${await client.isAdapter("erc4626", adapterAddress)}`,
+	);
 	console.log(`   ids: ${await client.getIdsERC4626(adapterAddress)}`);
-	console.log(`   underlying: ${await client.getUnderlyingERC4626(adapterAddress)}`);
+	console.log(
+		`   underlying: ${await client.getUnderlyingERC4626(adapterAddress)}`,
+	);
 
 	console.log("\n✅ Done.");
 }

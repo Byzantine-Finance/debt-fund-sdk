@@ -8,13 +8,13 @@
 import { isAddress } from "ethers";
 import { describe, expect, it } from "vitest";
 import {
-	NETWORKS,
 	getExplorerAddressUrl,
 	getExplorerTransactionUrl,
 	getExplorerUrl,
 	getNetworkConfig,
 	getSupportedChainIds,
 	isChainSupported,
+	NETWORKS,
 	toHexChainId,
 } from "../../src/constants/networks";
 import type { ChainsOptions } from "../../src/types";
@@ -40,7 +40,9 @@ const ALL_CHAIN_IDS = [1, 8453] satisfies ChainsOptions[];
 
 describe("NETWORKS — supported chains", () => {
 	it("contains exactly Ethereum and Base", () => {
-		const ids = Object.keys(NETWORKS).map(Number).sort((a, b) => a - b);
+		const ids = Object.keys(NETWORKS)
+			.map(Number)
+			.sort((a, b) => a - b);
 		expect(ids).toEqual([1, 8453]);
 	});
 
@@ -49,7 +51,9 @@ describe("NETWORKS — supported chains", () => {
 	});
 });
 
-describe.each(ALL_CHAIN_IDS)("NetworkConfig structure — chain %s", (chainId) => {
+describe.each(
+	ALL_CHAIN_IDS,
+)("NetworkConfig structure — chain %s", (chainId) => {
 	const cfg = NETWORKS[chainId];
 
 	it.each(REQUIRED_NETWORK_FIELDS)("has field '%s'", (field) => {
@@ -66,7 +70,7 @@ describe.each(ALL_CHAIN_IDS)("NetworkConfig structure — chain %s", (chainId) =
 	});
 
 	it("scanLink is an https URL", () => {
-		expect(cfg.scanLink).toMatch(/^https:\/\/[^\/]+$/);
+		expect(cfg.scanLink).toMatch(/^https:\/\/[^/]+$/);
 	});
 
 	it("vaultV2Factory is a valid address", () => {
@@ -159,7 +163,8 @@ describe("toHexChainId", () => {
 
 describe("Explorer URL helpers", () => {
 	const ADDR = "0x1111111111111111111111111111111111111111";
-	const TX = "0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+	const TX =
+		"0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
 
 	it("getExplorerUrl matches the network's scanLink", () => {
 		expect(getExplorerUrl(1)).toBe("https://etherscan.io");
@@ -167,10 +172,14 @@ describe("Explorer URL helpers", () => {
 	});
 
 	it("getExplorerAddressUrl appends /address/<addr>", () => {
-		expect(getExplorerAddressUrl(1, ADDR)).toBe(`https://etherscan.io/address/${ADDR}`);
+		expect(getExplorerAddressUrl(1, ADDR)).toBe(
+			`https://etherscan.io/address/${ADDR}`,
+		);
 	});
 
 	it("getExplorerTransactionUrl appends /tx/<hash>", () => {
-		expect(getExplorerTransactionUrl(8453, TX)).toBe(`https://basescan.org/tx/${TX}`);
+		expect(getExplorerTransactionUrl(8453, TX)).toBe(
+			`https://basescan.org/tx/${TX}`,
+		);
 	});
 });

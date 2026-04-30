@@ -1,7 +1,12 @@
 import { formatUnits, JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
 import { ByzantineClient, type Vault } from "../src";
 import { checkAndApproveIfNeeded } from "./utils/depositor";
-import { fullReading, MNEMONIC, RPC_URL, waitHalfSecond } from "./utils/toolbox";
+import {
+	fullReading,
+	MNEMONIC,
+	RPC_URL,
+	waitHalfSecond,
+} from "./utils/toolbox";
 
 interface VaultOperations {
 	depositAmount?: bigint;
@@ -43,46 +48,80 @@ async function main() {
 	await displayBalances(vault, userAddress, "Initial");
 
 	if (DEPOSIT_CONFIG.depositAmount) {
-		console.log(`\n💸 Deposit ${formatUnits(DEPOSIT_CONFIG.depositAmount, 6)} USDC`);
-		await checkAndApproveIfNeeded(vault, DEPOSIT_CONFIG.depositAmount, userAddress, "deposit");
+		console.log(
+			`\n💸 Deposit ${formatUnits(DEPOSIT_CONFIG.depositAmount, 6)} USDC`,
+		);
+		await checkAndApproveIfNeeded(
+			vault,
+			DEPOSIT_CONFIG.depositAmount,
+			userAddress,
+			"deposit",
+		);
 		const tx = await vault.deposit(DEPOSIT_CONFIG.depositAmount, userAddress);
 		await waitHalfSecond();
 		const receipt = await tx.wait();
-		console.log(`📤 deposit tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`);
+		console.log(
+			`📤 deposit tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`,
+		);
 		await displayBalances(vault, userAddress, "After Deposit");
 	}
 
 	if (DEPOSIT_CONFIG.mintAmount) {
-		console.log(`\n🪙 Mint ${formatUnits(DEPOSIT_CONFIG.mintAmount, 18)} shares`);
-		await checkAndApproveIfNeeded(vault, DEPOSIT_CONFIG.mintAmount, userAddress, "mint");
+		console.log(
+			`\n🪙 Mint ${formatUnits(DEPOSIT_CONFIG.mintAmount, 18)} shares`,
+		);
+		await checkAndApproveIfNeeded(
+			vault,
+			DEPOSIT_CONFIG.mintAmount,
+			userAddress,
+			"mint",
+		);
 		const tx = await vault.mint(DEPOSIT_CONFIG.mintAmount, userAddress);
 		await waitHalfSecond();
 		const receipt = await tx.wait();
-		console.log(`📤 mint tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`);
+		console.log(
+			`📤 mint tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`,
+		);
 		await displayBalances(vault, userAddress, "After Mint");
 	}
 
 	if (DEPOSIT_CONFIG.withdrawAmount) {
-		console.log(`\n💸 Withdraw ${formatUnits(DEPOSIT_CONFIG.withdrawAmount, 6)} USDC`);
-		const tx = await vault.withdraw(DEPOSIT_CONFIG.withdrawAmount, userAddress, userAddress);
+		console.log(
+			`\n💸 Withdraw ${formatUnits(DEPOSIT_CONFIG.withdrawAmount, 6)} USDC`,
+		);
+		const tx = await vault.withdraw(
+			DEPOSIT_CONFIG.withdrawAmount,
+			userAddress,
+			userAddress,
+		);
 		await waitHalfSecond();
 		const receipt = await tx.wait();
-		console.log(`📤 withdraw tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`);
+		console.log(
+			`📤 withdraw tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`,
+		);
 		await displayBalances(vault, userAddress, "After Withdraw");
 	}
 
 	if (DEPOSIT_CONFIG.redeemAmount) {
-		console.log(`\n🔄 Redeem ${formatUnits(DEPOSIT_CONFIG.redeemAmount, 18)} shares`);
+		console.log(
+			`\n🔄 Redeem ${formatUnits(DEPOSIT_CONFIG.redeemAmount, 18)} shares`,
+		);
 		const sharesBefore = await vault.balanceOf(userAddress);
 		if (sharesBefore < DEPOSIT_CONFIG.redeemAmount) {
 			throw new Error(
 				`Insufficient shares for redeem. Have ${formatUnits(sharesBefore, 18)}, need ${formatUnits(DEPOSIT_CONFIG.redeemAmount, 18)}.`,
 			);
 		}
-		const tx = await vault.redeem(DEPOSIT_CONFIG.redeemAmount, userAddress, userAddress);
+		const tx = await vault.redeem(
+			DEPOSIT_CONFIG.redeemAmount,
+			userAddress,
+			userAddress,
+		);
 		await waitHalfSecond();
 		const receipt = await tx.wait();
-		console.log(`📤 redeem tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`);
+		console.log(
+			`📤 redeem tx: ${tx.hash} (block ${receipt?.blockNumber}, gas ${receipt?.gasUsed})`,
+		);
 		await displayBalances(vault, userAddress, "After Redeem");
 	}
 
@@ -90,7 +129,11 @@ async function main() {
 	console.log("\n🎉 Done.");
 }
 
-async function displayBalances(vault: Vault, userAddress: string, stage: string) {
+async function displayBalances(
+	vault: Vault,
+	userAddress: string,
+	stage: string,
+) {
 	console.log(`\n📊 ${stage} balances`);
 	console.log("─".repeat(40));
 	try {
@@ -99,7 +142,9 @@ async function displayBalances(vault: Vault, userAddress: string, stage: string)
 		const allowance = await vault.assetAllowance(userAddress);
 		console.log(`   🪙 Shares:    ${shares}  (${formatUnits(shares, 18)})`);
 		console.log(`   💰 USDC:      ${usdc}  (${formatUnits(usdc, 6)})`);
-		console.log(`   🔓 Allowance: ${allowance}  (${formatUnits(allowance, 6)})`);
+		console.log(
+			`   🔓 Allowance: ${allowance}  (${formatUnits(allowance, 6)})`,
+		);
 	} catch (err) {
 		console.log(`   ❌ ${err}`);
 	}

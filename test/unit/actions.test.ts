@@ -78,7 +78,9 @@ describe("Actions.curator — primitives", () => {
 
 describe("Actions.curator — adapters", () => {
 	it("addAdapter", () => {
-		expect(Actions.curator.addAdapter(ADDR_A)).toBe(enc("addAdapter", [ADDR_A]));
+		expect(Actions.curator.addAdapter(ADDR_A)).toBe(
+			enc("addAdapter", [ADDR_A]),
+		);
 	});
 	it("removeAdapter", () => {
 		expect(Actions.curator.removeAdapter(ADDR_A)).toBe(
@@ -248,10 +250,26 @@ describe("Actions.curator — instant* always returns [submit, set]", () => {
 		);
 	});
 	it.each([
-		["instantSetReceiveSharesGate", Actions.curator.instantSetReceiveSharesGate, "setReceiveSharesGate"],
-		["instantSetSendSharesGate", Actions.curator.instantSetSendSharesGate, "setSendSharesGate"],
-		["instantSetReceiveAssetsGate", Actions.curator.instantSetReceiveAssetsGate, "setReceiveAssetsGate"],
-		["instantSetSendAssetsGate", Actions.curator.instantSetSendAssetsGate, "setSendAssetsGate"],
+		[
+			"instantSetReceiveSharesGate",
+			Actions.curator.instantSetReceiveSharesGate,
+			"setReceiveSharesGate",
+		],
+		[
+			"instantSetSendSharesGate",
+			Actions.curator.instantSetSendSharesGate,
+			"setSendSharesGate",
+		],
+		[
+			"instantSetReceiveAssetsGate",
+			Actions.curator.instantSetReceiveAssetsGate,
+			"setReceiveAssetsGate",
+		],
+		[
+			"instantSetSendAssetsGate",
+			Actions.curator.instantSetSendAssetsGate,
+			"setSendAssetsGate",
+		],
 	] as const)("%s", (_label, builder, fn) => {
 		checkInstant(builder(ADDR_A), enc(fn, [ADDR_A]));
 	});
@@ -372,7 +390,9 @@ describe("Actions.user — deposit / mint / withdraw / redeem", () => {
 
 describe("Actions.user — ERC20", () => {
 	it("transfer", () => {
-		expect(Actions.user.transfer(ADDR_A, 1n)).toBe(enc("transfer", [ADDR_A, 1n]));
+		expect(Actions.user.transfer(ADDR_A, 1n)).toBe(
+			enc("transfer", [ADDR_A, 1n]),
+		);
 	});
 	it("transferFrom", () => {
 		expect(Actions.user.transferFrom(ADDR_A, ADDR_B, 2n)).toBe(
@@ -384,7 +404,9 @@ describe("Actions.user — ERC20", () => {
 	});
 	it("approve max uint256", () => {
 		const MAX = (1n << 256n) - 1n;
-		expect(Actions.user.approve(ADDR_A, MAX)).toBe(enc("approve", [ADDR_A, MAX]));
+		expect(Actions.user.approve(ADDR_A, MAX)).toBe(
+			enc("approve", [ADDR_A, MAX]),
+		);
 	});
 });
 

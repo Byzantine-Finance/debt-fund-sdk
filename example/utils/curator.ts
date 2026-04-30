@@ -122,7 +122,9 @@ export async function buildCuratorActions(
 		if (g.receive_shares !== undefined) {
 			const current = await vault.receiveSharesGate();
 			if (current.toLowerCase() !== g.receive_shares.toLowerCase()) {
-				actions.push(Actions.curator.instantSetReceiveSharesGate(g.receive_shares));
+				actions.push(
+					Actions.curator.instantSetReceiveSharesGate(g.receive_shares),
+				);
 			}
 		}
 		if (g.send_shares !== undefined) {
@@ -134,7 +136,9 @@ export async function buildCuratorActions(
 		if (g.receive_assets !== undefined) {
 			const current = await vault.receiveAssetsGate();
 			if (current.toLowerCase() !== g.receive_assets.toLowerCase()) {
-				actions.push(Actions.curator.instantSetReceiveAssetsGate(g.receive_assets));
+				actions.push(
+					Actions.curator.instantSetReceiveAssetsGate(g.receive_assets),
+				);
 			}
 		}
 		if (g.send_assets !== undefined) {

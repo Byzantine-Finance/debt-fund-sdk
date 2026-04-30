@@ -10,11 +10,15 @@
 
 import { JsonRpcProvider } from "ethers";
 import { describe, expect, it } from "vitest";
-import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import { getAdapterContract } from "../../src/clients/adapters/_contracts";
+import { AdapterInstance } from "../../src/clients/adapters/AdaptersClient";
 import type { ChainsOptions } from "../../src/types";
 import { ContractProvider } from "../../src/utils";
-import { ADDR_A as ADAPTER_ADDR, ADDR_B as RECIPIENT, RAW_DATA } from "../_fixtures";
+import {
+	ADDR_A as ADAPTER_ADDR,
+	RAW_DATA,
+	ADDR_B as RECIPIENT,
+} from "../_fixtures";
 
 const SOME_SELECTOR = "0xdeadbeef";
 
@@ -91,7 +95,10 @@ describe("MorphoMarketV1 V2 adapter — ABI surface", () => {
 	it("increaseTimelock / decreaseTimelock take (bytes4, uint256)", () => {
 		for (const fn of ["increaseTimelock", "decreaseTimelock"]) {
 			const f = c.interface.getFunction(fn);
-			expect(f?.inputs.map((i) => i.type), fn).toEqual(["bytes4", "uint256"]);
+			expect(
+				f?.inputs.map((i) => i.type),
+				fn,
+			).toEqual(["bytes4", "uint256"]);
 		}
 	});
 

@@ -14,15 +14,19 @@
 import { Contract, type ethers } from "ethers";
 import { VAULT_FACTORY_ABI } from "../constants/abis";
 import type { ChainsOptions, NetworkConfig } from "../types";
+import {
+	ContractProvider,
+	executeContractMethod,
+	formatContractError,
+} from "../utils";
 import { Vault } from "../Vault";
-import { ContractProvider, executeContractMethod, formatContractError } from "../utils";
-import { AdaptersClient, AdaptersFactoryClient } from "./adapters";
 import type {
 	AdapterInstance,
 	AdapterType,
 	DeployAdapterResult,
 	MarketParams,
 } from "./adapters";
+import { AdaptersClient, AdaptersFactoryClient } from "./adapters";
 
 export interface CreateVaultResult extends ethers.ContractTransactionResponse {
 	vaultAddress: string;
@@ -125,7 +129,11 @@ export class ByzantineClient {
 		underlying: string,
 		options?: { type?: AdapterType; cometRewards?: string },
 	): Promise<string> {
-		return this.adaptersFactoryClient.findAdapter(parentVault, underlying, options);
+		return this.adaptersFactoryClient.findAdapter(
+			parentVault,
+			underlying,
+			options,
+		);
 	}
 
 	/** Check whether an address is a registered adapter of the given type. */
@@ -147,7 +155,9 @@ export class ByzantineClient {
 
 	// ----- per-type adapter reads -----
 	getIdsERC4626(adapterAddress: string): Promise<string[]> {
-		return this.adaptersClient.adapter(adapterAddress, "erc4626").getIdsERC4626();
+		return this.adaptersClient
+			.adapter(adapterAddress, "erc4626")
+			.getIdsERC4626();
 	}
 	getIdsERC4626Merkl(adapterAddress: string): Promise<string[]> {
 		return this.adaptersClient
@@ -159,7 +169,10 @@ export class ByzantineClient {
 			.adapter(adapterAddress, "compoundV3")
 			.getIdsCompoundV3();
 	}
-	getIdsMarketV1(adapterAddress: string, marketParams: MarketParams): Promise<string[]> {
+	getIdsMarketV1(
+		adapterAddress: string,
+		marketParams: MarketParams,
+	): Promise<string[]> {
 		return this.adaptersClient
 			.adapter(adapterAddress, "morphoMarketV1")
 			.getIdsMarketV1(marketParams);
@@ -225,7 +238,11 @@ export class ByzantineClient {
 	}
 	async getVaultFactoryContract(): Promise<ethers.Contract> {
 		const cfg = await this.contractProvider.getNetworkConfig();
-		return new Contract(cfg.vaultV2Factory, VAULT_FACTORY_ABI, this.contractProvider.runner);
+		return new Contract(
+			cfg.vaultV2Factory,
+			VAULT_FACTORY_ABI,
+			this.contractProvider.runner,
+		);
 	}
 
 	// ====================================================================
@@ -236,7 +253,10 @@ export class ByzantineClient {
 	useSigner(signer: ethers.Signer): void {
 		this.signer = signer;
 		this.contractProvider = new ContractProvider(this.provider, signer);
-		this.adaptersFactoryClient = new AdaptersFactoryClient(this.provider, signer);
+		this.adaptersFactoryClient = new AdaptersFactoryClient(
+			this.provider,
+			signer,
+		);
 		this.adaptersClient = new AdaptersClient(this.provider, signer);
 	}
 
