@@ -39,7 +39,7 @@ export interface MorphoMarketState {
 // factory at deploy time, so per-call only `parentVault` is passed.
 // ============================================================================
 
-export async function deployMorphoMarketV1Adapter(
+export async function deployMorphoMarketV1AdapterV2(
 	cp: ContractProvider,
 	vaultAddress: string,
 ): Promise<DeployAdapterResult> {
@@ -59,7 +59,7 @@ export async function deployMorphoMarketV1Adapter(
 	}
 }
 
-export async function isMorphoMarketV1Adapter(
+export async function isMorphoMarketV1AdapterV2(
 	cp: ContractProvider,
 	account: string,
 ): Promise<boolean> {
@@ -67,7 +67,7 @@ export async function isMorphoMarketV1Adapter(
 	return callContractMethod(factory, "isMorphoMarketV1AdapterV2", account);
 }
 
-export async function findMorphoMarketV1Adapter(
+export async function findMorphoMarketV1AdapterV2(
 	cp: ContractProvider,
 	vaultAddress: string,
 ): Promise<string> {

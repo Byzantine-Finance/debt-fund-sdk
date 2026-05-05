@@ -48,7 +48,7 @@ export async function deployAdapter(
 		case "morphoMarketV1":
 			// V2 factory: `underlyingAddress` is unused — the morpho address is
 			// fixed by the factory's constructor.
-			return MorphoMarketV1.deployMorphoMarketV1Adapter(cp, parentAddress);
+			return MorphoMarketV1.deployMorphoMarketV1AdapterV2(cp, parentAddress);
 	}
 }
 
@@ -86,7 +86,7 @@ export async function getAdapterType(
 				return "erc4626Merkl";
 			case cfg.adapters.compoundV3AdapterFactory.toLowerCase():
 				return "compoundV3";
-			case cfg.adapters.morphoMarketV1AdapterFactory.toLowerCase():
+			case cfg.adapters.morphoMarketV1AdapterV2Factory.toLowerCase():
 				return "morphoMarketV1";
 			default:
 				throw new Error(`Unknown adapter factory: ${factoryAddress}`);
@@ -110,6 +110,6 @@ export async function getIsAdapter(
 		case "compoundV3":
 			return CompoundV3.isCompoundV3Adapter(cp, adapterAddress);
 		case "morphoMarketV1":
-			return MorphoMarketV1.isMorphoMarketV1Adapter(cp, adapterAddress);
+			return MorphoMarketV1.isMorphoMarketV1AdapterV2(cp, adapterAddress);
 	}
 }

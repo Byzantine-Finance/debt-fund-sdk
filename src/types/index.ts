@@ -11,7 +11,7 @@ export interface NetworkConfig {
 		erc4626AdapterFactory: string;
 		erc4626MerklAdapterFactory: string;
 		compoundV3AdapterFactory: string;
-		morphoMarketV1AdapterFactory: string;
+		morphoMarketV1AdapterV2Factory: string;
 	};
 }
 

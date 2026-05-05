@@ -12,8 +12,8 @@ import {
 	CompoundV3AdapterFactoryABI,
 	ERC4626MerklAdapterABI,
 	ERC4626MerklAdapterFactoryABI,
-	MorphoMarketV1AdapterABI,
-	MorphoMarketV1AdapterFactoryABI,
+	MorphoMarketV1AdapterV2ABI,
+	MorphoMarketV1AdapterV2FactoryABI,
 	MorphoVaultV1AdapterABI,
 	MorphoVaultV1AdapterFactoryABI,
 } from "../../constants/abis";
@@ -26,7 +26,7 @@ const ADAPTER_ABIS = {
 	erc4626: MorphoVaultV1AdapterABI,
 	erc4626Merkl: ERC4626MerklAdapterABI,
 	compoundV3: CompoundV3AdapterABI,
-	morphoMarketV1: MorphoMarketV1AdapterABI,
+	morphoMarketV1: MorphoMarketV1AdapterV2ABI,
 } as const;
 
 /** ABI used by the factory that deploys adapters of each type. */
@@ -34,7 +34,7 @@ const FACTORY_ABIS = {
 	erc4626: MorphoVaultV1AdapterFactoryABI,
 	erc4626Merkl: ERC4626MerklAdapterFactoryABI,
 	compoundV3: CompoundV3AdapterFactoryABI,
-	morphoMarketV1: MorphoMarketV1AdapterFactoryABI,
+	morphoMarketV1: MorphoMarketV1AdapterV2FactoryABI,
 } as const;
 
 /** Pull the on-chain factory address for a given adapter type. */
@@ -47,7 +47,7 @@ function factoryAddressFor(cfg: NetworkConfig, type: AdapterType): string {
 		case "compoundV3":
 			return cfg.adapters.compoundV3AdapterFactory;
 		case "morphoMarketV1":
-			return cfg.adapters.morphoMarketV1AdapterFactory;
+			return cfg.adapters.morphoMarketV1AdapterV2Factory;
 	}
 }
 

@@ -7,8 +7,8 @@ import CompoundV3AdapterFactoryABI from "./CompoundV3AdapterFactory.json";
 import ERC4626MerklAdapterABI from "./ERC4626MerklAdapter.json";
 import ERC4626MerklAdapterFactoryABI from "./ERC4626MerklAdapterFactory.json";
 import MorphoBlueABI from "./MorphoBlue.json";
-import MorphoMarketV1AdapterABI from "./MorphoMarketV1Adapter.json";
-import MorphoMarketV1AdapterFactoryABI from "./MorphoMarketV1AdapterFactory.json";
+import MorphoMarketV1AdapterV2ABI from "./MorphoMarketV1AdapterV2.json";
+import MorphoMarketV1AdapterV2FactoryABI from "./MorphoMarketV1AdapterV2Factory.json";
 import MorphoVaultV1AdapterABI from "./MorphoVaultV1Adapter.json";
 import MorphoVaultV1AdapterFactoryABI from "./MorphoVaultV1AdapterFactory.json";
 import VAULT_ABI from "./Vault.json";
@@ -22,8 +22,8 @@ export {
 	ERC4626MerklAdapterABI,
 	ERC4626MerklAdapterFactoryABI,
 	MorphoBlueABI,
-	MorphoMarketV1AdapterABI,
-	MorphoMarketV1AdapterFactoryABI,
+	MorphoMarketV1AdapterV2ABI,
+	MorphoMarketV1AdapterV2FactoryABI,
 	MorphoVaultV1AdapterABI,
 	MorphoVaultV1AdapterFactoryABI,
 	VAULT_ABI,

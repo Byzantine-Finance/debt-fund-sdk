@@ -14,7 +14,7 @@
  *                                      (Morpho V1 vaults are ERC4626,
  *                                       hence the generic SDK name)
  *   adapters.morphoMarketV1            MorphoMarketV1AdapterV2Factory
- *           AdapterFactory
+ *           AdapterV2Factory
  *
  * `erc4626MerklAdapterFactory` and `compoundV3AdapterFactory` are
  * Byzantine-deployed adapter factories — they are not listed on the
@@ -38,7 +38,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
 		adapters: {
 			// Source: https://docs.morpho.org/get-started/resources/addresses/
 			erc4626AdapterFactory: "0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394",
-			morphoMarketV1AdapterFactory:
+			morphoMarketV1AdapterV2Factory:
 				"0x32BB1c0D48D8b1B3363e86eeB9A0300BAd61ccc1",
 			// Byzantine-deployed adapter factories (not in Morpho docs).
 			erc4626MerklAdapterFactory: "0x576136011496367C7FEF780445349060646C7cC1",
@@ -59,7 +59,7 @@ export const NETWORKS: Record<ChainsOptions, NetworkConfig> = {
 		adapters: {
 			// Source: https://docs.morpho.org/get-started/resources/addresses/
 			erc4626AdapterFactory: "0xF42D9c36b34c9c2CF3Bc30eD2a52a90eEB604642",
-			morphoMarketV1AdapterFactory:
+			morphoMarketV1AdapterV2Factory:
 				"0x9a1B378C43BA535cDB89934230F0D3890c51C0EB",
 			// Byzantine-deployed adapter factories (not in Morpho docs).
 			erc4626MerklAdapterFactory: "0xdF311B93f922867A686abA9b233Fd7C65d66f83d",

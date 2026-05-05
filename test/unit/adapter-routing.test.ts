@@ -51,7 +51,7 @@ describe("getAdapterFactoryContract — address routing per (chain, type)", () =
 						erc4626: "erc4626AdapterFactory",
 						erc4626Merkl: "erc4626MerklAdapterFactory",
 						compoundV3: "compoundV3AdapterFactory",
-						morphoMarketV1: "morphoMarketV1AdapterFactory",
+						morphoMarketV1: "morphoMarketV1AdapterV2Factory",
 					} as const
 				)[type];
 				expect(factory.target).toBe(expected[fieldName]);

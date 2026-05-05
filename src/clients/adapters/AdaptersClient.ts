@@ -87,7 +87,7 @@ export class AdaptersFactoryClient {
 		if (type === "morphoMarketV1") {
 			// V2 factory: `underlying` is unused — there is exactly one
 			// MorphoMarketV1 adapter per parentVault per chain.
-			return MorphoMarketV1.findMorphoMarketV1Adapter(this.cp, parentVault);
+			return MorphoMarketV1.findMorphoMarketV1AdapterV2(this.cp, parentVault);
 		}
 
 		// Type unspecified — try them all.
@@ -115,7 +115,7 @@ export class AdaptersFactoryClient {
 						underlying,
 					);
 				} else {
-					found = await MorphoMarketV1.findMorphoMarketV1Adapter(
+					found = await MorphoMarketV1.findMorphoMarketV1AdapterV2(
 						this.cp,
 						parentVault,
 					);

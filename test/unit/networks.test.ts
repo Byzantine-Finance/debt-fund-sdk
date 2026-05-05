@@ -33,7 +33,7 @@ const REQUIRED_ADAPTER_FIELDS = [
 	"erc4626AdapterFactory",
 	"erc4626MerklAdapterFactory",
 	"compoundV3AdapterFactory",
-	"morphoMarketV1AdapterFactory",
+	"morphoMarketV1AdapterV2Factory",
 ] as const;
 
 const ALL_CHAIN_IDS = [1, 8453] satisfies ChainsOptions[];

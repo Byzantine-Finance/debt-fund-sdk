@@ -28,7 +28,7 @@ describe.skipIf(!hasRpc())("integration-read · network", () => {
 		expect(cfg.vaultV2Factory).toMatch(/^0x[0-9a-fA-F]{40}$/);
 		expect(cfg.morphoRegistry).toMatch(/^0x[0-9a-fA-F]{40}$/);
 		expect(cfg.adapters.erc4626AdapterFactory).toMatch(/^0x[0-9a-fA-F]{40}$/);
-		expect(cfg.adapters.morphoMarketV1AdapterFactory).toMatch(
+		expect(cfg.adapters.morphoMarketV1AdapterV2Factory).toMatch(
 			/^0x[0-9a-fA-F]{40}$/,
 		);
 	});
