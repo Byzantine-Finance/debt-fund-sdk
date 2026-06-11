@@ -6,7 +6,10 @@
 import { Interface } from "ethers";
 import { describe, expect, it } from "vitest";
 import { VAULT_ABI } from "../../src/constants";
-import { formatContractError } from "../../src/utils/contractErrorHandler";
+import {
+	executeContractMethod,
+	formatContractError,
+} from "../../src/utils/contractErrorHandler";
 
 const VAULT_IFACE = new Interface(VAULT_ABI);
 
@@ -140,5 +143,53 @@ describe("formatContractError — return value is always a real Error", () => {
 			message: "anything",
 		});
 		expect(out.message.startsWith("MY_METHOD_NAME failed:")).toBe(true);
+	});
+});
+
+describe("executeContractMethod — staticCall replay when revert data is missing", () => {
+	const feeTooHigh = VAULT_IFACE.encodeErrorResult("FeeTooHigh", []);
+
+	function fakeContract(sendError: unknown, staticError?: unknown) {
+		const fn = async () => {
+			throw sendError;
+		};
+		(fn as unknown as { staticCall: () => Promise<void> }).staticCall =
+			async () => {
+				if (staticError) throw staticError;
+			};
+		return {
+			setPerformanceFee: fn,
+			interface: VAULT_IFACE,
+		} as unknown as Parameters<typeof executeContractMethod>[0];
+	}
+
+	it("recovers the revert reason via eth_call replay", async () => {
+		const contract = fakeContract(
+			{ message: "missing revert data", code: "CALL_EXCEPTION" },
+			{ message: "execution reverted", data: feeTooHigh },
+		);
+		await expect(
+			executeContractMethod(contract, "setPerformanceFee", 1n),
+		).rejects.toThrow(/FeeTooHigh/);
+	});
+
+	it("keeps the original error when the replay yields no data either", async () => {
+		const contract = fakeContract(
+			{ message: "missing revert data", code: "CALL_EXCEPTION" },
+			{ message: "missing revert data" },
+		);
+		await expect(
+			executeContractMethod(contract, "setPerformanceFee", 1n),
+		).rejects.toThrow(/missing revert data/);
+	});
+
+	it("does not replay when the send error already carries data", async () => {
+		const contract = fakeContract({
+			message: "execution reverted",
+			data: feeTooHigh,
+		});
+		await expect(
+			executeContractMethod(contract, "setPerformanceFee", 1n),
+		).rejects.toThrow(/FeeTooHigh/);
 	});
 });

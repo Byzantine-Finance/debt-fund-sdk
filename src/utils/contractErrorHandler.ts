@@ -133,8 +133,14 @@ export function formatContractError(
 
 /**
  * Send a contract write and forward any revert through `formatContractError`.
- * No static-call simulation, no auto tx-overrides detection — pass any
- * overrides as the final argument and ethers handles them natively.
+ * Pass any tx overrides as the final argument, ethers handles them natively.
+ *
+ * When the send fails WITHOUT revert bytes (ethers' "missing revert data":
+ * some RPCs refuse to return them on estimateGas), the call is replayed as
+ * an eth_call (staticCall, same sender via the contract's runner), which
+ * reverts WITH the bytes, so the decoder can still name the reason. Best
+ * effort: if the replay does not produce data either, the original error
+ * is formatted as before.
  *
  * @example
  * await executeContractMethod(vaultContract, "deposit", amount, onBehalf);
@@ -148,6 +154,15 @@ export async function executeContractMethod(
 	try {
 		return await contract[method](...args);
 	} catch (error) {
+		if (!extractRevertData(error)) {
+			try {
+				await contract[method].staticCall(...args);
+			} catch (staticError) {
+				if (extractRevertData(staticError)) {
+					throw formatContractError(method, staticError, contract.interface);
+				}
+			}
+		}
 		throw formatContractError(method, error, contract.interface);
 	}
 }
