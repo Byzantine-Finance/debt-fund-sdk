@@ -132,6 +132,51 @@ export async function getSkimRecipient(
 	return callContractMethod(contract, "skimRecipient");
 }
 
+/**
+ * Vault-side tracked allocation for one market (the `this/marketParams` id).
+ * Lazy: only resynced to the real position on (de)allocate, so it excludes
+ * interest/losses accrued since the last interaction. Use
+ * `getExpectedSupplyAssets` for the live per-market value.
+ */
+export async function getAllocation(
+	contract: ethers.Contract,
+	marketParams: MarketParams,
+): Promise<bigint> {
+	return callContractMethod(contract, "allocation", marketParams);
+}
+
+/**
+ * Live value of the adapter's position on one market by `id` (bytes32 hash),
+ * in loan asset units, pending interest included. Exactly the per-market
+ * term of `realAssets`.
+ */
+export async function getExpectedSupplyAssets(
+	contract: ethers.Contract,
+	id: string,
+): Promise<bigint> {
+	return callContractMethod(contract, "expectedSupplyAssets", id);
+}
+
+/** Adapter's raw supply shares on one market by `id` (bytes32 hash). */
+export async function getSupplyShares(
+	contract: ethers.Contract,
+	id: string,
+): Promise<bigint> {
+	return callContractMethod(contract, "supplyShares", id);
+}
+
+/** Loan asset (the parent vault's asset) supplied to the markets. */
+export async function getAsset(contract: ethers.Contract): Promise<string> {
+	return callContractMethod(contract, "asset");
+}
+
+/** Adaptive-curve IRM address baked into the deployed adapter. */
+export async function getAdaptiveCurveIrm(
+	contract: ethers.Contract,
+): Promise<string> {
+	return callContractMethod(contract, "adaptiveCurveIrm");
+}
+
 /** Timelock duration (seconds) for a given selector on this adapter. */
 export async function getTimelock(
 	contract: ethers.Contract,
@@ -308,4 +353,16 @@ export async function skim(
 	token: string,
 ): Promise<ethers.TransactionResponse> {
 	return executeContractMethod(contract, "skim", token);
+}
+
+/**
+ * Write off the adapter's recorded supply shares on a market (sets them to
+ * 0), e.g. after bad debt. Timelocked, must be `submit`'d first. Follow up
+ * with a `deallocate(market, 0)` on the vault to resync its allocation.
+ */
+export async function burnShares(
+	contract: ethers.Contract,
+	id: string,
+): Promise<ethers.TransactionResponse> {
+	return executeContractMethod(contract, "burnShares", id);
 }

@@ -105,6 +105,18 @@ export async function getSkimRecipient(
 }
 
 /**
+ * Vault-side tracked allocation for this adapter's id. Lazy: only resynced
+ * to the real position on (de)allocate, so it excludes interest/losses
+ * accrued since the last interaction. Use the type-agnostic
+ * `GlobalAdapters.getRealAssets` for the live value.
+ */
+export async function getAllocation(
+	contract: ethers.Contract,
+): Promise<bigint> {
+	return callContractMethod(contract, "allocation");
+}
+
+/**
  * Read the live state of the underlying ERC-4626 vault.
  * No on-chain APY (would require historical share-price drift).
  */

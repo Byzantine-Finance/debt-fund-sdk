@@ -71,6 +71,48 @@ export async function getAdapterFactoryAddress(
 	}
 }
 
+/**
+ * Live value of an adapter's investments, in underlying asset units, pending
+ * interest included. `realAssets()` is part of the `IAdapter` interface the
+ * vault requires (it calls it on every adapter at interest accrual), so this
+ * works on ANY adapter, including unknown types. Same placeholder-ABI trick
+ * as `getAdapterFactoryAddress`: the selector is identical across types.
+ *
+ * Contrast with the vault-side `allocation(id)`, which is lazy (resynced only
+ * on (de)allocate) and therefore excludes interest/losses accrued since the
+ * last interaction.
+ */
+export async function getRealAssets(
+	cp: ContractProvider,
+	adapterAddress: string,
+): Promise<bigint> {
+	try {
+		const adapter = getAdapterContract(cp, adapterAddress, "morphoMarketV1");
+		return await callContractMethod(adapter, "realAssets");
+	} catch (error) {
+		throw formatContractError("getRealAssets", error);
+	}
+}
+
+/**
+ * Parent vault of an adapter. Unlike `realAssets`, `parentVault()` is not
+ * part of `IAdapter`: it is a convention shared by every Byzantine adapter
+ * type (same as `factory()` above), so it can revert on exotic third-party
+ * adapters.
+ */
+export async function getParentVault(
+	cp: ContractProvider,
+	adapterAddress: string,
+): Promise<string> {
+	try {
+		const adapter = getAdapterContract(cp, adapterAddress, "morphoMarketV1");
+		const addr: string = await callContractMethod(adapter, "parentVault");
+		return addr.toLowerCase();
+	} catch (error) {
+		throw formatContractError("getParentVault", error);
+	}
+}
+
 /** Detect an adapter's type by matching its `factory()` against known factories. */
 export async function getAdapterType(
 	cp: ContractProvider,

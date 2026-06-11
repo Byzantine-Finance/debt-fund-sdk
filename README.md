@@ -483,6 +483,35 @@ await adapter.revoke(data);                     // cancel a pending submission
 await adapter.abdicate(selector);               // permanent, irreversible
 await adapter.increaseTimelock(selector, duration);  // not itself timelocked
 await adapter.decreaseTimelock(selector, duration);  // itself timelocked — submit first
+
+await adapter.burnShares(marketId);             // write off recorded shares (bad debt), timelocked
+```
+
+### Live value vs vault-side allocation
+
+Two different numbers describe "how much an adapter holds", and they
+diverge between interactions:
+
+- `realAssets()` is the live value, pending interest included. It is part
+  of the `IAdapter` interface (the vault calls it on every adapter at
+  interest accrual), so it works on **any** adapter, even of unknown type.
+- the vault-side `allocation(id)` is lazy bookkeeping: it is resynced to
+  the real position only on (de)allocate, so it excludes interest and
+  losses accrued since the last interaction. It is the value the vault
+  checks caps against (after resync), and what gates `deallocate`.
+
+```ts
+// Universal (any adapter type, even unknown):
+await client.getRealAssets(adapter);            // live value, interest included
+await client.getParentVault(adapter);
+
+// Vault-side (lazy) allocation:
+await client.getAllocation(adapter, type);                  // single-id types
+await client.getAllocationMarketV1(adapter, marketParams);  // morpho, per market
+
+// MorphoMarketV1, live per-market decomposition of realAssets():
+await client.getExpectedSupplyAssets(adapter, marketId);    // live value of one market
+await client.getSupplyShares(adapter, marketId);            // raw supply shares
 ```
 
 ### Live state reads
