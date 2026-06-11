@@ -135,6 +135,13 @@ interface IdMarketData {
 	utilization?: bigint;
 	/** Per-second supply rate in WAD. Annualize via `formatAnnualRate`. */
 	supplyRatePerSec?: bigint;
+	/**
+	 * Live value of the adapter's position in this market, pending interest
+	 * included (`expectedSupplyAssets` for Morpho V1, `realAssets` /
+	 * Comet balance elsewhere). Compare against the entry's lazy
+	 * `allocation` to see the unaccrued drift.
+	 */
+	adapterPosition?: bigint;
 }
 
 interface IdCapEntry {
@@ -161,6 +168,11 @@ interface AdapterSnapshot {
 	adapterId: string | undefined;
 	underlying: string;
 	forceDeallocatePenalty: bigint;
+	/**
+	 * Live value of all the adapter's investments (IAdapter `realAssets()`,
+	 * pending interest included). Works for unknown adapter types too.
+	 */
+	realAssets: bigint | undefined;
 	idsWithCaps: IdCapEntry[];
 }
 
@@ -255,6 +267,9 @@ async function buildIdEntries(
 						underlyingLiquidity: state.liquidity,
 						utilization: state.utilization,
 						supplyRatePerSec: state.supplyRatePerSec,
+						adapterPosition: await client
+							.getExpectedSupplyAssets(adapterAddress, rawMarketId)
+							.catch(() => undefined),
 					};
 
 					const vaultIds = await client
@@ -319,6 +334,9 @@ async function readIdMarketData(
 					underlyingLiquidity: s.liquidity,
 					utilization: s.utilization,
 					supplyRatePerSec: s.supplyRatePerSec,
+					adapterPosition: await client
+						.getExpectedSupplyAssets(adapterAddress, id)
+						.catch(() => undefined),
 				};
 			}
 			case "compoundV3": {
@@ -328,6 +346,9 @@ async function readIdMarketData(
 					underlyingLiquidity: s.liquidity,
 					utilization: s.utilization,
 					supplyRatePerSec: s.supplyRatePerSec,
+					// Comet rebases balanceOf, so the adapter balance IS the
+					// live position.
+					adapterPosition: s.adapterBalance,
 				};
 			}
 			case "erc4626": {
@@ -335,6 +356,9 @@ async function readIdMarketData(
 				return {
 					underlyingTotalAssets: s.totalAssets,
 					underlyingLiquidity: s.maxWithdraw,
+					adapterPosition: await client
+						.getRealAssets(adapterAddress)
+						.catch(() => undefined),
 				};
 			}
 			case "erc4626Merkl": {
@@ -342,6 +366,9 @@ async function readIdMarketData(
 				return {
 					underlyingTotalAssets: s.totalAssets,
 					underlyingLiquidity: s.maxWithdraw,
+					adapterPosition: await client
+						.getRealAssets(adapterAddress)
+						.catch(() => undefined),
 				};
 			}
 			default:
@@ -420,6 +447,12 @@ export async function fullReading(
 						.catch(() => undefined)
 				: undefined;
 
+			// IAdapter-guaranteed, so no `adapterType` gate: this works even
+			// when type detection failed above.
+			const realAssets = await client
+				.getRealAssets(address)
+				.catch(() => undefined);
+
 			const idsWithCaps = await buildIdEntries(
 				client,
 				vault,
@@ -434,6 +467,7 @@ export async function fullReading(
 				adapterId,
 				underlying,
 				forceDeallocatePenalty,
+				realAssets,
 				idsWithCaps,
 			};
 		}),
@@ -491,8 +525,12 @@ export async function fullReading(
 				? "0%"
 				: `${formatPercent(a.forceDeallocatePenalty)}%`;
 		const isLiquidity = a.address === snapshot.liquidityAdapter;
+		const live =
+			a.realAssets !== undefined
+				? ` | realAssets: ${formatAmount(a.realAssets, 6, 4)}`
+				: "";
 		console.log(
-			`*   [${a.index}] ${a.address} (${a.adapterType} → ${a.underlying}) | penalty: ${penalty}${
+			`*   [${a.index}] ${a.address} (${a.adapterType} → ${a.underlying}) | penalty: ${penalty}${live}${
 				isLiquidity ? "  💦 (liquidity adapter)" : ""
 			}`,
 		);
@@ -507,6 +545,9 @@ export async function fullReading(
 		const printMarketData = (md: IdMarketData | undefined): void => {
 			if (!md) return;
 			const parts: string[] = [];
+			if (md.adapterPosition !== undefined) {
+				parts.push(`live ${formatAmount(md.adapterPosition, 6, 4)}`);
+			}
 			if (md.underlyingTotalAssets !== undefined) {
 				parts.push(`undTVL ${formatAmount(md.underlyingTotalAssets, 6, 2)}`);
 			}
