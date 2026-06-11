@@ -10,17 +10,41 @@
  *      contains the error definition (the common case).
  *   2. `iface.parseError(data)` — fallback when ethers couldn't parse it
  *      itself but we still have the raw data.
- *   3. `error.shortMessage` / `error.reason` / `error.message` — generic
- *      fallbacks when no custom error is reachable.
+ *   3. `describeRevertData(data)`: ecosystem-wide dictionary covering
+ *      custom errors raised by NESTED contracts (adapter, market, token),
+ *      plus the Error(string) / Panic(uint256) built-ins.
+ *   4. `error.shortMessage` / `error.reason` / `error.message`: generic
+ *      fallbacks, keeping the raw selector greppable.
  */
 
 import type { ethers } from "ethers";
+import { describeRevertData } from "./errorDictionary";
 
 /** Subset of ethers' parsed error shape we actually use. */
 interface RevertInfo {
 	name?: string;
 	signature?: string;
 	args?: readonly unknown[];
+}
+
+/**
+ * Dig the raw revert bytes out of whatever ethers threw. The location
+ * varies with the provider and the failure stage (send vs estimateGas vs
+ * static call), so probe the known spots in order.
+ */
+function extractRevertData(e: unknown): string | undefined {
+	const err = e as {
+		data?: unknown;
+		error?: { data?: unknown };
+		info?: { error?: { data?: unknown } };
+	};
+	const candidates = [err?.data, err?.error?.data, err?.info?.error?.data];
+	for (const c of candidates) {
+		if (typeof c === "string" && c.startsWith("0x") && c.length >= 10) {
+			return c;
+		}
+	}
+	return undefined;
 }
 
 function describeRevert(revert: RevertInfo): string {
@@ -54,11 +78,11 @@ export function formatContractError(
 ): Error {
 	const e = error as {
 		revert?: RevertInfo;
-		data?: string;
 		shortMessage?: string;
 		reason?: string;
 		message?: string;
 	};
+	const data = extractRevertData(error);
 
 	// 1. ethers already parsed it (the common case for known ABIs).
 	if (e?.revert) {
@@ -66,9 +90,9 @@ export function formatContractError(
 	}
 
 	// 2. We have raw revert data — try to parse it with the provided ABI.
-	if (e?.data && e.data !== "0x" && iface) {
+	if (data && iface) {
 		try {
-			const parsed = iface.parseError(e.data);
+			const parsed = iface.parseError(data);
 			if (parsed) {
 				return new Error(
 					`${method} failed: ${describeRevert({
@@ -83,8 +107,27 @@ export function formatContractError(
 		}
 	}
 
-	// 3. Generic fallbacks ethers exposes.
+	// 3. Ecosystem-wide fallback. The called contract's ABI only names ITS
+	// errors; a revert bubbling up from a nested call (adapter, underlying
+	// market, token) carries the CHILD's selector, which is contract-
+	// independent: the merged dictionary names it regardless of call
+	// depth, and also covers Error(string) and Panic(uint256).
+	if (data) {
+		const described = describeRevertData(data);
+		if (described) {
+			return new Error(`${method} failed: ${described}`);
+		}
+	}
+
+	// 4. Generic fallbacks ethers exposes. If an unrecognized custom error
+	// slipped through, keep its selector + raw data greppable (the selector
+	// can be looked up on openchain.xyz / 4byte.directory).
 	const msg = e?.shortMessage ?? e?.reason ?? e?.message ?? "unknown error";
+	if (data) {
+		return new Error(
+			`${method} failed: ${msg} (unrecognized custom error, selector ${data.slice(0, 10)}, data ${data})`,
+		);
+	}
 	return new Error(`${method} failed: ${msg}`);
 }
 
