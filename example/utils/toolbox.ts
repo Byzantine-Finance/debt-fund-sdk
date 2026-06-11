@@ -9,36 +9,17 @@ import type {
 	Vault,
 } from "../../src";
 import {
+	classifyMorphoFlavour,
 	formatAmount,
 	formatAnnualRate,
 	formatPercent,
-	idHash,
+	TIMELOCK_FUNCTIONS,
 } from "../../src";
 
 dotenv.config();
 
 export const RPC_URL = process.env.RPC_URL || "";
 export const MNEMONIC = process.env.MNEMONIC || "";
-
-/** All timelocked functions on the vault — used by `fullReading` to print durations. */
-export const timelocks: TimelockFunction[] = [
-	"addAdapter",
-	"removeAdapter",
-	"decreaseTimelock",
-	"increaseAbsoluteCap",
-	"increaseRelativeCap",
-	"setIsAllocator",
-	"setAdapterRegistry",
-	"setReceiveSharesGate",
-	"setSendSharesGate",
-	"setReceiveAssetsGate",
-	"setSendAssetsGate",
-	"setPerformanceFee",
-	"setPerformanceFeeRecipient",
-	"setManagementFee",
-	"setManagementFeeRecipient",
-	"setForceDeallocatePenalty",
-];
 
 export const waitDelay = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
@@ -87,40 +68,6 @@ export function fmtAbsCap(cap: bigint, decimals = 6): string {
 	return `${formatAmount(cap, decimals, 4)} USDC`;
 }
 
-export type MorphoFlavour =
-	| "this"
-	| "this/marketParams"
-	| "collateralToken"
-	| "unknown";
-
-/**
- * Label a Morpho V1 vault id by which `idData` flavour produced it.
- *
- * Each match is a positive hash check against the SDK's `idHash` —
- * single source of truth for the contract-side encoding (see
- * https://docs.morpho.org/get-started/resources/contracts/morpho-market-v1-adapter-v2/).
- * Anything that doesn't match returns `unknown`, so a future 4th bucket
- * is flagged instead of silently mislabelled.
- */
-export function classifyMorphoFlavour(
-	id: string,
-	adapterAddress: string,
-	adapterId: string | undefined,
-	marketParams: MarketParams | undefined,
-): MorphoFlavour {
-	const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-	if (adapterId && eq(id, adapterId)) return "this";
-	if (!marketParams) return "unknown";
-
-	if (eq(id, idHash("collateralToken", marketParams.collateralToken))) {
-		return "collateralToken";
-	}
-	if (eq(id, idHash("this/marketParams", adapterAddress, marketParams))) {
-		return "this/marketParams";
-	}
-	return "unknown";
-}
-
 /**
  * Per-id live snapshot pulled from the underlying protocol. All four
  * adapter types contribute the fields they can read on-chain — fields
@@ -135,6 +82,13 @@ interface IdMarketData {
 	utilization?: bigint;
 	/** Per-second supply rate in WAD. Annualize via `formatAnnualRate`. */
 	supplyRatePerSec?: bigint;
+	/**
+	 * Live value of the adapter's position in this market, pending interest
+	 * included (`expectedSupplyAssets` for Morpho V1, `realAssets` /
+	 * Comet balance elsewhere). Compare against the entry's lazy
+	 * `allocation` to see the unaccrued drift.
+	 */
+	adapterPosition?: bigint;
 }
 
 interface IdCapEntry {
@@ -161,6 +115,11 @@ interface AdapterSnapshot {
 	adapterId: string | undefined;
 	underlying: string;
 	forceDeallocatePenalty: bigint;
+	/**
+	 * Live value of all the adapter's investments (IAdapter `realAssets()`,
+	 * pending interest included). Works for unknown adapter types too.
+	 */
+	realAssets: bigint | undefined;
 	idsWithCaps: IdCapEntry[];
 }
 
@@ -255,6 +214,9 @@ async function buildIdEntries(
 						underlyingLiquidity: state.liquidity,
 						utilization: state.utilization,
 						supplyRatePerSec: state.supplyRatePerSec,
+						adapterPosition: await client
+							.getExpectedSupplyAssets(adapterAddress, rawMarketId)
+							.catch(() => undefined),
 					};
 
 					const vaultIds = await client
@@ -319,6 +281,9 @@ async function readIdMarketData(
 					underlyingLiquidity: s.liquidity,
 					utilization: s.utilization,
 					supplyRatePerSec: s.supplyRatePerSec,
+					adapterPosition: await client
+						.getExpectedSupplyAssets(adapterAddress, id)
+						.catch(() => undefined),
 				};
 			}
 			case "compoundV3": {
@@ -328,6 +293,9 @@ async function readIdMarketData(
 					underlyingLiquidity: s.liquidity,
 					utilization: s.utilization,
 					supplyRatePerSec: s.supplyRatePerSec,
+					// Comet rebases balanceOf, so the adapter balance IS the
+					// live position.
+					adapterPosition: s.adapterBalance,
 				};
 			}
 			case "erc4626": {
@@ -335,6 +303,9 @@ async function readIdMarketData(
 				return {
 					underlyingTotalAssets: s.totalAssets,
 					underlyingLiquidity: s.maxWithdraw,
+					adapterPosition: await client
+						.getRealAssets(adapterAddress)
+						.catch(() => undefined),
 				};
 			}
 			case "erc4626Merkl": {
@@ -342,6 +313,9 @@ async function readIdMarketData(
 				return {
 					underlyingTotalAssets: s.totalAssets,
 					underlyingLiquidity: s.maxWithdraw,
+					adapterPosition: await client
+						.getRealAssets(adapterAddress)
+						.catch(() => undefined),
 				};
 			}
 			default:
@@ -420,6 +394,12 @@ export async function fullReading(
 						.catch(() => undefined)
 				: undefined;
 
+			// IAdapter-guaranteed, so no `adapterType` gate: this works even
+			// when type detection failed above.
+			const realAssets = await client
+				.getRealAssets(address)
+				.catch(() => undefined);
+
 			const idsWithCaps = await buildIdEntries(
 				client,
 				vault,
@@ -434,13 +414,14 @@ export async function fullReading(
 				adapterId,
 				underlying,
 				forceDeallocatePenalty,
+				realAssets,
 				idsWithCaps,
 			};
 		}),
 	);
 
 	snapshot.timelocks = await Promise.all(
-		timelocks.map(async (name) => ({
+		TIMELOCK_FUNCTIONS.map(async (name) => ({
 			name,
 			timelock: await vault.timelock(name),
 		})),
@@ -491,8 +472,12 @@ export async function fullReading(
 				? "0%"
 				: `${formatPercent(a.forceDeallocatePenalty)}%`;
 		const isLiquidity = a.address === snapshot.liquidityAdapter;
+		const live =
+			a.realAssets !== undefined
+				? ` | realAssets: ${formatAmount(a.realAssets, 6, 4)}`
+				: "";
 		console.log(
-			`*   [${a.index}] ${a.address} (${a.adapterType} → ${a.underlying}) | penalty: ${penalty}${
+			`*   [${a.index}] ${a.address} (${a.adapterType} → ${a.underlying}) | penalty: ${penalty}${live}${
 				isLiquidity ? "  💦 (liquidity adapter)" : ""
 			}`,
 		);
@@ -507,6 +492,9 @@ export async function fullReading(
 		const printMarketData = (md: IdMarketData | undefined): void => {
 			if (!md) return;
 			const parts: string[] = [];
+			if (md.adapterPosition !== undefined) {
+				parts.push(`live ${formatAmount(md.adapterPosition, 6, 4)}`);
+			}
 			if (md.underlyingTotalAssets !== undefined) {
 				parts.push(`undTVL ${formatAmount(md.underlyingTotalAssets, 6, 2)}`);
 			}

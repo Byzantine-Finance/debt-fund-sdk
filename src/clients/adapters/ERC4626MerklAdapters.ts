@@ -121,6 +121,18 @@ export async function getSkimRecipient(
 	return callContractMethod(contract, "skimRecipient");
 }
 
+/**
+ * Vault-side tracked allocation for this adapter's id. Lazy: only resynced
+ * to the real position on (de)allocate, so it excludes interest/losses
+ * accrued since the last interaction. Use the type-agnostic
+ * `GlobalAdapters.getRealAssets` for the live value.
+ */
+export async function getAllocation(
+	contract: ethers.Contract,
+): Promise<bigint> {
+	return callContractMethod(contract, "allocation");
+}
+
 // ============================================================================
 // Adapter writes — administrative surface (target: the adapter, NOT the vault)
 // ============================================================================

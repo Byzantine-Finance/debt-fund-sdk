@@ -65,6 +65,13 @@ async function main() {
 	console.log(
 		`   underlying: ${await client.getUnderlyingERC4626(adapterAddress)}`,
 	);
+	// Live value (interest included) vs the vault's lazy allocation: these
+	// drift apart between (de)allocates, see the README section
+	// "Live value vs vault-side allocation".
+	console.log(`   realAssets: ${await client.getRealAssets(adapterAddress)}`);
+	console.log(
+		`   allocation: ${await client.getAllocation(adapterAddress, "erc4626")}`,
+	);
 
 	console.log("\n✅ Done.");
 }

@@ -268,6 +268,74 @@ export class AdapterInstance {
 	getAdapterType(): Promise<AdapterType | undefined> {
 		return Global.getAdapterType(this.cp, this.address);
 	}
+	/**
+	 * Live value of the adapter's investments (pending interest included).
+	 * `realAssets()` is required by `IAdapter`, so this works for any type.
+	 */
+	getRealAssets(): Promise<bigint> {
+		return Global.getRealAssets(this.cp, this.address);
+	}
+	/** Parent vault address, exposed by every adapter type. */
+	getParentVault(): Promise<string> {
+		return Global.getParentVault(this.cp, this.address);
+	}
+
+	// ----- allocation surface (vault-side lazy accounting) -----
+	/**
+	 * Vault-side tracked allocation for the adapter's lone id (single-id
+	 * types). Lazy: excludes interest/losses since the last (de)allocate,
+	 * use `getRealAssets()` for the live value. For morphoMarketV1 the
+	 * allocation is per-market: use `getAllocationMarketV1(marketParams)`.
+	 */
+	getAllocation(): Promise<bigint> {
+		switch (this.type) {
+			case "erc4626":
+				return ERC4626.getAllocation(this.contract);
+			case "erc4626Merkl":
+				return ERC4626Merkl.getAllocation(this.contract);
+			case "compoundV3":
+				return CompoundV3.getAllocation(this.contract);
+			case "morphoMarketV1":
+				throw new Error(
+					"morphoMarketV1 allocation is per-market, use getAllocationMarketV1(marketParams)",
+				);
+		}
+	}
+	/** Vault-side tracked allocation of one market (`this/marketParams` id). */
+	getAllocationMarketV1(
+		marketParams: MorphoMarketV1.MarketParams,
+	): Promise<bigint> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getAllocation(this.contract, marketParams);
+	}
+
+	// ----- morphoMarketV1: live per-market values -----
+	/**
+	 * Live value of the adapter's position on one market by id (bytes32),
+	 * pending interest included: the per-market term of `realAssets()`.
+	 */
+	getExpectedSupplyAssets(marketId: string): Promise<bigint> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getExpectedSupplyAssets(this.contract, marketId);
+	}
+	/** Adapter's raw supply shares on one market by id (bytes32). */
+	getSupplyShares(marketId: string): Promise<bigint> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getSupplyShares(this.contract, marketId);
+	}
+	/** Adaptive-curve IRM address baked into the adapter. */
+	getAdaptiveCurveIrm(): Promise<string> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.getAdaptiveCurveIrm(this.contract);
+	}
+
+	/** Underlying asset of the adapter (morphoMarketV1 / compoundV3 only). */
+	getAsset(): Promise<string> {
+		if (this.type === "morphoMarketV1")
+			return MorphoMarketV1.getAsset(this.contract);
+		if (this.type === "compoundV3") return CompoundV3.getAsset(this.contract);
+		throw new Error(`getAsset not supported on ${this.type}`);
+	}
 
 	// ----- skim surface (every adapter type) -----
 	getSkimRecipient(): Promise<string> {
@@ -369,6 +437,14 @@ export class AdapterInstance {
 	abdicate(selector: string): Promise<ethers.TransactionResponse> {
 		this.requireType("morphoMarketV1");
 		return MorphoMarketV1.abdicate(this.contract, selector);
+	}
+	/**
+	 * Write off the adapter's recorded supply shares on a market (bad debt).
+	 * Timelocked, must be `submit`'d first.
+	 */
+	burnShares(marketId: string): Promise<ethers.TransactionResponse> {
+		this.requireType("morphoMarketV1");
+		return MorphoMarketV1.burnShares(this.contract, marketId);
 	}
 	increaseTimelock(
 		selector: string,

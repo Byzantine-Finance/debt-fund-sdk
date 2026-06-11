@@ -252,6 +252,63 @@ export class ByzantineClient {
 		return this.adaptersClient.adapter(adapterAddress, type).getAdapterId();
 	}
 
+	// ----- live value / allocation reads -----
+	/**
+	 * Live value of an adapter's investments in underlying asset units,
+	 * pending interest included. `realAssets()` is required by the `IAdapter`
+	 * interface, so this works for ANY adapter, even of unknown type. This is
+	 * the value the vault reads on interest accrual, contrast it with the
+	 * vault-side `allocation(id)` which is lazy (resynced only on
+	 * (de)allocate) and excludes interest/losses since the last interaction.
+	 */
+	getRealAssets(adapterAddress: string): Promise<bigint> {
+		return this.adaptersClient.globalAdapter(adapterAddress).getRealAssets();
+	}
+
+	/** Parent vault of an adapter. Works for any adapter type. */
+	getParentVault(adapterAddress: string): Promise<string> {
+		return this.adaptersClient.globalAdapter(adapterAddress).getParentVault();
+	}
+
+	/**
+	 * Vault-side tracked (lazy) allocation of a single-id adapter. For
+	 * morphoMarketV1 use `getAllocationMarketV1` (per-market).
+	 */
+	getAllocation(adapterAddress: string, type: AdapterType): Promise<bigint> {
+		return this.adaptersClient.adapter(adapterAddress, type).getAllocation();
+	}
+
+	/** Vault-side tracked (lazy) allocation of one Morpho V1 market. */
+	getAllocationMarketV1(
+		adapterAddress: string,
+		marketParams: MarketParams,
+	): Promise<bigint> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "morphoMarketV1")
+			.getAllocationMarketV1(marketParams);
+	}
+
+	/**
+	 * Live value of a Morpho V1 adapter's position on one market by id
+	 * (bytes32), pending interest included: the per-market term of
+	 * `realAssets()`.
+	 */
+	getExpectedSupplyAssets(
+		adapterAddress: string,
+		marketId: string,
+	): Promise<bigint> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "morphoMarketV1")
+			.getExpectedSupplyAssets(marketId);
+	}
+
+	/** Raw supply shares of a Morpho V1 adapter on one market by id (bytes32). */
+	getSupplyShares(adapterAddress: string, marketId: string): Promise<bigint> {
+		return this.adaptersClient
+			.adapter(adapterAddress, "morphoMarketV1")
+			.getSupplyShares(marketId);
+	}
+
 	/**
 	 * Get an `AdapterInstance` for an existing adapter. Use this for
 	 * adapter-level admin writes (`setSkimRecipient`, `skim`, `claim`,

@@ -15,13 +15,20 @@
  *   ]);
  */
 
-export type { Action, IdType, TimelockFunction } from "./actions";
+export type {
+	Action,
+	IdType,
+	MorphoFlavour,
+	TimelockFunction,
+} from "./actions";
 // ----- Calldata builders for multicall -----
 export {
 	Actions,
+	classifyMorphoFlavour,
 	flattenActions,
 	idData,
 	idHash,
+	TIMELOCK_FUNCTIONS,
 	timelockSelector,
 } from "./actions";
 export type {
