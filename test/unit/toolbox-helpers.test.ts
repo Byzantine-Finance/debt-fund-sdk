@@ -1,5 +1,5 @@
 /**
- * Pure unit tests for the example-toolbox helpers used by `fullReading` —
+ * Pure unit tests for the helpers used by `fullReading` —
  * no RPC, no network. They guard:
  *
  *  - `fmtAbsCap` — boundary handling for `type(uint256).max`.
@@ -7,17 +7,15 @@
  *    bytes32 ids returned by `morphoMarketV1Adapter.ids(marketParams)`
  *    into one of `this` / `collateralToken` / `this/marketParams`. Each
  *    flavour is a positive hash check against the SDK's `idHash`; any
- *    other input must come back as `unknown`.
+ *    other input must come back as `unknown`. Lives in the SDK proper
+ *    (`src/actions.ts`, next to `idHash`) since curator front-ends need
+ *    the same classification.
  */
 
 import { describe, expect, it } from "vitest";
-import {
-	classifyMorphoFlavour,
-	fmtAbsCap,
-	MAX_UINT256,
-} from "../../example/utils/toolbox";
+import { fmtAbsCap, MAX_UINT256 } from "../../example/utils/toolbox";
 import type { MarketParams } from "../../src";
-import { idHash } from "../../src";
+import { classifyMorphoFlavour, idHash } from "../../src";
 import { ADDR_A, ADDR_B, ADDR_C, ADDR_D } from "../_fixtures";
 
 const ADAPTER = ADDR_A;

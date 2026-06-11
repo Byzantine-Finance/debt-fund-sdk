@@ -107,6 +107,40 @@ export function idHash(type: IdType, ...args: unknown[]): string {
 	return keccak256(blob);
 }
 
+export type MorphoFlavour =
+	| "this"
+	| "this/marketParams"
+	| "collateralToken"
+	| "unknown";
+
+/**
+ * Label a Morpho V1 vault id by which `idData` flavour produced it.
+ *
+ * Each match is a positive hash check against `idHash`, the single source
+ * of truth for the contract-side encoding (see
+ * https://docs.morpho.org/get-started/resources/contracts/morpho-market-v1-adapter-v2/).
+ * Anything that doesn't match returns `unknown`, so a future 4th bucket
+ * is flagged instead of silently mislabelled.
+ */
+export function classifyMorphoFlavour(
+	id: string,
+	adapterAddress: string,
+	adapterId: string | undefined,
+	marketParams: MarketParams | undefined,
+): MorphoFlavour {
+	const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+	if (adapterId && eq(id, adapterId)) return "this";
+	if (!marketParams) return "unknown";
+
+	if (eq(id, idHash("collateralToken", marketParams.collateralToken))) {
+		return "collateralToken";
+	}
+	if (eq(id, idHash("this/marketParams", adapterAddress, marketParams))) {
+		return "this/marketParams";
+	}
+	return "unknown";
+}
+
 // ============================================================================
 // TIMELOCK SELECTORS — used by increase/decrease/abdicate timelock actions
 // ============================================================================
@@ -155,6 +189,15 @@ const TIMELOCK_SELECTORS: Record<TimelockFunction, string> = {
 export function timelockSelector(fn: TimelockFunction): string {
 	return TIMELOCK_SELECTORS[fn];
 }
+
+/**
+ * Every timelocked vault function, in declaration order. Derived from
+ * `TIMELOCK_SELECTORS` so it can never drift from the selector table:
+ * iterate this to read all timelock durations off a vault.
+ */
+export const TIMELOCK_FUNCTIONS = Object.keys(
+	TIMELOCK_SELECTORS,
+) as TimelockFunction[];
 
 // ============================================================================
 // ACTIONS — grouped by role

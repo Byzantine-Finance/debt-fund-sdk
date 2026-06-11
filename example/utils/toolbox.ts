@@ -9,36 +9,17 @@ import type {
 	Vault,
 } from "../../src";
 import {
+	classifyMorphoFlavour,
 	formatAmount,
 	formatAnnualRate,
 	formatPercent,
-	idHash,
+	TIMELOCK_FUNCTIONS,
 } from "../../src";
 
 dotenv.config();
 
 export const RPC_URL = process.env.RPC_URL || "";
 export const MNEMONIC = process.env.MNEMONIC || "";
-
-/** All timelocked functions on the vault — used by `fullReading` to print durations. */
-export const timelocks: TimelockFunction[] = [
-	"addAdapter",
-	"removeAdapter",
-	"decreaseTimelock",
-	"increaseAbsoluteCap",
-	"increaseRelativeCap",
-	"setIsAllocator",
-	"setAdapterRegistry",
-	"setReceiveSharesGate",
-	"setSendSharesGate",
-	"setReceiveAssetsGate",
-	"setSendAssetsGate",
-	"setPerformanceFee",
-	"setPerformanceFeeRecipient",
-	"setManagementFee",
-	"setManagementFeeRecipient",
-	"setForceDeallocatePenalty",
-];
 
 export const waitDelay = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
@@ -85,40 +66,6 @@ export const MAX_UINT256 = (1n << 256n) - 1n;
 export function fmtAbsCap(cap: bigint, decimals = 6): string {
 	if (cap >= MAX_UINT256) return "∞";
 	return `${formatAmount(cap, decimals, 4)} USDC`;
-}
-
-export type MorphoFlavour =
-	| "this"
-	| "this/marketParams"
-	| "collateralToken"
-	| "unknown";
-
-/**
- * Label a Morpho V1 vault id by which `idData` flavour produced it.
- *
- * Each match is a positive hash check against the SDK's `idHash` —
- * single source of truth for the contract-side encoding (see
- * https://docs.morpho.org/get-started/resources/contracts/morpho-market-v1-adapter-v2/).
- * Anything that doesn't match returns `unknown`, so a future 4th bucket
- * is flagged instead of silently mislabelled.
- */
-export function classifyMorphoFlavour(
-	id: string,
-	adapterAddress: string,
-	adapterId: string | undefined,
-	marketParams: MarketParams | undefined,
-): MorphoFlavour {
-	const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-	if (adapterId && eq(id, adapterId)) return "this";
-	if (!marketParams) return "unknown";
-
-	if (eq(id, idHash("collateralToken", marketParams.collateralToken))) {
-		return "collateralToken";
-	}
-	if (eq(id, idHash("this/marketParams", adapterAddress, marketParams))) {
-		return "this/marketParams";
-	}
-	return "unknown";
 }
 
 /**
@@ -474,7 +421,7 @@ export async function fullReading(
 	);
 
 	snapshot.timelocks = await Promise.all(
-		timelocks.map(async (name) => ({
+		TIMELOCK_FUNCTIONS.map(async (name) => ({
 			name,
 			timelock: await vault.timelock(name),
 		})),
