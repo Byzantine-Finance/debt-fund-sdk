@@ -55,11 +55,14 @@ describe("formatContractError — path 2: iface.parseError fallback", () => {
 		expect(out.message).toContain("Unauthorized");
 	});
 
-	it("ignores parsing failure and falls through to message", () => {
+	it("ignores parsing failure and falls through to message, keeping the selector greppable", () => {
 		const error = { data: "0xdeadbeef", message: "something else" };
 		const out = formatContractError("xyz", error, VAULT_IFACE);
-		// Couldn't parse 0xdeadbeef as a known custom error → shortMessage/message path
-		expect(out.message).toBe("xyz failed: something else");
+		// Couldn't parse 0xdeadbeef as a known custom error: message path,
+		// with the raw selector appended so the revert stays debuggable
+		// (look it up on openchain.xyz / 4byte.directory).
+		expect(out.message).toContain("xyz failed: something else");
+		expect(out.message).toContain("selector 0xdeadbeef");
 	});
 
 	it("does nothing if data is empty", () => {

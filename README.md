@@ -573,6 +573,33 @@ await vault.accrueInterest();
 await vault.approveAsset(amount);   // approves the vault to spend the underlying
 ```
 
+## Error decoding
+
+Every SDK call funnels failures through `formatContractError`, which names
+the revert instead of surfacing "execution reverted":
+
+1. the called contract's own custom errors (`AbsoluteCapExceeded(...)`),
+2. custom errors raised by **nested** contracts: a revert bubbles its raw
+   bytes up unchanged, and selectors hash the error signature alone, so a
+   merged dictionary of every shipped ABI (vault, adapters, factories) plus
+   the common OpenZeppelin standards decodes errors from any call depth
+   (vault → adapter → underlying market → token),
+3. the Solidity built-ins: `Error(string)` requires (`reverted with reason
+   "insufficient liquidity"`) and `Panic(uint256)` with a human label
+   (`Panic(0x11): arithmetic overflow or underflow`),
+4. anything still unknown keeps its raw selector + data in the message, so
+   it can be looked up on openchain.xyz / 4byte.directory.
+
+The decoder is also exported for direct use on raw revert bytes (e.g. from
+a viem-based front end):
+
+```ts
+import { describeRevertData, ERROR_DICTIONARY } from "@byzantine/debt-fund-sdk";
+
+describeRevertData("0x21f74345...");   // "LoanAssetMismatch()", an adapter error
+ERROR_DICTIONARY.parseError(data);     // full ethers ErrorDescription
+```
+
 ## Adapter types
 
 | Adapter type | Use for | Example underlyings |

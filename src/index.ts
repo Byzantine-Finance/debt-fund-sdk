@@ -53,6 +53,11 @@ export * from "./types";
 export {
 	ContractProvider,
 	callContractMethod,
+	// Ecosystem-wide revert decoding: name a custom error raised at ANY
+	// call depth (vault -> adapter -> market -> token), plus Error(string)
+	// and Panic(uint256).
+	describeRevertData,
+	ERROR_DICTIONARY,
 	executeContractMethod,
 	// Conversion helpers (bigint <-> human strings)
 	formatAmount,
