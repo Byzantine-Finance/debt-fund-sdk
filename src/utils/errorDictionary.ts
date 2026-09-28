@@ -9,7 +9,8 @@
  * contract, so one merged dictionary decodes any call depth.
  *
  * This module unions every error fragment from the ABIs shipped with the
- * SDK, plus widely-deployed standards (OpenZeppelin v5, Solidity built-ins),
+ * SDK, plus widely-deployed standards (OpenZeppelin v5, MetaMorpho,
+ * Solidity built-ins),
  * deduped by selector. `formatContractError` uses it as a fallback after
  * the called contract's own interface; apps can also call
  * `describeRevertData` directly on raw revert bytes (e.g. from viem).
@@ -48,7 +49,8 @@ const SHIPPED_ABIS: InterfaceAbi[] = [
 /**
  * Widely-deployed standard errors that children of our contracts commonly
  * raise but that no shipped ABI carries (OpenZeppelin v5 tokens/vaults,
- * access control, reentrancy guards). Signatures, not contract-bound.
+ * access control, reentrancy guards, MetaMorpho). Signatures, not
+ * contract-bound.
  */
 const STANDARD_ERRORS: string[] = [
 	// OpenZeppelin ERC20
@@ -77,6 +79,37 @@ const STANDARD_ERRORS: string[] = [
 	"error ERC2612ExpiredSignature(uint256 deadline)",
 	"error ERC2612InvalidSigner(address signer, address owner)",
 	"error ECDSAInvalidSignature()",
+	// MetaMorpho v1 / v1.1 (ErrorsLib, identical in both). Raised by the
+	// vault behind a MorphoVaultV1 or ERC4626 adapter, e.g. AllCapsReached
+	// when every market of its supply queue is at cap. `Id` is bytes32.
+	"error NotCuratorRole()",
+	"error NotAllocatorRole()",
+	"error NotGuardianRole()",
+	"error NotCuratorNorGuardianRole()",
+	"error UnauthorizedMarket(bytes32 id)",
+	"error InconsistentAsset(bytes32 id)",
+	"error SupplyCapExceeded(bytes32 id)",
+	"error MaxFeeExceeded()",
+	"error AlreadySet()",
+	"error AlreadyPending()",
+	"error PendingCap(bytes32 id)",
+	"error PendingRemoval()",
+	"error NonZeroCap()",
+	"error DuplicateMarket(bytes32 id)",
+	"error InvalidMarketRemovalNonZeroCap(bytes32 id)",
+	"error InvalidMarketRemovalNonZeroSupply(bytes32 id)",
+	"error InvalidMarketRemovalTimelockNotElapsed(bytes32 id)",
+	"error NoPendingValue()",
+	"error NotEnoughLiquidity()",
+	"error MarketNotCreated()",
+	"error MarketNotEnabled(bytes32 id)",
+	"error AboveMaxTimelock()",
+	"error BelowMinTimelock()",
+	"error TimelockNotElapsed()",
+	"error MaxQueueLengthExceeded()",
+	"error ZeroFeeRecipient()",
+	"error InconsistentReallocation()",
+	"error AllCapsReached()",
 ];
 
 function buildDictionary(): Interface {

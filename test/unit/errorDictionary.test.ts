@@ -53,6 +53,25 @@ describe("ERROR_DICTIONARY", () => {
 	});
 });
 
+describe("MetaMorpho errors (raised behind a vault or ERC4626 adapter)", () => {
+	it("names AllCapsReached from its raw selector", () => {
+		// Real revert bytes from an allocate into a VaultV2 whose nested
+		// MetaMorpho had every supply-queue market at cap.
+		expect(describeRevertData("0xded0652d")).toBe("AllCapsReached()");
+	});
+
+	it("decodes the market id of SupplyCapExceeded", () => {
+		const id = `0x${"ab".repeat(32)}`;
+		const data = ERROR_DICTIONARY.encodeErrorResult("SupplyCapExceeded", [id]);
+		expect(describeRevertData(data)).toBe(`SupplyCapExceeded(${id})`);
+	});
+
+	it("names NotEnoughLiquidity", () => {
+		const data = ERROR_DICTIONARY.encodeErrorResult("NotEnoughLiquidity");
+		expect(describeRevertData(data)).toBe("NotEnoughLiquidity()");
+	});
+});
+
 describe("describeRevertData", () => {
 	it("decodes Error(string) requires (e.g. Morpho Blue reasons)", () => {
 		const data = concat(["0x08c379a0", coder.encode(["string"], ["insufficient liquidity"])]);
