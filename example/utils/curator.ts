@@ -113,42 +113,6 @@ export async function buildCuratorActions(
 		);
 	}
 
-	// ----- GATES (transfer / deposit / withdraw filters) -----
-	// Each setX*Gate is timelocked, so `instantX` only works while the
-	// corresponding timelock is still 0 (typically right after vault
-	// creation). Skip emit when the desired value already matches on-chain.
-	if (config.gates) {
-		const g = config.gates;
-		if (g.receive_shares !== undefined) {
-			const current = await vault.receiveSharesGate();
-			if (current.toLowerCase() !== g.receive_shares.toLowerCase()) {
-				actions.push(
-					Actions.curator.instantSetReceiveSharesGate(g.receive_shares),
-				);
-			}
-		}
-		if (g.send_shares !== undefined) {
-			const current = await vault.sendSharesGate();
-			if (current.toLowerCase() !== g.send_shares.toLowerCase()) {
-				actions.push(Actions.curator.instantSetSendSharesGate(g.send_shares));
-			}
-		}
-		if (g.receive_assets !== undefined) {
-			const current = await vault.receiveAssetsGate();
-			if (current.toLowerCase() !== g.receive_assets.toLowerCase()) {
-				actions.push(
-					Actions.curator.instantSetReceiveAssetsGate(g.receive_assets),
-				);
-			}
-		}
-		if (g.send_assets !== undefined) {
-			const current = await vault.sendAssetsGate();
-			if (current.toLowerCase() !== g.send_assets.toLowerCase()) {
-				actions.push(Actions.curator.instantSetSendAssetsGate(g.send_assets));
-			}
-		}
-	}
-
 	// ----- ADAPTERS (already deployed) -----
 	if (config.underlying_vaults?.length) {
 		for (const u of config.underlying_vaults) {
@@ -232,7 +196,10 @@ export async function setupCuratorsSettings(
 	}
 
 	const adapters = await deployCuratorAdapters(client, vault, config);
-	const actions = await buildCuratorActions(client, vault, config, adapters);
+	const actions = [
+		...(await buildCuratorActions(client, vault, config, adapters)),
+		...(await buildGateActions(vault, config)),
+	];
 
 	if (actions.length === 0) {
 		console.log("  → nothing to update");
@@ -270,4 +237,53 @@ async function defaultIdForAdapter(
 				"Morpho Market V1 adapters expose multiple ids — pass `cap.id` explicitly.",
 			);
 	}
+}
+
+/**
+ * Build the gate actions (transfer / deposit / withdraw filters) separately
+ * from `buildCuratorActions`, so the caller can place them AFTER any
+ * bootstrap deposit in the same multicall: once a gate is live, the
+ * running wallet may no longer be allowed to receive shares.
+ */
+export async function buildGateActions(
+	vault: Vault,
+	config: CuratorsSettingsConfig,
+): Promise<Action[]> {
+	const actions: Action[] = [];
+
+	// Each setX*Gate is timelocked, so `instantX` only works while the
+	// corresponding timelock is still 0 (typically right after vault
+	// creation). Skip emit when the desired value already matches on-chain.
+	if (config.gates) {
+		const g = config.gates;
+		if (g.receive_shares !== undefined) {
+			const current = await vault.receiveSharesGate();
+			if (current.toLowerCase() !== g.receive_shares.toLowerCase()) {
+				actions.push(
+					Actions.curator.instantSetReceiveSharesGate(g.receive_shares),
+				);
+			}
+		}
+		if (g.send_shares !== undefined) {
+			const current = await vault.sendSharesGate();
+			if (current.toLowerCase() !== g.send_shares.toLowerCase()) {
+				actions.push(Actions.curator.instantSetSendSharesGate(g.send_shares));
+			}
+		}
+		if (g.receive_assets !== undefined) {
+			const current = await vault.receiveAssetsGate();
+			if (current.toLowerCase() !== g.receive_assets.toLowerCase()) {
+				actions.push(
+					Actions.curator.instantSetReceiveAssetsGate(g.receive_assets),
+				);
+			}
+		}
+		if (g.send_assets !== undefined) {
+			const current = await vault.sendAssetsGate();
+			if (current.toLowerCase() !== g.send_assets.toLowerCase()) {
+				actions.push(Actions.curator.instantSetSendAssetsGate(g.send_assets));
+			}
+		}
+	}
+	return actions;
 }

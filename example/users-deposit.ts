@@ -1,4 +1,10 @@
-import { formatUnits, JsonRpcProvider, Wallet, ZeroAddress } from "ethers";
+import {
+	formatUnits,
+	JsonRpcProvider,
+	parseUnits,
+	Wallet,
+	ZeroAddress,
+} from "ethers";
 import { ByzantineClient, type Vault } from "../src";
 import { checkAndApproveIfNeeded } from "./utils/depositor";
 import {
@@ -15,10 +21,10 @@ interface VaultOperations {
 	redeemAmount?: bigint;
 }
 
-const VAULT_ADDRESS = "0x04422053aDDbc9bB2759b248B574e3FCA76Bc145";
+const VAULT_ADDRESS = "0xb7f226a02e7a725c2da8e5df4561e0ed5b04e351";
 
 const DEPOSIT_CONFIG: VaultOperations = {
-	// depositAmount: parseUnits("0.1", 6),
+	depositAmount: parseUnits("0.5", 6),
 	// mintAmount: parseUnits("0.5", 18),
 	// withdrawAmount: parseUnits("0.04", 6),
 	// redeemAmount: 1198496n,
