@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ReadFn } from "../../src/utils/exitLiquidity";
 import {
 	buildReallocateTo,
+	destinationHeadroom,
 	PUBLIC_ALLOCATOR,
 	planPaPull,
 	readPaRoute,
@@ -135,6 +136,13 @@ describe("transactions", () => {
 		expect(txs.map((t) => t.to)).toEqual([PUBLIC_ALLOCATOR[1], ADDR_D]);
 		expect(txs[0].value).toBe(2n);
 		expect(txs[1].data.startsWith("0xac9650d8")).toBe(true);
+	});
+});
+
+describe("destinationHeadroom", () => {
+	it("is the lesser of the flow cap and the supply-cap room", () => {
+		expect(destinationHeadroom({ marketId: "0x1", maxIn: 100n, capHeadroom: 60n })).toBe(60n);
+		expect(destinationHeadroom({ marketId: "0x1", maxIn: 40n, capHeadroom: 60n })).toBe(40n);
 	});
 });
 

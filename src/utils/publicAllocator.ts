@@ -14,13 +14,14 @@ import type { ReadFn } from "./exitLiquidity";
  */
 
 /** Canonical deployments (their `MORPHO()` is the Morpho Blue singleton). */
-export const PUBLIC_ALLOCATOR: Record<number, string> = {
+export const PUBLIC_ALLOCATOR: Record<number, `0x${string}`> = {
 	1: "0xfd32fA2ca22c76dD6E550706Ad913FC6CE91c75D",
 	8453: "0xA090dD1a701408Df1d4d0B85b716c87565f90467",
 };
 
 /** The Morpho Blue singleton, the same address on both chains. */
-export const MORPHO_BLUE = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
+export const MORPHO_BLUE: `0x${string}` =
+	"0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
 const PA_INTERFACE = new Interface([
 	"function reallocateTo(address vault, tuple(tuple(address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) marketParams, uint128 amount)[] withdrawals, tuple(address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) supplyMarketParams) payable",

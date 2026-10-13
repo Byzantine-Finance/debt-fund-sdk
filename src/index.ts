@@ -70,6 +70,7 @@ export {
 	// What a VaultV2 can pay out: idle, liquidity adapter, deallocatable
 	breakdownOf,
 	buildReallocateTo,
+	destinationHeadroom,
 	getExitLiquidity,
 	groupPushes,
 	MORPHO_BLUE,
