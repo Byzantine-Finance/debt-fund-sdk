@@ -111,7 +111,10 @@ export interface PaPullPlan {
  * market with the most headroom. Bounded by the vault's position, the
  * market's `maxOut`, the market's own liquidity and the destination's room.
  */
-export function planPaPull(route: PaRoute, marketLiquidity: bigint): PaPullPlan {
+export function planPaPull(
+	route: Pick<PaRoute, "position" | "maxOut" | "destinations">,
+	marketLiquidity: bigint,
+): PaPullPlan {
 	let best: PaDestination | null = null;
 	let bestRoom = 0n;
 	for (const d of route.destinations) {
