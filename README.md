@@ -22,6 +22,8 @@ Breaking change vs v1: every `client.X(vaultAddress, ...)` call became `vault.X(
 
 **v2.0.2** fixes the encoding of `idData("this/marketParams", ...)` (was bytes-wrapped, now inline-tuple) so its `keccak256` actually matches the bucket id the Morpho V1 adapter exposes. The signature now takes a `MarketParams` struct directly. A new `idHash(type, ...)` helper returns the hashed bucket id in one call.
 
+**v2.1.0** adds exit-liquidity reads and withdrawal planning: `vault.exitLiquidity()` (idle, liquidity adapter, force-deallocatable positions, nested VaultV2s followed down), `vault.planExit(...)` / `planWithdraw` and `planTransactions` to build the `forceDeallocate` and PublicAllocator `reallocateTo` calls. See [Exit liquidity](#exit-liquidity--withdrawal-planning).
+
 ## Supported networks
 
 - **Ethereum Mainnet** (chain ID `1`)
@@ -573,6 +575,53 @@ await vault.accrueInterest();
 await vault.approveAsset(amount);   // approves the vault to spend the underlying
 ```
 
+## Exit liquidity & withdrawal planning
+
+A VaultV2 withdrawal pays the idle assets first, then pulls from the
+**liquidity adapter alone**; past that it reverts, even for a holder with
+enough shares. `exitLiquidity` measures what is payable and where:
+
+```ts
+const x = await vault.exitLiquidity();
+x.idle;              // the vault's own asset balance
+x.liquidityAdapter;  // what the liquidity adapter releases now
+x.instant;           // idle + liquidityAdapter: one tx, no penalty
+x.deallocatable;     // the OTHER positions, via forceDeallocate (a penalty)
+x.reachable;         // instant + deallocatable
+x.sources;           // each deallocatable position: adapter, venue, kind, data, amount
+```
+
+A venue that is itself a VaultV2 (it answers `maxWithdraw = 0` by design) is
+followed down its own liquidity adapter, up to `maxDepth` (default 5).
+Supported venues: Morpho Blue markets (interest accrued, market cash shared
+between positions), ERC4626 / Morpho Vault V1, Aave, Compound V3. A venue of
+an unknown kind counts for nothing. Reads only, any ethers provider works.
+
+To make more than `instant` payable, two permissionless levers exist:
+
+```ts
+// Force-deallocate: `penalty` (assets) is burned from the withdrawer's shares.
+// Push: MetaMorpho v1 vaults wired to the PublicAllocator move supply INTO
+// the liquidity adapter's market (`reallocateTo`, a flat ETH fee per call).
+const route = await readPaRoute(read, chainId, v1Vault, fromMarketId); // null if unusable
+const { exit, plan } = await vault.planExit(need, withdrawer, pushes);
+
+plan.covered;   // the levers cover `need`
+plan.penalty;   // asset units burned
+plan.feeWei;    // native currency for the pushes
+
+// The transactions to send BEFORE vault.withdraw / vault.redeem:
+// one reallocateTo per source vault, then one multicall of forceDeallocates.
+const txs = planTransactions(plan, chainId, vault.address, liquidityMarketParams, withdrawer);
+for (const tx of txs) await signer.sendTransaction(tx);
+```
+
+The SDK cannot list the v1 vaults that supply a market (that needs an
+indexer): pass it candidates, `readPaRoute` checks each one on-chain
+(PublicAllocator is an allocator, outbound flow cap, a sibling market with
+room). Lower-level exports: `buildReallocateTo`, `planPaPull`, `groupPushes`,
+`penaltyAssetsOf`, `breakdownOf`, `PUBLIC_ALLOCATOR`.
+
 ## Error decoding
 
 Every SDK call funnels failures through `formatContractError`, which names
@@ -653,6 +702,7 @@ A full set of runnable examples lives under [`example/`](./example):
 | `allocators-settings.ts` | Allocator ops (allocate, deallocate, force-deallocate) |
 | `morpho-adapters.ts` | Adapter deployment + introspection |
 | `set-cap-adapter.ts` | Set absolute + relative caps in one tx |
+| `exit-liquidity.ts` | What a vault can pay out, and the withdrawal plan (force-deallocate / PublicAllocator) |
 
 Run any example with:
 

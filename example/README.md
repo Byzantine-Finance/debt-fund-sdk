@@ -35,6 +35,12 @@ Production-grade vault deployment with optional `SETUP_VAULT_CONFIG`
 fields. Handles temporary role swaps automatically when the running
 wallet doesn't already hold the target roles.
 
+### 💧 `exit-liquidity.ts` — what can be withdrawn
+
+Read-only by default: measures a nested VaultV2 chain (idle, liquidity
+adapter, force-deallocatable positions), plans a withdrawal that needs the
+levers and prints the transactions to send before it. Flip `SEND` to execute.
+
 ### 💰 `users-deposit.ts` — user lifecycle
 
 Deposit, mint, withdraw, redeem, with proper preview-then-approve flow.

@@ -26,7 +26,16 @@ import {
 } from "./actions";
 import type { MarketParams } from "./clients/adapters";
 import { VAULT_ABI } from "./constants/abis";
-import { callContractMethod, executeContractMethod } from "./utils";
+import {
+	callContractMethod,
+	type ExitLiquidity,
+	type ExitLiquidityOptions,
+	executeContractMethod,
+	getExitLiquidity,
+	type PushSource,
+	breakdownOf,
+	planWithdraw,
+} from "./utils";
 
 const ERC20_MIN_ABI = [
 	"function balanceOf(address) view returns (uint256)",
@@ -136,6 +145,41 @@ export class Vault {
 	}
 	convertToAssets(shares: bigint): Promise<bigint> {
 		return callContractMethod(this.contract, "convertToAssets", shares);
+	}
+
+	/** What this vault can pay out: idle, the liquidity adapter's reach and
+	 *  the force-deallocatable positions (see {@link ExitLiquidity}). */
+	exitLiquidity(options?: ExitLiquidityOptions): Promise<ExitLiquidity> {
+		return getExitLiquidity(this.runner, this.address, options);
+	}
+
+	/**
+	 * The cheapest way to make `need` assets payable by a withdraw/redeem,
+	 * with the transactions to send before it (see {@link planWithdraw}).
+	 *
+	 * @param need - The assets to withdraw
+	 * @param onBehalf - The withdrawer, whose shares pay the penalty
+	 * @param pushes - Public-allocator pushes into the liquidity market, from {@link readPaRoute}
+	 */
+	async planExit(
+		need: bigint,
+		onBehalf: string,
+		pushes: PushSource[] = [],
+		adapterShortfall = 0n,
+	) {
+		const exit = await this.exitLiquidity();
+		const penalties = new Map(
+			await Promise.all(
+				exit.sources.map(
+					async (s) => [s.adapter, await this.forceDeallocatePenalty(s.adapter)] as const,
+				),
+			),
+		);
+		const plan = planWithdraw(
+			breakdownOf(exit, (a) => penalties.get(a) ?? 0n, adapterShortfall, pushes),
+			need,
+		);
+		return { exit, plan };
 	}
 
 	// ----- adapters -----

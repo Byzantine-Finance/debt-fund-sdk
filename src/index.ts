@@ -50,9 +50,36 @@ export * from "./constants";
 // ----- Types & constants -----
 export * from "./types";
 // ----- Utilities (provider helpers, error formatting, conversions) -----
+export type {
+	ExitLiquidity,
+	ExitLiquidityOptions,
+	ExitSource,
+	LiquidityBreakdown,
+	PaDestination,
+	PaRoute,
+	PlannedOwnPull,
+	PlannedPush,
+	PushCall,
+	PushSource,
+	TxRequest,
+	WithdrawPlan,
+} from "./utils";
 export {
 	ContractProvider,
 	callContractMethod,
+	// What a VaultV2 can pay out: idle, liquidity adapter, deallocatable
+	breakdownOf,
+	buildReallocateTo,
+	getExitLiquidity,
+	groupPushes,
+	MORPHO_BLUE,
+	PUBLIC_ALLOCATOR,
+	penaltyAssetsOf,
+	planPaPull,
+	planTransactions,
+	planWithdraw,
+	pushFromRoute,
+	readPaRoute,
 	// Ecosystem-wide revert decoding: name a custom error raised at ANY
 	// call depth (vault -> adapter -> market -> token), plus Error(string)
 	// and Panic(uint256).

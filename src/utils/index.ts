@@ -2,5 +2,8 @@ export * from "./ContractProvider";
 export * from "./contractErrorHandler";
 export * from "./conversions";
 export * from "./errorDictionary";
+export * from "./exitLiquidity";
 export * from "./LocalNonceManager";
 export * from "./providers";
+export * from "./publicAllocator";
+export * from "./withdrawPlan";
